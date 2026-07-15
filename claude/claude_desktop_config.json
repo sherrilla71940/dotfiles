@@ -1,0 +1,44 @@
+{
+  "coworkUserFilesPath": "C:\\Users\\Aaron.Sherrill\\Claude",
+  "preferences": {
+    "coworkScheduledTasksEnabled": false,
+    "coworkHipaaRestricted": false,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "epitaxy",
+    "bypassPermissionsGateByAccount": {
+      "3f8529c7-1c3b-45c4-a0ef-96cf48852b74": true
+    },
+    "coworkWebSearchEnabled": true,
+    "coworkModelAutoFallbackByAccount": {
+      "3f8529c7-1c3b-45c4-a0ef-96cf48852b74": true
+    },
+    "remoteToolsDeviceName": "desk-aaronsher",
+    "epitaxyPrefs": {
+      "starred-local-code-sessions": [],
+      "starred-cowork-spaces": [],
+      "starred-session-groups": [],
+      "dframe-local-slice": {
+        "pinnedOrder": [],
+        "customGroupAssignments": {},
+        "customGroupOrder": {}
+      },
+      "ccd-sessions-filter": {
+        "state": {
+          "selectedProjects": []
+        },
+        "version": 0
+      },
+      "desktop-frame.paneStore.v1": {
+        "state": {
+          "extraPanesByMode": {},
+          "colWeightsByMode": {},
+          "rowSplit": 0.5,
+          "draftNonce": 0
+        },
+        "version": 4
+      }
+    },
+    "launchPreviewPersistedWorkspaces": [],
+    "launchPreviewSessionScopedSessions": []
+  }
+}

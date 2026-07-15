@@ -1,0 +1,11 @@
+# Ignore everything by default
+*
+!*/
+
+# Explicitly tracked
+!CLAUDE.md
+!settings.json
+!skills/**
+!rules/**
+!.gitignore
+!claude_desktop_config.json

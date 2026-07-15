@@ -1,16 +1,17 @@
 ---
-name: git-commit
-description: 'Create a Conventional Commit from the current git diff with safe staging and message selection. Use when the user asks to commit changes, draft a commit message, or invokes /git-commit. Supports draft vs. commit modes, English or Traditional Chinese messages, and fast chat-edit scoping.'
+name: git-commit-action
+description: 'Create a Conventional Commit from the current git diff with safe staging and message selection. Use when the user asks to commit changes, draft a commit message, or invokes /git-commit-action. Supports draft vs. commit modes, English or Traditional Chinese messages, and fast chat-edit scoping.'
 argument-hint: '[draft|commit] [en|zhtw] [last-chat-edit|all-chat-edits|recent-last|recent-all] optional type, scope, description, or files'
-allowed-tools: Bash(git:*)
 disable-model-invocation: true
 ---
 
-# Git Commit
+# Git Commit Action
 
 Create one standardized git commit using the Conventional Commits format. Analyze the actual repository state before choosing the commit message.
 
-`disable-model-invocation: true` is set deliberately: this command has side effects (staging, committing), so it should only run when the user explicitly types `/git-commit`, never auto-triggered by Claude on its own judgment.
+`disable-model-invocation: true` is set deliberately: this skill has side effects (staging, committing), so it should only run when the user explicitly types `/git-commit-action`, never auto-triggered by Claude on its own judgment.
+
+For the Conventional Commit type table, description/body rules, breaking-change and footer conventions, and message examples, see the `git-commit-reference` skill — this file only covers the `/git-commit-action` workflow itself.
 
 ## Mission
 
@@ -18,7 +19,7 @@ Create one safe Conventional Commit from the current logical diff, or draft the 
 
 ## Arguments
 
-`$ARGUMENTS` contains the full trailing text typed after `/git-commit`. Parse it as optional flags and hints — flags are not strictly positional, so scan the whole string for recognized tokens. Defaults are `draft` mode and `en` language.
+`$ARGUMENTS` contains the full trailing text typed after `/git-commit-action`. Parse it as optional flags and hints — flags are not strictly positional, so scan the whole string for recognized tokens. Defaults are `draft` mode and `en` language.
 
 - Mode flags:
   - `draft`: return the proposed commit message in chat without staging or committing. This is the default.
@@ -59,26 +60,10 @@ Create one safe Conventional Commit from the current logical diff, or draft the 
    git add -p
    ```
 6. Check relevant filenames for obvious secrets or private credentials, including `.env`, private keys, credential JSON, tokens, and generated secret dumps.
-7. Choose a Conventional Commit type:
-
-   | Type | Purpose |
-   |---|---|
-   | `feat` | New feature |
-   | `fix` | Bug fix |
-   | `docs` | Documentation only |
-   | `style` | Formatting/style, no logic change |
-   | `refactor` | Code change without feature or bug fix |
-   | `perf` | Performance improvement |
-   | `test` | Add/update tests |
-   | `build` | Build system or dependencies |
-   | `ci` | CI/config automation |
-   | `chore` | Maintenance or repository housekeeping |
-   | `revert` | Revert a prior commit |
-8. Keep the description imperative, present tense, and under 72 characters when practical.
-9. Use a body only when it clarifies a non-obvious change, breaking change, migration note, or multi-area commit.
-10. In `draft` mode, respond with the proposed commit message in a fenced `text` block, mention that no commit was created, and stop.
-11. In `commit` mode, run `git diff --cached --check` before committing.
-12. Commit with `git commit -m "<type>[optional scope]: <description>"` or a multi-line message when needed:
+7. Load the `git-commit-reference` skill, then choose the type and compose the message following its type table, description/body rules, and breaking-change/footer conventions.
+8. In `draft` mode, respond with the proposed commit message in a fenced `text` block, mention that no commit was created, and stop.
+9. In `commit` mode, run `git diff --cached --check` before committing.
+10. Commit with `git commit -m "<type>[optional scope]: <description>"` or a multi-line message when needed:
     ```bash
     git commit -m "$(cat <<'EOF'
     <type>[scope]: <description>
@@ -88,21 +73,7 @@ Create one safe Conventional Commit from the current logical diff, or draft the 
     EOF
     )"
     ```
-13. Finish with `git status --short` and report the commit hash and message.
-
-## Additional Conventional Commit Rules
-
-- Use `!` after the type/scope, or a `BREAKING CHANGE:` footer, only when the diff clearly introduces a breaking API, configuration, or behavior change:
-  ```text
-  feat!: remove deprecated endpoint
-  ```
-  ```text
-  feat: allow config to extend other configs
-
-  BREAKING CHANGE: `extends` key behavior changed
-  ```
-- If one diff contains unrelated commit types, split it into separate commits when practical.
-- Use footers only for useful trailers such as `BREAKING CHANGE:`, `Refs:`, or `Closes:`.
+11. Finish with `git status --short` and report the commit hash and message.
 
 ## Safety Rules
 
@@ -113,27 +84,3 @@ Create one safe Conventional Commit from the current logical diff, or draft the 
 - Never commit obvious secrets. Stop and explain what needs review if a secret-like file is staged.
 - Never stage files or create commits in `draft` mode.
 - If hooks fail, fix the reported issue and create a normal commit. Do not amend unless the user asks.
-
-## Message Examples
-
-```text
-feat(auth): add password reset flow
-```
-
-```text
-fix(api): handle empty search results
-```
-
-```text
-docs(readme): clarify sync workflow
-```
-
-```text
-chore(sync): archive unused copilot assets
-```
-
-```text
-feat(api)!: require explicit project id
-
-BREAKING CHANGE: config files must now include projectId.
-```

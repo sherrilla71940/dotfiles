@@ -3,7 +3,7 @@ paths:
   - "**/*.{ts,tsx}"
 ---
 
-## TypeScript Guidelines
+# TypeScript Guidelines
 
 - Default to `"strict": true` (including `strictNullChecks`) for new projects. Keep existing settings in legacy projects unless asked to harden them.
 - Let TypeScript infer simple local return types; add explicit return types when inference is complex, recursive, generic-heavy, or materially improves readability.

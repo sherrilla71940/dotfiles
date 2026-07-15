@@ -3,7 +3,7 @@ paths:
   - "**/*.{html,cshtml,css,scss,js,jsx,ts,tsx}"
 ---
 
-## Accessibility Guidelines
+# Accessibility Guidelines
 
 - Prefer native semantic HTML before ARIA. Use buttons, links, labels, headings, landmarks, lists, tables, and form controls for their intended purpose.
 - Every interactive control needs a clear accessible name, visible focus, keyboard access, and a predictable disabled/loading/error state.

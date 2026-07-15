@@ -3,7 +3,7 @@ paths:
   - "**/*.{js,jsx,ts,tsx}"
 ---
 
-## React Guidelines
+# React Guidelines
 
 - Avoid nested ternaries in JSX. Use a simple ternary (`condition ? a : b`) only for short, single-condition, single-line branches. For anything nested, multi-line, or with more than one condition — including rendering one of several mutually exclusive branches — assign to a `let` via `if`/`else if`/`else` (or use early returns) before the `return`, then interpolate that variable in JSX.
 - Keep renders pure.

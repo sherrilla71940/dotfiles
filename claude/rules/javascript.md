@@ -3,7 +3,7 @@ paths:
   - "**/*.{js,jsx,ts,tsx}"
 ---
 
-## JavaScript Guidelines
+# JavaScript Guidelines
 
 *Applies to JavaScript and TypeScript files. See TypeScript Guidelines and React Guidelines below for language/framework-specific rules.*
 

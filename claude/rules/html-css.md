@@ -3,7 +3,7 @@ paths:
   - "**/*.{html,cshtml,css,scss,js,jsx,ts,tsx}"
 ---
 
-## HTML / CSS / SCSS Guidelines
+# HTML / CSS / SCSS Guidelines
 
 - Default to BEM-style naming (`block__element--modifier-value`).
 - Keep selector specificity low: use class-based selectors, avoid IDs and deep selectors, and keep SCSS nesting shallow (`&` only for BEM elements/modifiers, states, and pseudo-selectors).

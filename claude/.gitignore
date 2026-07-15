@@ -9,3 +9,4 @@
 !rules/**
 !.gitignore
 !claude_desktop_config.json
+!statusline.sh

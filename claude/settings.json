@@ -3,6 +3,18 @@
     "API_TIMEOUT_MS": "1200000",
     "BASH_DEFAULT_TIMEOUT_MS": "300000"
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/skills/journal/session-start-hook.sh"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(git push *)"

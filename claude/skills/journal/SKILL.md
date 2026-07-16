@@ -75,6 +75,7 @@ Because both can hold a "why," they can fall out of sync. One rule prevents that
 
 - Do **not** copy a memory fact wholesale into a journal entry. Reference it briefly for narrative continuity, but the authoritative copy stays in memory.
 - When a fact later changes, update **memory** (the authority). In the journal, do **not** go back and edit the old entry — add a new `Correction:` line pointing to what changed. The old entry stays as the historical record; memory reflects the new truth.
+- **When correcting a fact in one memory file, grep all memory files for the same claim/keyword before finishing.** Memory is not one file — a project typically has several (`feedback-*`, `project-*`, `reference-*`). A corrected rule can leave a stale, contradicting copy in a different file that nothing else points at. Search (`grep -rn "<keyword>"` across the project's memory folder) and fix every instance found, not just the one you started with.
 - Net effect: a fact lives in exactly one place (memory); the journal holds only the story of how it got there and what was tried. No double-maintenance, no drift.
 
 ## When to use
@@ -139,6 +140,84 @@ Once resolved, the per-project journal lives at:
 
 `<project>` is the working directory's repo name (last segment of `git rev-parse --show-toplevel`, or cwd name if not a git repo). E.g. `c:\...\work\my-app` → `my-app`. Create `<journalRoot>\<project>\logs\` automatically if missing — do not ask again once setup is done.
 
+### Two sibling folders — `archive/` (frozen) and `references/<topic>/` (active)
+
+A project can accumulate detail too granular to inline in journal entries — per-field change tables, verification how-tos, meeting minutes, exported data, diagrams. Two folders hold this, with **different lifecycles**, both as siblings of `logs/`:
+
+```
+<journalRoot>\<project>\
+├── logs\
+│   └── project-journal.md
+├── archive\                    ← FROZEN — historical, pre-journal docs. Never written to again.
+│   └── README.md               ← index of what's inside and why
+└── references\                 ← ACTIVE — one folder per refactor/topic, grows over time
+    └── <topic>\
+        ├── README.md           ← entry point: what this covers, why it exists
+        └── (anything else)     ← other .md files, data exports, diagrams, subfolders — no fixed shape
+```
+
+**`archive/`** is a one-time historical relic (e.g. from a pre-journal era of this project). Never write to it. Only read it.
+
+**Before filing anything into `archive/` (or leaving it there during a reorg), verify the underlying work is actually finished** — check the journal for any BLOCKED/DEFERRED pending item that references the same topic/fields/files. If an open pending item still depends on this content, it belongs in `references/<topic>/`, not `archive/`, no matter how old the file is. "Old" and "done" are not the same thing — a doc can predate the journal and still describe work that hasn't landed yet.
+
+**`references/<topic>/`** is where NEW deep-dive detail goes, created *as part of doing a refactor*, going forward. Each topic gets its own folder (not a flat file) so it can hold whatever the work produced — a full field-mapping table, a verification methodology doc, a screenshot, exported data — without being forced into one file. `README.md` is the required entry point per topic; everything else inside is unconstrained.
+
+**Copy in primary source documents too, not just your own analysis.** If a spec file, Excel, Word doc, PDF, or exported data is being actively referenced for ongoing work — not just a markdown summary *about* it — copy the actual file into the relevant `references/<topic>/` folder so the topic is self-contained. Don't leave the real source sitting only in an unrelated personal working folder while the topic folder holds nothing but notes referencing it by path — a future reader (or session) should find everything needed, source and analysis together, in one place. Note in the `README.md` when a file was copied in and from where.
+
+**Discovery is structural, not a manual per-project pointer.** At the start of both Mode A (Read) and Mode C (List), check whether `<journalRoot>\<project>\archive\` and `<journalRoot>\<project>\references\` exist. If either does:
+- Read `archive/README.md` and/or list the topic folders under `references/` (read each topic's `README.md`).
+- **Produce a "reference map" for the user — not just that folders exist, but what each is FOR and when to consult it.** Each topic README carries a `**Consult this when:**` line for exactly this; surface it. Example map:
+  > - `references/115yr-field-mapping/` — **consult when** verifying field lists / column validation against the spec (holds the Excel source of truth + full per-layer table).
+  > - `references/fe-be-field-sync/` — **consult when** syncing FE↔BE JSON names after Jacky's commits (holds the 欄位VS對照 preview).
+  > - `archive/` — historical, pre-journal shipped work.
+- If the user's question maps to one of these, open that reference directly (reading binary files per "Reading reference files" above) and cite what's found — do not guess or claim detail doesn't exist without checking.
+
+This map is the point of the whole system: the journal (`logs/`) is the index that tells you *where things are and what to look at when* — `references/` holds the depth, and the journal + each README route you to the right one.
+
+If neither folder exists, say nothing about them — most projects won't have either yet.
+
+**Creating a `references/<topic>/` folder (judgment call, always offer first):** When a session's work produces detail too extensive to inline in a journal entry (full tables, multi-file mappings, methodology writeups), offer to create `references/<topic>/README.md` (plus whatever other files fit) rather than doing it silently — same bar and pattern as offering `/journal write` itself. If the user agrees, write the files, then link it from the journal entry via the `**Reference:**` field (see entry format in Mode B). Do not create one for every entry — only when the detail genuinely doesn't fit in the journal's structured format.
+
+Every `references/<topic>/README.md` should include, near the top:
+- a `**Consult this when:**` line — the trigger/situation that should send a future session here (this is what the read-mode "reference map" surfaces);
+- a list of the files inside with a one-line purpose each;
+- for any binary file (`.xlsx`/`.docx`/etc.), the one-line command to read it (see "Reading reference files").
+
+**Whenever moving a file into, out of, or between `archive/` and `references/<topic>/`, grep the moved file's own content and any sibling index (`README.md` in either folder) for relative-path language or "this folder" phrasing that assumed the old location.** Fix every stale reference in the same operation — a move is not complete until cross-references are updated, not just the file's physical location.
+
+### Reading reference files (any format — this is what makes the pointers usable)
+
+A reference is only useful if it can actually be opened. When the journal or a `README.md` points at a file, read it — do not claim you can't without trying. By format:
+
+- **Markdown / txt / csv / json / code** → the Read tool directly.
+- **PDF** → the Read tool directly (it renders pages; use the `pages` param on large files).
+- **Images / screenshots (PNG, JPG)** → the Read tool directly (it views them).
+- **Excel `.xlsx`** → the Read tool CANNOT open these. Use Python `openpyxl`. **Always set `PYTHONIOENCODING=utf-8`** or non-ASCII (CJK) text crashes on Windows:
+  ```bash
+  PYTHONIOENCODING=utf-8 python -c "
+  import openpyxl
+  wb = openpyxl.load_workbook('FILE.xlsx', read_only=True, data_only=True)
+  print(wb.sheetnames)
+  ws = wb[wb.sheetnames[0]]
+  for row in ws.iter_rows(values_only=True):
+      print([c for c in row if c is not None])
+  "
+  ```
+- **Word `.docx`** → also NOT readable by the Read tool. Use Python `python-docx`:
+  ```bash
+  PYTHONIOENCODING=utf-8 python -c "
+  import docx
+  d = docx.Document('FILE.docx')
+  for p in d.paragraphs:
+      if p.text.strip(): print(p.text)
+  for t in d.tables:
+      for r in t.rows: print([c.text.strip() for c in r.cells])
+  "
+  ```
+- **Fallback** if `openpyxl` / `python-docx` are missing: both formats are ZIP archives — `unzip -p FILE.xlsx xl/worksheets/sheet1.xml` or `unzip -p FILE.docx word/document.xml` and parse the XML. Try `pip install openpyxl python-docx` first.
+
+If a `references/<topic>/` folder holds a binary file, its `README.md` should note the one-liner for reading it (so a session that lands on the folder without this skill loaded still knows how).
+
 ### First-time setup
 
 Only runs when no valid config exists. Ask the user, then persist the answer so it is never asked again:
@@ -155,6 +234,8 @@ If `config.json` exists but its `journalRoot` directory is gone (e.g. moved mach
 
 Write in English. If the project's technical terms are in another language — field/table/entity names, spec document titles, directive or ticket numbers — quote them as-is; do not translate or anglicize them. These are code literals and spec identifiers, not descriptions, and a translation makes them un-searchable against the actual codebase or documents.
 
+**When citing an external document (a spec file, DOCX, Excel, ticket) inside a journal entry or a `references/<topic>/` file, always name the exact file — including any version-distinguishing suffix (date, version number).** Never write a generic placeholder like "the spec," "the docx," or "per the DOCX" more than once without the concrete filename nearby — a project can accumulate multiple versions of the same-titled document over time, and "the docx" becomes ambiguous the moment a second version exists. If the version being cited might not match the project's current confirmed source of truth (check memory/journal for a "source of truth" fact), flag that explicitly rather than silently assuming they match.
+
 ---
 
 ## Mode A — Read (`/journal read` or `/journal read <focus>`)
@@ -167,7 +248,7 @@ Any argument after `read` is an optional **focus** — a free-text description o
 
 1. Resolve the journal root from config (run First-time setup if needed), then determine project name and journal path (see Setup and location)
 2. If the file does not exist, say so and stop — no prior context exists
-3. Read the full journal (always read the whole file — it is one file; focus only narrows the *output*, not the read)
+3. Read the full journal (always read the whole file — it is one file; focus only narrows the *output*, not the read). Also check for sibling `archive\` and `references\` folders (see "Two sibling folders" above); read `archive/README.md` if present, and list `references/<topic>/` folders (reading each topic's `README.md` for a one-line description).
 4. **Drift check (offer a catch-up, do not block).** Take the newest entry's date. In the *code* repo (cwd), run `git log --since=<that date> --oneline` and check for uncommitted changes. If there are commits/changes since the last entry, the journal is likely behind. Tell the user plainly **and explain the trade-off so they can decide**, e.g.:
 
    > The journal's newest entry is `<date>`, but there have been N commit(s) in the code since — so it's probably missing recent work. Two options:
@@ -180,7 +261,8 @@ Any argument after `read` is an optional **focus** — a free-text description o
    - **No focus given** → summarize all still-active context: decisions in effect, open BLOCKED/DEFERRED items, architecture notes, corrections
    - **Focus given** → surface only entries/sections relevant to the focus term; note briefly how many other entries were skipped so the user knows there's more
 6. Explicitly flag any SUPERSEDED entries so they are not acted on
-7. **Reconcile pending items against current state.** Treat BLOCKED / DEFERRED / pending items as *point-in-time*, not live truth — work may have happened in sessions where `/journal write` was skipped. For any pending item that would drive action now, quickly verify against current code/git (grep, `git log`, read the file) before presenting it as still-open, and flag any that look already-done or stale. This is the same check that caught the stale `用戶接管` "NEEDS FIX" — it defends against journal-vs-reality drift. If a pending item turns out done, tell the user (they may then want `/journal write` to record the catch-up).
+7. If `archive/` and/or `references/<topic>/` folders were found in step 3, mention them briefly (one line each) so the user knows more granular detail exists
+8. **Reconcile pending items against current state.** Treat BLOCKED / DEFERRED / pending items as *point-in-time*, not live truth — work may have happened in sessions where `/journal write` was skipped. For any pending item that would drive action now, quickly verify against current code/git (grep, `git log`, read the file) before presenting it as still-open, and flag any that look already-done or stale. This is the same check that caught the stale `用戶接管` "NEEDS FIX" — it defends against journal-vs-reality drift. If a pending item turns out done, tell the user (they may then want `/journal write` to record the catch-up).
 
 ---
 
@@ -200,6 +282,7 @@ Any argument after `read` is an optional **focus** — a free-text description o
    3. 2026-07-16 — spec-migration-corrections
    ```
 4. Do **not** summarize content or reconcile — this is a table of contents only. Tell the user they can `/journal read <topic>` to expand any one.
+5. Also check for sibling `archive\` and `references\` folders (see "Two sibling folders"). If present, add one line each noting what exists — `archive/` from its README, `references/` as a count of topic folders with their names.
 
 ---
 
@@ -225,7 +308,10 @@ Extract from the conversation:
 - **Pending** — open items, labelled BLOCKED (waiting on someone/event) or DEFERRED (chose to wait)
 - **Related files** — affected files, briefly
 
-### Step 5: Prepend entry (newest first)
+### Step 5: Offer a `references/<topic>/` folder if the detail warrants it
+If the session produced detail too extensive to inline (a full field-by-field table, multi-file mapping, a methodology writeup, exported data, a diagram) — **offer** to create `references/<topic>/README.md` (plus any other files that fit) before finalizing the entry. Do not create it silently, and do not create one for ordinary entries — only when inlining would bloat the entry past what's scannable. If the user agrees, write the files under `<journalRoot>\<project>\references\<topic>\`, then include a `**Reference:**` line in the entry (Step 6).
+
+### Step 6: Prepend entry (newest first)
 
 ```md
 ## YYYY-MM-DD — <topic>
@@ -242,6 +328,9 @@ Prior entry YYYY-MM-DD stated: "<what was wrong>". Actual outcome: "<what is cor
 **Architecture notes:** (omit section if no structural finding)
 <non-obvious structural fact — e.g. zone separation, shared model, deferred-rename rule>
 
+**Reference:** (omit section if no references/ folder was created for this entry)
+`references/<topic>/` — <one-line description of what's in it>
+
 **Pending:**
 - BLOCKED: <item> — waiting on <person/event>
 - DEFERRED: <item> — decided to wait until <condition>
@@ -253,25 +342,28 @@ Prior entry YYYY-MM-DD stated: "<what was wrong>". Actual outcome: "<what is cor
 ---
 ```
 
-### Step 6: Commit
+### Step 7: Commit
 Only if the journal root was set up as a git repo (see First-time setup). From `<journalRoot>`:
 ```bash
 cd "<journalRoot>"
 git add <project>/logs/project-journal.md
+git add <project>/references/<topic>/   # if a references folder was created this write
 git commit -m "journal(<project>): <topic> YYYY-MM-DD"
 ```
 If the journal root is not a git repo, skip the commit.
 
-### Step 7: Report back
+### Step 8: Report back
 - One-line summary of what was recorded
 - Total entry count
 - Whether the directory or file was newly created
+- If a `references/<topic>/` folder was created, its path
 
 ## Rules
 
 - Do not journal what git commits already describe — only the *why* and *context*
 - Do not journal code details (snippets, diffs)
 - Do not journal secrets, tokens, or personal data
-- Do not translate Chinese technical terms — quote them directly
+- Do not translate technical terms in another language — quote them directly (e.g. field/table names, spec titles)
 - If nothing worth recording happened, say so rather than writing a thin entry
+- Never write to `archive/` — it is frozen and historical only; new detail goes in `references/<topic>/`
 - When reading, explicitly flag superseded entries so they are not acted on

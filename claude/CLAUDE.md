@@ -50,6 +50,11 @@
 - Use JSDoc for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
 - Use standard comments sparingly, for implementation notes that explain *why* a non-obvious decision or workaround was used.
 
+### Shell tool preference
+
+- On Windows with Git for Windows installed, **prefer the Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.). It is simpler and more portable.
+- Use PowerShell only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
+
 ---
 
 ## Company Coding Style

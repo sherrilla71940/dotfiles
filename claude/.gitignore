@@ -10,3 +10,6 @@
 !.gitignore
 !claude_desktop_config.json
 !statusline.sh
+
+# Machine-specific journal config (absolute path) — keep local, do not sync
+claude/skills/journal/config.json

@@ -40,6 +40,7 @@ Shared conventions for writing a Conventional Commit message. Both organic commi
 
 - Keep the description imperative, present tense, and under 72 characters when practical.
 - Use a body only when it clarifies a non-obvious change, breaking change, migration note, or multi-area commit.
+- Use `-` bullets in the body when listing multiple distinct changes; prose for a single explanatory point.
 - If one diff contains unrelated commit types, split it into separate commits when practical.
 
 ## Breaking changes

@@ -12,4 +12,4 @@
 !statusline.sh
 
 # Machine-specific journal config (absolute path) — keep local, do not sync
-claude/skills/journal/config.json
+skills/journal/config.json

@@ -28,7 +28,7 @@ The value is narrow and real. It pays off when **all** of these hold; if they do
 | **AI-assisted** work where the assistant loses context between sessions | You have strong ADR / PR / ticket discipline that already covers it |
 | You resume days apart and would otherwise re-derive context | Routine or purely mechanical changes |
 
-**Sweet-spot example (this project):** the `taoyuansewer2` 115yr refactor — AI-assisted, spans weeks, and its source-of-truth is a Chinese government spec plus verbal PM/BE confirmations that never land in git. Losing that reasoning between sessions is expensive, so the journal earns its keep.
+**Sweet-spot pattern:** a multi-week, AI-assisted refactor where the source of truth keeps shifting — a spec doc that gets revised, plus PM/stakeholder clarifications you copy-paste in from chat, email, or a call summary. None of that lands in a commit, and it can't (it's not code — it's context, and it changes mid-project). Without somewhere to persist it, every session either re-asks the same questions or silently drifts when the spec updates. The journal is where that pasted context and its revision history lives, so a session days later still knows which version of the requirement is current and why it changed.
 
 **Not worth it:** a typical CRUD feature sprint finished in a day — the commit messages and ticket say everything; a journal would just be ceremony.
 
@@ -85,14 +85,14 @@ Because both can hold a "why," they can fall out of sync. One rule prevents that
 
 ### The `[topic]` argument (optional)
 
-`[topic]` is a short kebab-case tag naming the theme of the entry — e.g. `115yr-corrections`, `field-rename`, `auth-restructure`. It becomes the entry's heading and the commit message subject, so entries are easy to scan and find later.
+`[topic]` is a short kebab-case tag naming the theme of the entry — e.g. `spec-v2-migration`, `field-rename`, `auth-restructure`. It becomes the entry's heading and the commit message subject, so entries are easy to scan and find later.
 
 - **Optional.** If the user omits it (`/journal write` with no topic), Claude infers a concise topic from what the session was about and states the chosen topic in the report-back.
 - The user only needs to supply one when they want to control the label — otherwise let Claude pick.
 
 ## Example workflow (a multi-session refactor)
 
-This is how a big refactor — like the 115yr spec update on `taoyuansewer2` — flows across sessions:
+This is how a big refactor — like a spec migration spanning weeks, where requirements evolve via pasted PM/stakeholder notes — flows across sessions:
 
 1. **Start of session** → user runs `/journal read`. Claude loads the journal and summarizes: decisions still in effect, open BLOCKED/DEFERRED items, architecture notes, and any prior corrections. Both sides start aligned. (On the very first session there's nothing to read yet — skip.)
 2. **Do the work** → make changes, hit decisions, get clarifications from PM/BE, discover structure.
@@ -137,7 +137,7 @@ Once resolved, the per-project journal lives at:
 <journalRoot>\<project>\logs\project-journal.md
 ```
 
-`<project>` is the working directory's repo name (last segment of `git rev-parse --show-toplevel`, or cwd name if not a git repo). E.g. `c:\...\work\taoyuansewer2` → `taoyuansewer2`. Create `<journalRoot>\<project>\logs\` automatically if missing — do not ask again once setup is done.
+`<project>` is the working directory's repo name (last segment of `git rev-parse --show-toplevel`, or cwd name if not a git repo). E.g. `c:\...\work\my-app` → `my-app`. Create `<journalRoot>\<project>\logs\` automatically if missing — do not ask again once setup is done.
 
 ### First-time setup
 
@@ -153,7 +153,7 @@ If `config.json` exists but its `journalRoot` directory is gone (e.g. moved mach
 
 ## Language rule
 
-Write in English. Chinese technical terms — layer names (`污水竣工人孔`), field names (`PI_SLOP`), spec document names, government directive numbers — are quoted as-is; do not translate or anglicize them. These are code literals and spec identifiers, not descriptions.
+Write in English. If the project's technical terms are in another language — field/table/entity names, spec document titles, directive or ticket numbers — quote them as-is; do not translate or anglicize them. These are code literals and spec identifiers, not descriptions, and a translation makes them un-searchable against the actual codebase or documents.
 
 ---
 
@@ -194,10 +194,10 @@ Any argument after `read` is an optional **focus** — a free-text description o
 2. If the file does not exist, say so and stop
 3. Extract every heading matching `^## \d{4}-\d{2}-\d{2} — <topic>` and print them as a numbered index, newest first, e.g.:
    ```
-   taoyuansewer2 journal — 3 entries
-   1. 2026-07-16 — map-display-path-pending
-   2. 2026-07-16 — 115yr-foundation
-   3. 2026-07-16 — 115yr-corrections
+   my-app journal — 3 entries
+   1. 2026-07-16 — display-path-pending
+   2. 2026-07-16 — spec-migration-foundation
+   3. 2026-07-16 — spec-migration-corrections
    ```
 4. Do **not** summarize content or reconcile — this is a table of contents only. Tell the user they can `/journal read <topic>` to expand any one.
 

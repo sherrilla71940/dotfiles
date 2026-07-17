@@ -55,6 +55,14 @@
 - On Windows with Git for Windows installed, **prefer the Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.). It is simpler and more portable.
 - Use PowerShell only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
 
+### Knowledge & reference-doc storage (all projects)
+
+Three stores, each with a distinct job. Keep them separate — overlapping stores of the same facts is what causes drift.
+
+1. **Atomic facts / rules / decisions → memory** (Claude Code's built-in per-project memory). The default. One discrete fact per file. This is the single source of truth for any specific fact; when a fact changes, update the memory file.
+2. **Narrative orientation → ONE memory file** (e.g. `project-overview.md`). For multi-week / multi-session projects, keep a single narrative file that gives the *arc* — what the work is, the sequence, the current front line — and **points to** the atomic fact files via `[[links]]`. Critical rule: it restates **no facts of its own**, only sequences and links them. Because it holds no facts, it can't go stale when a fact changes. Do NOT maintain a separate standalone overview document outside memory (e.g. a hand-written `MASTER.md`) — a second live copy of the facts drifts. If one exists, retire it (stop referencing it) rather than dual-maintaining.
+3. **Non-text reference docs I may need to read (Word, PDF, Excel, etc.) → `C:\Users\Aaron.Sherrill\Documents\personal\reference-docs\{projectName}\`** — where `{projectName}` is the current working directory / repo name (e.g. `taoyuansewer2`). If that folder doesn't exist, create it. Single home per project; don't scatter these files elsewhere. To read/work with them, use the dedicated **office skills** (`xlsx`, `docx`, `pdf`, `pptx`) — they trigger on the file type and extract content properly (tables, tracked changes, formulas). Plain images: the Read tool.
+
 ---
 
 ## Company Coding Style

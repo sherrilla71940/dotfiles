@@ -29,7 +29,6 @@
       }
     }
   },
-  "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
   "theme": "auto",
   "verbose": true

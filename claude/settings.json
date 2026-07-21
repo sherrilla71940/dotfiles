@@ -4,14 +4,11 @@
     "BASH_DEFAULT_TIMEOUT_MS": "300000"
   },
   "permissions": {
-    "allow": [
-      "Bash(git push *)"
-    ],
     "ask": [
+      "Bash(git push *)",
       "Bash(git commit *)"
     ]
   },
-  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"

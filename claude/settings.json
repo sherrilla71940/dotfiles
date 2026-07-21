@@ -11,13 +11,15 @@
       "Bash(git commit *)"
     ]
   },
+  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
     "figma@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "claude-code-plugins": {
@@ -30,6 +32,5 @@
   "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
   "theme": "auto",
-  "verbose": true,
-  "model": "sonnet"
+  "verbose": true
 }

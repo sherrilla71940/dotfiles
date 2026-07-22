@@ -5,7 +5,7 @@ paths:
 
 # JavaScript Guidelines
 
-*Applies to JavaScript and TypeScript files. See TypeScript Guidelines and React Guidelines below for language/framework-specific rules.*
+_Applies to JavaScript and TypeScript files. See TypeScript Guidelines and React Guidelines below for language/framework-specific rules. When JS/TS code creates, queries, or manipulates HTML/CSS (DOM construction, class toggling, inline styles, selectors), see [html-css.md](./html-css.md) for markup/styling conventions._
 
 ### Declarations and naming
 

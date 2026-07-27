@@ -1,9 +1,13 @@
 ---
-description: Reverse-engineer a frontend project to understand it, then generate bilingual resume and interview material backed by evidence.
+description: Reverse-engineer a project to understand it, then generate bilingual resume and interview material backed by evidence.
 argument-hint: [output-dir]
 ---
 
+# Reverse-engineer this project
+
 Reverse-engineer the current project so I can understand how it works, explain it well, and describe my work on it honestly. Teaching me the system matters more than summarizing the code. Resume and interview material is a by-product of that understanding, not the goal.
+
+**Do not inflate my ownership.** I would rather have three bullets I can defend under questioning than eight that collapse when an interviewer probes. When evidence is thin, say so.
 
 ## Before you start: where do outputs go?
 
@@ -17,34 +21,123 @@ Once you have a path, create `<output-dir>/<project-name>/` and write every gene
 
 Work through these in order. Explain *why* things exist, not just which libraries are present.
 
-1. **Discovery** — What does the project do, who uses it, and what problem does it solve? Read `package.json`, `README`, config files, and route definitions to infer the domain and the main user workflows.
+### 0. Orient to the stack before assuming one
 
-2. **Architecture** — Map the frontend: framework and language, component organization, routing, global and server state, form handling, API style (REST/GraphQL/WebSocket), the client data layer, auth, and any backend-for-frontend pieces that affect the frontend.
+Do not assume npm/React/SPA. Identify what this actually is first:
 
-3. **Engineering complexity and ownership** — Find the non-trivial work: domain modules (maps/GIS, charts, real-time, canvas/WebGL, rich media), complex forms and validation, performance work (virtualization, code-splitting, memoization, workers), and quality systems (RBAC, i18n, design system, accessibility). For each, say whether I built the foundation or extended something that already existed.
+- Look for `package.json`, `*.csproj`/`*.sln`, `pom.xml`, `go.mod`, `Gemfile`, `requirements.txt`, `composer.json`.
+- **Find the real source directory.** It may not be `src/`. Common: `src/`, `app/`, `lib/`, or a project-named folder (e.g. `MyApp/`). Every git command below needs this path — get it right before running any of them.
+- Note the rendering model: SPA, server-rendered templates, hybrid, or static. This determines which architecture questions even apply.
 
-4. **Git forensics** — Use history as *evidence*, not proof. Filter out lockfiles, build output, and generated files so contribution volume is not distorted. Useful commands:
-   - `git shortlog -sn --no-merges -n 10 -- src/`
-   - `git log --oneline --grep="feat" --grep="refactor" -n 30 -- src/`
-   - high-churn files under `src/`, excluding `package-lock`, `yarn`, `pnpm`, generated, and `.d.ts`
-   Treat a single massive commit as a likely squash merge or initial import — flag it for me to confirm rather than assuming I wrote all of it. Avoid repository-wide `git blame`.
+If it is server-rendered (Razor/Blade/ERB/Django templates/JSP), then routing, global state, and client data-layer questions mostly do not apply — say so rather than forcing a SPA vocabulary onto it. Ask instead: how is per-page script organized, is there a bundler or hand-compiled output, how do pages get data (form POST vs AJAX vs API).
 
-5. **Memory recovery** — Ask me 3–5 focused questions that code cannot answer: which large commits I actually authored, why a given approach was chosen over a simpler one, which module took the most time and why, and the hardest bug or backend integration I resolved.
+### 1. Discovery
+
+What does the project do, who uses it, and what problem does it solve? Read manifests, README, config, and route/controller definitions to infer the domain and main user workflows.
+
+For domain-heavy or government/enterprise systems, the domain rules matter more than the tech. Dig for the non-obvious ones — regulatory constraints, calendar/locale quirks, dual-state data models, multi-tenant or contract-based data segregation.
+
+### 2. Architecture
+
+Map the system: language and framework, code organization, routing, state, form handling, API style, data layer, auth, and any backend pieces that affect the frontend. Include the persistence layer if it shapes the frontend (e.g. spatial types, denormalized read models).
+
+### 3. Engineering complexity and ownership
+
+Find the non-trivial work: domain modules (maps/GIS, charts, real-time, canvas/WebGL, rich media), complex forms and validation, performance work, and quality systems (RBAC, i18n, design system, accessibility).
+
+For each, classify my involvement explicitly as one of:
+
+- **Authored** — I created it; it did not exist before
+- **Restructured** — it existed; I substantially reorganized or rewrote it
+- **Extended** — it existed; I added capability within its existing shape
+- **Patched** — I fixed bugs in it without changing its structure
+- **Untouched** — it is context for the interview, not my work
+
+Never leave this ambiguous. "Worked on" is not a classification.
+
+### 4. Git forensics
+
+Use history as *evidence*, not proof. `$SRC` below means the real source directory found in phase 0.
+
+**Sweep all branches, not just the current one.** This is the most common failure mode of this whole exercise: the checked-out branch shows a fraction of my work and the resume comes out understated. Do this first:
+
+```bash
+git branch -a                                    # enumerate everything
+git log --all --oneline --no-merges --author="<me>" | wc -l   # my true total
+```
+
+Then per-branch, for any branch with my commits:
+
+```bash
+git log --oneline --no-merges --author="<me>" <branch>
+git log --author="<me>" --no-merges --name-only --format="--- %h %s" <branch>
+```
+
+**Resolve my identity first.** Start from `git config user.email` and `git config user.name`, then check for aliases — people commit from work email, personal email, and bare machine names. Search each variant. Undercounting my own commits is the failure this prevents.
+
+**Normalize other contributors too** before drawing any volume conclusion. One person routinely appears as 3–4 identities (work email, gmail, `DESKTOP-XXX\name`, differently-cased name). Group by person, not by string:
+
+```bash
+git log --format="%ae %an" --no-merges -- "$SRC" | sort | uniq -c | sort -rn | head -15
+```
+
+**Correct `shortlog` usage.** `git shortlog -sn -n 10` fails with `fatal: bad revision '10'` — in shortlog `-n` means *sort numerically*, not *limit*. `-sn` is already summary + numeric sort. To limit, pipe:
+
+```bash
+git shortlog -sn --no-merges -- "$SRC" | head -15
+```
+
+**Exclude generated and compiled output from volume counts.** Beyond lockfiles and `dist/`: many repos commit compiled output alongside source (`.ts` → a checked-in `.js`, `.scss` → `.css`, generated clients, `.d.ts`). If so, every commit touches each file twice and apparent volume doubles. Count source only, and note in the output that you did.
+
+**Flag single massive commits** as likely squash merges or initial imports. Ask me to confirm rather than assuming I wrote them.
+
+Avoid repository-wide `git blame`.
+
+### 5. Sanity gate — before you generate anything
+
+Stop and check the evidence against plausibility:
+
+- Does my commit count match how involved I say I was? If I describe months of work and you found a handful of commits, **you have not found all my work** — go back to the branch sweep, check for other identities, check for squashed PRs.
+- Is the person with the most commits someone other than me? Then this is not "my project" and no output file may imply otherwise.
+- Did a subagent hand you a "resume summary" or "competencies demonstrated" section? **Discard it.** Subagent reports are research input, not evidence — they routinely attribute a whole system's tech surface to whoever asked. Every ownership claim must trace to a commit you personally verified.
+
+### 6. Memory recovery — ask me what code cannot answer
+
+Ask in batches of **3–4 questions per call** (the question tool rejects more than 4 at once). Batch again if needed.
+
+Prioritize questions whose answers change the output:
+
+- For each significant module: did I author it, restructure it, extend it, or patch it?
+- Which large or ambiguous commits are genuinely mine?
+- Why was a harder approach chosen over the obvious simpler one?
+- Which module cost the most time, and what made it expensive?
+- The hardest bug or integration I resolved, and how I found it.
+
+Offer the honest/deflationary option as a real choice, not a token one. If I pick a modest framing, respect it in every output file.
 
 ## Generate the outputs
 
-Write these files into `<output-dir>/<project-name>/`:
+Write these into `<output-dir>/<project-name>/`:
 
-- `project-summary` — domain, purpose, problem solved
-- `architecture` — system design, state, routing, API patterns
-- `business` — workflows, user personas, domain rules
-- `interview` — STAR stories and technical Q&A notes
-- `resume` — space-optimized, high-ownership bullets
+- `project-summary` — domain, purpose, problem solved, and a plain statement of my role
+- `architecture` — system design, state, routing, API and data patterns
+- `business` — workflows, user personas, domain rules (especially the non-obvious ones)
+- `interview` — STAR stories, technical Q&A, and the four sections below
+- `resume` — space-optimized bullets, evidence-labeled
 - `linkedin` — project showcase narrative
 - `career-portal.zh-TW.md` — entry tuned for a regional (Taiwan) career profile
 - `glossary.md` — domain terms alongside their English tech equivalents
 
 Produce English and Traditional Chinese (zh-TW) versions of the first six (e.g. `resume.en.md`, `resume.zh-TW.md`). Write each language for its own audience — the English is for global recruiters and tech leads, the zh-TW is for the local ecosystem and PM/backend collaboration. Neither is a literal translation of the other.
+
+### The interview file must also include
+
+These come up constantly and are not derivable from code:
+
+1. **What I would do differently** — real retrospective, tied to something concrete in the codebase. A structural weakness I hit, a shortcut I took, or a bug class that better design would have prevented. Senior interviews test this directly.
+2. **Why this stack, not the modern alternative** — the honest answer for legacy or enterprise stacks (existing codebase, contract constraints, team skills, migration cost), plus what I would choose greenfield.
+3. **Questions I should ask the interviewer** — 4–6, drawn from this project's real tensions (e.g. how spec changes mid-sprint are handled, migration plans off an EOL framework, how they test what has no test suite). Good questions signal domain fluency.
+4. **Probing questions I cannot fully answer** — name the parts of the system I did not build, so I can say "I did not own that layer, but here is how it works and here is who did." Being caught bluffing costs more than admitting a boundary.
 
 ### Terminology
 
@@ -59,4 +152,20 @@ Assume my full resume holds 10–12 projects, so space is tight:
 - Secondary projects: 1–2 bullets.
 - Minor projects: exactly 1 bullet.
 
-Lead with ownership verbs I can defend — Architected, Owned, Spearheaded, Overhauled — not "assisted with" or "helped build". Label every claim with its evidence strength: `[High Confidence]`, `[Medium Confidence]`, `[Low Confidence]`, or `[Needs Confirmation]`. Never inflate ownership past what the git history and code support.
+State which tier this project is and why, based on the evidence.
+
+**Match the verb to the evidence.** Do not reach for the top tier by default — an indefensible verb is worse than a modest one, because it invites exactly the question that exposes it:
+
+| Evidence | Verbs |
+| --- | --- |
+| I created the system or its architecture | Architected, Owned, Spearheaded |
+| I created a module or feature within someone else's system | Authored, Built, Implemented, Delivered |
+| I substantially reorganized existing code | Refactored, Restructured, Overhauled, Modernized |
+| I added capability to existing code | Extended, Integrated, Migrated |
+| I fixed defects | Resolved, Diagnosed, Hardened |
+
+Avoid "assisted with" and "helped build" — they undersell real work. But if the top-tier verbs do not fit, say so plainly rather than stretching one.
+
+Label every claim with evidence strength: `[High Confidence]`, `[Medium Confidence]`, `[Low Confidence]`, or `[Needs Confirmation]`. Apply these in the interview file too, not just the resume — a STAR story built on weak evidence is a liability in the room.
+
+**End the resume file with an explicit "what not to claim" list** — the specific overreaches available on this project and who actually did that work. This is often the most valuable part of the output: it is what stops me over-claiming under interview pressure, when the temptation is highest.

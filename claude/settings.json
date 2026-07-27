@@ -9,10 +9,6 @@
       "Bash(git commit *)"
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh"
-  },
   "enabledPlugins": {
     "figma@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,

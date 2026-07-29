@@ -15,6 +15,8 @@ Output directory: `$ARGUMENTS`
 
 If that is empty, ask me for a path and wait for my answer. Do not pick one yourself, and do not write generated files into the repository being analyzed unless I ask for that.
 
+**Even if a path was given (including one you are about to supply yourself when invoking this skill), sanity-check it before writing anything.** If a summaries directory with sibling project output already exists elsewhere — recognizable by containing `<other-project>/resume.en.md` or similar reverse-engineer output — and the given path is not that directory, stop and ask which location I actually want. A plausible-looking new folder is not the same as the established one, and I have been burned by this exact mistake once already: reconciling duplicate output after the fact costs far more than asking up front.
+
 Once you have a path, create `<output-dir>/<project-name>/` and write every generated file there.
 
 ## Investigate in phases
@@ -119,6 +121,7 @@ Stop and check the evidence against plausibility:
 - Does my commit count match how involved I say I was? If I describe months of work and you found a handful of commits, **you have not found all my work** — go back to the branch sweep, check for other identities, check for squashed PRs.
 - Is the person with the most commits someone other than me? Then this is not "my project" and no output file may imply otherwise.
 - Did a subagent hand you a "resume summary" or "competencies demonstrated" section? **Discard it.** Subagent reports are research input, not evidence — they routinely attribute a whole system's tech surface to whoever asked. Every ownership claim must trace to a commit you personally verified.
+- **Does every specific mechanism claim survive reading the actual diff?** A claim like "silently drops X", "defaults to zero", "crashes", or "corrupts Y" describes precise runtime behavior — verify it by reading the diff and reasoning through the failing code path, not by inferring it from a commit message. Commit messages state intent and often paraphrase loosely; only the diff proves what the code did on failure. This has burned me before: a past run asserted a bug "silently stored zero-values" based on a commit message about a field rename, but reading the actual code showed one path safely returned `null` and the other would have thrown — neither matches "silent zero." If a mechanism can't be traced to specific lines, soften the claim to what the diff actually shows (e.g. "the field was renamed" rather than "the old value silently corrupted the database"), or mark it `[Needs Confirmation]`.
 
 ### 6. Memory recovery — ask me what code cannot answer
 

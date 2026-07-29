@@ -23,6 +23,21 @@
   - Why it changed
   - Any assumptions or remaining risks
 
+### Standing pending-items list
+
+For multi-step or multi-session work, end each response with a short list of things identified but not yet done. Keep it to ~5 lines, one line per item, no re-explanation. Group as:
+
+- **Ready now** — mine to do
+- **Blocked** — waiting on a person, a merge, data, or access (name which)
+- **Watching** — noted deliberately, no action intended
+
+Rules:
+
+- **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy. This is precisely what makes it safe to omit.
+- Drop items the moment they are resolved — do not accumulate ✅ entries.
+- Skip the list for one-off questions, quick lookups, and purely conversational turns.
+- If the list would exceed ~5 lines, treat that as a signal to collapse finished threads into memory, not to write a longer list.
+
 ### Engineering principles
 
 - Keep changes minimal, scoped, and architecture-aware.

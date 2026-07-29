@@ -93,6 +93,25 @@ git shortlog -sn --no-merges -- "$SRC" | head -15
 
 Avoid repository-wide `git blame`.
 
+### 4.5 Read the written project record before asking me
+
+Check `~/.claude/projects/<mangled-cwd>/memory/` (cwd with `/`→`-`, `:` dropped). Read `MEMORY.md` first — it is an index; follow only the entries that look relevant rather than reading every file.
+
+This is where decisions, rejected alternatives, and defect post-mortems live. Mine it specifically for what code cannot show:
+
+- Why a harder approach was chosen over the obvious one
+- What was deliberately NOT done, and why (negative knowledge — the highest-value interview material and the least recoverable from a repo)
+- Bugs found, their failure mode, and how they were found
+- Ownership boundaries (which teammate owned what)
+
+Three rules, no exceptions:
+
+- **Memory is a lead, not evidence.** Same standing as a subagent report in phase 5. Every claim it suggests must still trace to a commit before it enters `evidence.md`.
+- **Memory says "I" about the assistant, not about me.** It describes sessions I directed; it does not establish that I authored the code. Any ownership classification drawn from it starts at **Needs Confirmation** and must be confirmed in phase 6.
+- **Prefer the latest state.** Entries marked CORRECTED / SUPERSEDED / WRONG are superseded — do not surface them as current claims. A belief that was later disproved is retrospective material, not a resume bullet.
+
+If no memory directory exists, say so in one line and continue.
+
 ### 5. Sanity gate — before you generate anything
 
 Stop and check the evidence against plausibility:
@@ -102,6 +121,8 @@ Stop and check the evidence against plausibility:
 - Did a subagent hand you a "resume summary" or "competencies demonstrated" section? **Discard it.** Subagent reports are research input, not evidence — they routinely attribute a whole system's tech surface to whoever asked. Every ownership claim must trace to a commit you personally verified.
 
 ### 6. Memory recovery — ask me what code cannot answer
+
+Ask only what phase 4.5 did not already answer — do not make me re-answer what is already written down. Confirming an ownership classification that memory only hinted at is exactly the right use of these questions.
 
 Ask in batches of **3–4 questions per call** (the question tool rejects more than 4 at once). Batch again if needed.
 

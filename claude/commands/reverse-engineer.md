@@ -19,7 +19,7 @@ Once you have a path, create `<output-dir>/<project-name>/` and write every gene
 
 ## Investigate in phases
 
-Work through these in order. Explain *why* things exist, not just which libraries are present.
+Work through these in order. Explain _why_ things exist, not just which libraries are present.
 
 ### 0. Orient to the stack before assuming one
 
@@ -57,7 +57,7 @@ Never leave this ambiguous. "Worked on" is not a classification.
 
 ### 4. Git forensics
 
-Use history as *evidence*, not proof. `$SRC` below means the real source directory found in phase 0.
+Use history as _evidence_, not proof. `$SRC` below means the real source directory found in phase 0.
 
 **Sweep all branches, not just the current one.** This is the most common failure mode of this whole exercise: the checked-out branch shows a fraction of my work and the resume comes out understated. Do this first:
 
@@ -81,7 +81,7 @@ git log --author="<me>" --no-merges --name-only --format="--- %h %s" <branch>
 git log --format="%ae %an" --no-merges -- "$SRC" | sort | uniq -c | sort -rn | head -15
 ```
 
-**Correct `shortlog` usage.** `git shortlog -sn -n 10` fails with `fatal: bad revision '10'` — in shortlog `-n` means *sort numerically*, not *limit*. `-sn` is already summary + numeric sort. To limit, pipe:
+**Correct `shortlog` usage.** `git shortlog -sn -n 10` fails with `fatal: bad revision '10'` — in shortlog `-n` means _sort numerically_, not _limit_. `-sn` is already summary + numeric sort. To limit, pipe:
 
 ```bash
 git shortlog -sn --no-merges -- "$SRC" | head -15
@@ -115,7 +115,22 @@ Prioritize questions whose answers change the output:
 
 Offer the honest/deflationary option as a real choice, not a token one. If I pick a modest framing, respect it in every output file.
 
+### 7. Evidence synthesis
+
+Before writing any output file, consolidate everything gathered in phases 1–6 — including my answers from phase 6 — into a single evidence inventory, and write it to `<output-dir>/<project-name>/evidence.md`. For each significant feature or module, record:
+
+- What exists (one line)
+- Who owned it originally, if not me
+- My classification (Authored / Restructured / Extended / Patched / Untouched)
+- Confidence (High / Medium / Low / Needs Confirmation)
+- Supporting commits (hashes or "none — interview evidence only")
+- Supporting files (paths)
+
+This file is the single source of truth for every output below. Every ownership claim, confidence label, and resume verb must trace back to an evidence entry. — do not reclassify or re-judge confidence independently per file. If a later output needs a claim that isn't in the inventory yet, add it to the inventory first, then use it from there. This is what keeps the resume, interview, LinkedIn, and career-portal files consistent with each other instead of each one re-interpreting the same evidence slightly differently.
+
 ## Generate the outputs
+
+Every output file must derive its ownership claims, confidence labels, and citations from `evidence.md` (phase 7) — not re-derive them from scratch.
 
 Write these into `<output-dir>/<project-name>/`:
 
@@ -156,13 +171,13 @@ State which tier this project is and why, based on the evidence.
 
 **Match the verb to the evidence.** Do not reach for the top tier by default — an indefensible verb is worse than a modest one, because it invites exactly the question that exposes it:
 
-| Evidence | Verbs |
-| --- | --- |
-| I created the system or its architecture | Architected, Owned, Spearheaded |
-| I created a module or feature within someone else's system | Authored, Built, Implemented, Delivered |
-| I substantially reorganized existing code | Refactored, Restructured, Overhauled, Modernized |
-| I added capability to existing code | Extended, Integrated, Migrated |
-| I fixed defects | Resolved, Diagnosed, Hardened |
+| Evidence                                                   | Verbs                                            |
+| ---------------------------------------------------------- | ------------------------------------------------ |
+| I created the system or its architecture                   | Architected, Owned, Spearheaded                  |
+| I created a module or feature within someone else's system | Authored, Built, Implemented, Delivered          |
+| I substantially reorganized existing code                  | Refactored, Restructured, Overhauled, Modernized |
+| I added capability to existing code                        | Extended, Integrated, Migrated                   |
+| I fixed defects                                            | Resolved, Diagnosed, Hardened                    |
 
 Avoid "assisted with" and "helped build" — they undersell real work. But if the top-tier verbs do not fit, say so plainly rather than stretching one.
 

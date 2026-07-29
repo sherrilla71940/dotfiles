@@ -143,7 +143,7 @@ Write these into `<output-dir>/<project-name>/`:
 - `career-portal.zh-TW.md` — entry tuned for a regional (Taiwan) career profile
 - `glossary.md` — domain terms alongside their English tech equivalents
 
-Produce English and Traditional Chinese (zh-TW) versions of the first six (e.g. `resume.en.md`, `resume.zh-TW.md`). Write each language for its own audience — the English is for global recruiters and tech leads, the zh-TW is for the local ecosystem and PM/backend collaboration. Neither is a literal translation of the other.
+Produce English and Traditional Chinese (zh-TW) versions of the first six (e.g. `resume.en.md`, `resume.zh-TW.md`). Write each language for its own audience — the English is for global recruiters and tech leads, the zh-TW is for the local ecosystem and PM/backend collaboration. Neither is a literal translation of the other. Keep the factual content equivalent across languages, while adapting tone and wording for the intended audience — a claim, confidence label, or "what not to claim" boundary must not appear in one language and not the other.
 
 ### The interview file must also include
 
@@ -161,13 +161,16 @@ These come up constantly and are not derivable from code:
 
 ### Resume rules
 
-Assume my full resume holds 10–12 projects, so space is tight:
+Assume my full resume holds 10–12 projects, so space is tight. This section is canonical: `resume-consolidate.md` (the second-stage command that condenses across every project into paste-ready entries) applies these same two tables rather than restating them — if either table changes, change it here.
 
-- Flagship projects: 2–3 dense bullets.
-- Secondary projects: 1–2 bullets.
-- Minor projects: exactly 1 bullet.
+| Tier | Bullets | When |
+| --- | --- | --- |
+| Flagship | 2–3 | Full architecture ownership, long tenure; 1–2 projects max on a resume |
+| Standard | 1–2 | Meaningful contribution, not the centerpiece |
+| Minor / feature contributor | 1–2 | Feature-level work on a mature system; use 2 only if two genuinely distinct contributions each warrant a line |
+| Brief mention | 0 (header only) | Very small scope; header tells the whole story |
 
-State which tier this project is and why, based on the evidence.
+State which tier this project is and why, based on the evidence. Bullet count is proportional to ownership depth — never let a feature-contributor project end up with more bullets than a full-ownership project.
 
 **Match the verb to the evidence.** Do not reach for the top tier by default — an indefensible verb is worse than a modest one, because it invites exactly the question that exposes it:
 

@@ -356,6 +356,21 @@ Future analysis should use this file rather than repeating investigation.
 
 ---
 
+## Output location
+
+Output directory: `$ARGUMENTS`
+
+If empty, ask me for a path and wait. Do not choose a location yourself.
+
+Do not write into the repository being analyzed unless explicitly requested.
+
+Create:
+
+```text
+{output-dir}/{project-name}/
+
+---
+
 ## Confidentiality
 
 Treat all repository information as confidential.
@@ -369,3 +384,4 @@ When generating documentation:
 - Avoid documenting client-specific business processes beyond what is needed to understand the system.
 - Prefer describing general concepts, architecture, engineering decisions, and technical challenges rather than proprietary implementation details.
 - When describing business workflows, use a generalized description unless the specific detail is publicly available or necessary.
+```

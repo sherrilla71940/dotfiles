@@ -22,17 +22,18 @@ Keep everything factual and evidence-based. Do not optimize for polished descrip
 
 ## Output location
 
-Output directory: `$ARGUMENTS`
-
-If empty, ask me for a path and wait. Do not choose a location yourself.
-
-Do not write into the repository being analyzed unless explicitly requested.
-
-Create:
+Write output to:
 
 ```text
 {output-dir}/{project-name}/
 ```
+
+- `{output-dir}` — `$ARGUMENTS` if provided; otherwise default to `C:\Users\Aaron.Sherrill\Documents\work\summaries`.
+- `{project-name}` — the name of the directory the command was invoked from (the repository root folder name).
+
+Create the directory if it does not exist.
+
+Never write into the repository being analyzed unless I explicitly request it.
 
 ---
 
@@ -356,21 +357,6 @@ Future analysis should use this file rather than repeating investigation.
 
 ---
 
-## Output location
-
-Output directory: `$ARGUMENTS`
-
-If empty, ask me for a path and wait. Do not choose a location yourself.
-
-Do not write into the repository being analyzed unless explicitly requested.
-
-Create:
-
-```text
-{output-dir}/{project-name}/
-
----
-
 ## Confidentiality
 
 Treat all repository information as confidential.
@@ -384,4 +370,3 @@ When generating documentation:
 - Avoid documenting client-specific business processes beyond what is needed to understand the system.
 - Prefer describing general concepts, architecture, engineering decisions, and technical challenges rather than proprietary implementation details.
 - When describing business workflows, use a generalized description unless the specific detail is publicly available or necessary.
-```

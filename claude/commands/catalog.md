@@ -1,22 +1,39 @@
 ---
-description: Orient me to an unfamiliar project by analyzing its purpose, architecture, domain, and my verified involvement history.
+description: Build an evidence-based engineering knowledge base for an unfamiliar project, focusing on architecture, domain understanding, and verified personal contributions.
 argument-hint: [output-dir]
 ---
 
-# Orient me to this project
+# Build project knowledge base
 
-Analyze this project and create an engineering knowledge base.
+Analyze this project and create a concise engineering knowledge base.
 
 The goal is to understand:
 
 - what this system does
-- how it works
 - why it exists
-- what my role and contributions were
+- how it works at a high level
+- what engineering decisions matter
+- what my verified contributions were
 
-The intended audience is someone who needs to regain context on this project, understand the architecture, and understand important implementation decisions.
+The intended use:
 
-Keep everything factual and evidence-based. Do not optimize for polished descriptions or marketing language.
+- regain context on past projects
+- prepare resume content
+- prepare technical interviews
+- accurately explain engineering decisions
+
+Do not create exhaustive internal documentation.
+
+Prioritize:
+
+- important engineering decisions
+- meaningful contributions
+- interview-relevant knowledge
+- evidence-backed claims
+
+Keep everything factual.
+
+Do not optimize for marketing language.
 
 ---
 
@@ -28,20 +45,22 @@ Write output to:
 {output-dir}/{project-name}/
 ```
 
-- `{output-dir}` — `$ARGUMENTS` if provided; otherwise default to `C:\Users\Aaron.Sherrill\Documents\work\summaries`.
-- `{project-name}` — the name of the directory the command was invoked from (the repository root folder name).
+Where:
+
+- `{output-dir}` — `$ARGUMENTS` if provided; otherwise use `C:\Users\Aaron.Sherrill\Documents\work\summaries`
+- `{project-name}` — repository root folder name
 
 Create the directory if it does not exist.
 
-Never write into the repository being analyzed unless I explicitly request it.
+Never write into the analyzed repository unless explicitly requested.
 
 ---
 
 ## Phase 1 — Understand the project
 
-First identify what kind of project this is.
+Identify the project type.
 
-Look for:
+Check common project files:
 
 - `package.json`
 - `*.csproj` / `*.sln`
@@ -55,61 +74,76 @@ Determine:
 
 - languages
 - frameworks
+- application type
 - rendering model
 - build tooling
 - deployment approach
-- real source directories
+- important source directories
 
-Do not assume React, SPA, npm, or REST APIs.
+Do not assume:
+
+- React
+- SPA
+- npm
+- REST APIs
+
+Only document details that help understand the system.
 
 ---
 
-## Phase 2 — Understand the business context
+## Phase 2 — Understand purpose and domain
+
+Understand why the software exists.
 
 Document:
 
-- What does the system do?
+- What problem does the system solve?
 - Who uses it?
-- What problem does it solve?
-- What workflows does it support?
-- What are the important business rules?
+- What are the main workflows?
+- What domain concepts matter?
 - What external systems exist?
-- What regulations or constraints affect the design?
+- What constraints affect design?
 
 For enterprise/government systems, pay attention to:
 
-- domain concepts
-- compliance requirements
-- approval flows
-- data lifecycle
-- terminology
+- regulations
+- approval processes
+- important business rules
+- domain terminology
 
-Explain why the software exists, not only how it is built.
+Avoid copying confidential business details.
+
+Focus on general understanding.
 
 ---
 
-## Phase 3 — Understand the architecture
+## Phase 3 — Understand architecture
 
-Document:
+Create a high-level architecture overview.
 
-- major directories
-- application structure
-- frontend architecture
-- backend interaction
-- routing
-- state management
-- forms and validation
-- authentication/authorization
-- API communication
+Include only:
+
+- major system components
+- frontend/backend relationship
 - data flow
-- persistence layer
-- deployment/build process
+- authentication approach
+- API communication style
+- persistence approach
+- important technical decisions
 
-For each major area explain:
+Do not document:
 
-- what it does
-- why it exists
-- how it connects to other parts
+- every folder
+- every component
+- every endpoint
+- every service
+- every implementation detail
+
+Limit architecture documentation to what is useful for:
+
+- understanding the system
+- explaining design decisions
+- preparing interviews
 
 ---
 
@@ -120,84 +154,86 @@ Use Git history as evidence.
 Do not assume ownership from:
 
 - current files
-- commit messages alone
 - code presence
+- commit messages alone
 
-Verify through history and diffs.
+Verify through:
 
-### Git investigation
+- commit history
+- diffs
+- changed files
 
-Identify my Git identities:
+### Identify Git identities
+
+Check:
 
 ```bash
 git config user.email
 git config user.name
 ```
 
-Check for aliases:
+Look for:
 
-- work email
-- personal email
-- alternate usernames
-- machine identities
+- alternate emails
+- usernames
+- work/personal identities
 
-Normalize identities before judging contribution volume.
+Normalize identities before evaluating contribution.
 
-Inspect all branches:
+### Find meaningful contributions
 
-```bash
-git branch -a
-```
-
-Search commits:
+Search:
 
 ```bash
 git log --all --oneline --no-merges --author="{identity}"
 ```
 
-Inspect relevant changes:
+Inspect meaningful changes only.
 
-```bash
-git log --author="{identity}" --no-merges --name-only --format="--- %h %s" {branch}
-```
+Prioritize:
 
-Group changes by feature or area, not individual commits.
+- feature development
+- architecture changes
+- difficult debugging
+- integrations
+- migrations
+- validation logic
+- reusable components
+- reliability improvements
+- accessibility improvements
+- security improvements
 
-Ignore misleading volume from:
+Ignore:
 
 - generated files
-- compiled output
-- build artifacts
+- build output
+- dependency updates
+- formatting-only commits
 - large imports
-- squash merges
 
-### Validate ownership
+Group changes by feature or engineering area.
 
-Use diffs to confirm important claims.
-
-Commit messages describe intent, not necessarily actual behavior.
-
-Do not claim specific fixes, performance improvements, security improvements, or bug behavior unless the code supports it.
+Do not list every commit.
 
 ### Ownership classification
 
-Every meaningful area must be classified:
+Every meaningful contribution must be classified:
 
-- **Authored** — created by me.
-- **Restructured** — existing code significantly reorganized or rewritten by me.
-- **Extended** — existing capability expanded by me.
-- **Patched** — bug fix or maintenance without structural change.
-- **Untouched** — exists for context only.
+- **Authored** — created by me
+- **Extended** — expanded existing functionality
+- **Restructured** — significantly reorganized existing code
+- **Patched** — bug fix or maintenance change
+- **Untouched** — exists only for context
 
-Do not use vague terms like:
+Do not use vague terms:
 
 - worked on
 - helped with
 - contributed to
 
-### Confidence
+### Confidence level
 
-Every ownership statement needs one of:
+Every ownership claim requires:
 
 - High Confidence
 - Medium Confidence
@@ -206,51 +242,50 @@ Every ownership statement needs one of:
 
 ---
 
-## Phase 5 — Identify meaningful engineering work
+## Phase 5 — Identify interview-worthy engineering work
 
-Identify areas worth preserving because they represent important engineering effort.
+Find work worth remembering.
 
-Look for:
+Prioritize:
 
-- difficult debugging
+- difficult technical problems
+- important design decisions
+- legacy constraints
 - complex integrations
-- architecture decisions
-- reusable components
-- migrations
+- domain-specific logic
+- debugging challenges
+- reusable solutions
+
+For each item capture:
+
+- Problem
+- Existing situation
+- My role
+- Technical approach
+- Tradeoffs
+- Evidence
+- Why it matters
+
+Only include outcomes when supported by evidence.
+
+Do not invent:
+
+- metrics
+- scale
 - performance improvements
-- security improvements
-- accessibility improvements
-- testing improvements
-- automation
-- difficult domain rules
-- workflow improvements
-- reliability improvements
-
-For each item record:
-
-- what exists
-- technical problem
-- implementation approach
-- engineering tradeoffs
-- my involvement
-- evidence
-- outcome or value when supported by evidence
-- why it is significant
-- confidence
-
-Do not exaggerate impact.
+- business impact
 
 ---
 
-## Phase 6 — Optional context
+## Phase 6 — Optional memory context
 
-If Claude project memory exists, it may be used as additional context.
+If Claude project memory exists, use it only as additional context.
 
 Rules:
 
 - memory is not evidence
-- do not use it alone to prove ownership
-- prefer repository and Git evidence
+- do not use memory alone to prove ownership
+- prioritize repository and Git evidence
 - ignore outdated information
 
 ---
@@ -264,12 +299,14 @@ Only ask questions that cannot be determined from:
 - documentation
 - configuration
 
-Prioritize questions that change understanding:
+Ask only questions that materially improve understanding.
 
-- Did I author or extend this?
+Examples:
+
 - Why was this approach chosen?
-- What problem was this solving?
-- Which area required the most effort?
+- Was this feature primarily yours?
+- What was the hardest technical challenge?
+- What tradeoff influenced this decision?
 
 Ask questions in small batches.
 
@@ -277,71 +314,62 @@ Ask questions in small batches.
 
 ## Phase 8 — Generate files
 
-Create the following files.
+Create:
+
+```text
+{project-name}/
+├── overview.md
+├── contributions.md
+└── evidence.md
+```
 
 ### `overview.md`
 
-Include:
-
-- project purpose
-- users
-- problem solved
-- workflows
-- technology overview
-- my overall involvement
-
-### `architecture.md`
+Purpose: help me quickly understand the project.
 
 Include:
 
-- directory structure
-- system components
-- data flow
-- frontend/backend relationship
-- APIs
-- state
-- authentication
-- important technical decisions
+- **Project Purpose** — what the system does, who uses it, why it exists
+- **Domain Context** — important concepts, important workflows, relevant constraints
+- **Technology Overview** — frontend technologies, backend technologies, database/storage, deployment approach, important integrations
+- **Architecture Summary** (keep high-level) — major components, system relationships, data flow, important technical decisions
 
-### `domain.md`
-
-Include:
-
-- business concepts
-- terminology
-- rules
-- workflows
-- external dependencies
+Do not include exhaustive implementation details. Keep this concise.
 
 ### `contributions.md`
 
+Purpose: create interview and resume-ready engineering stories.
+
 For each meaningful contribution include:
 
-- Feature/area
-- What exists
-- My classification
-- Confidence
-- Supporting commits
-- Supporting files
-- Technical details
-- Why it matters
-- Unknowns
+- Feature / Area
+- Ownership — classification: Authored / Extended / Restructured / Patched
+- Confidence: High / Medium / Low / Needs Confirmation
+- Problem — what problem existed?
+- My Role — what did I actually do?
+- Technical Approach — how was it implemented?
+- Tradeoffs — what decisions or constraints affected the solution?
+- Why It Matters — why is this worth remembering?
+- Evidence — reference the related section in `evidence.md`
+
+Do not include unsupported impact claims.
 
 ### `evidence.md`
 
-This is the source of truth.
+Purpose: be the source of truth.
 
-Every contribution must include:
+Keep this factual and concise. For each contribution include:
 
-- Feature/area
-- Ownership classification
+- Feature / Area
+- Classification
 - Confidence
 - Supporting commits
 - Supporting files
-- Evidence
-- Notes
+- Relevant notes
 
-Future analysis should use this file rather than repeating investigation.
+Only include evidence needed to verify ownership. Do not repeat full explanations.
+
+Future analysis should use this file instead of repeating Git investigation.
 
 ---
 
@@ -350,23 +378,29 @@ Future analysis should use this file rather than repeating investigation.
 - Accuracy over completeness.
 - Evidence over assumptions.
 - Preserve ownership boundaries.
-- Capture business context.
-- Explain systems, not just files.
-- Do not invent metrics, scale, or impact.
-- A modest claim supported by evidence is better than an impressive unsupported claim.
+- Avoid confidential details.
+- Prefer useful summaries over exhaustive documentation.
+- A small supported claim is better than an impressive unsupported claim.
 
 ---
 
 ## Confidentiality
 
-Treat all repository information as confidential.
+Treat repository information as confidential.
 
-When generating documentation:
+Do not include:
 
-- Do not include secrets, credentials, tokens, API keys, private URLs, or personal data.
-- Do not copy large sections of source code.
-- Do not include client data, contract details, or unpublished requirements.
-- Do not expose internal system names or identifiers unless necessary for understanding.
-- Avoid documenting client-specific business processes beyond what is needed to understand the system.
-- Prefer describing general concepts, architecture, engineering decisions, and technical challenges rather than proprietary implementation details.
-- When describing business workflows, use a generalized description unless the specific detail is publicly available or necessary.
+- secrets
+- credentials
+- tokens
+- API keys
+- private URLs
+- customer data
+- contract details
+- unpublished requirements
+
+Do not copy source code.
+
+Do not expose internal identifiers unless necessary.
+
+Prefer describing architecture, engineering challenges, technical decisions, and general workflows rather than proprietary implementation details.

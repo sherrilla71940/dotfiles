@@ -1,6 +1,7 @@
 ---
 description: Build an evidence-based engineering knowledge base for an unfamiliar project, focusing on architecture, domain understanding, and verified personal contributions.
 argument-hint: [output-dir]
+model: claude-sonnet-5
 ---
 
 # Build project knowledge base

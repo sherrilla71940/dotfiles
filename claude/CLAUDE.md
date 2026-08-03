@@ -4,17 +4,20 @@
 
 ### Scope and priority
 
-- Apply rules in this order when conflicts occur: language/framework-specific > file-type-specific > general.
+- Apply rules in this order when conflicts occur: explicit in-conversation user instruction > language/framework-specific > file-type-specific > general.
 - Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Only compile or generate output if explicitly requested.
 
 ### Response behavior
 
-- Always respond in English. This instruction wins over any language-specific rule in a conflict.
+- Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
 - Be concise and actionable.
+  <!-- provenance: kept because artifacts have claimed work was done that wasn't. Edit this note with the real incident; it's stripped before context (zero tokens), so it's for human maintainers only. This is a template — copy the pattern above other hard-won rules. -->
+  <!-- source (block-level HTML comments are stripped before context = zero token cost): code.claude.com/docs/en/memory → "How CLAUDE.md files load" — "Block-level HTML comments … are stripped before the content is injected into Claude's context." Comments inside code blocks are preserved. -->
 - **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
   commit messages, docs, messages to others — do not write that something was asked,
   reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
   or "suggested" phrasing for anything not yet done.
+- **Verify before reporting done.** Before calling a change complete, check it: re-read the edited file, run the project's typecheck/lint/build/tests if it has any, and review the `git diff`. If you couldn't verify something, say what you didn't run. This is what makes "never assert an action that hasn't happened" enforceable rather than aspirational.
 - **Handling missing/ambiguous information:** if any input needed for a task — source files, specs, data, or these instructions themselves — is incomplete, unreadable, ambiguous, or missing, do not guess or silently fill the gap. Instead:
   1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
   2. State what's needed from the user to resolve it.
@@ -30,9 +33,9 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
-### Standing pending-items list
+## Standing pending-items list
 
-For multi-step or multi-session work, end each response with a short list of things identified but not yet done. Keep it to ~5 lines, one line per item, no re-explanation. Group as:
+When a response leaves unresolved work (follow-up actions, blockers, or deliberate deferrals), end with a short list of things identified but not yet done. Keep it to ~5 lines, one line per item, no re-explanation. Group as:
 
 - **Ready now** — mine to do
 - **Blocked** — waiting on a person, a merge, data, or access (name which)
@@ -40,9 +43,9 @@ For multi-step or multi-session work, end each response with a short list of thi
 
 Rules:
 
-- **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy. This is precisely what makes it safe to omit.
+- **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy.
 - Drop items the moment they are resolved — do not accumulate ✅ entries.
-- Skip the list for one-off questions, quick lookups, and purely conversational turns.
+- Omit the list when nothing remains to track (for example: one-off questions, quick lookups, purely conversational turns, or fully completed work).
 - If the list would exceed ~5 lines, treat that as a signal to collapse finished threads into memory, not to write a longer list.
 
 ### Engineering principles
@@ -65,11 +68,10 @@ Rules:
 
 ### Security
 
-- Prevent common web vulnerabilities (XSS, injection, unsafe deserialization, CSRF gaps).
-- Treat client-side validation and escaping as defense-in-depth, not a trust boundary.
-- Never rely on client-side checks for authorization or critical validation.
-- Escape or sanitize user-generated content whenever bypassing a framework's built-in protections (e.g., React `dangerouslySetInnerHTML`, direct `innerHTML`, or raw template output).
-- Never hardcode secrets, API keys, or access tokens.
+- Never trust the client for authorization or critical validation — enforce it server-side; client-side checks are defense-in-depth only.
+- When bypassing a framework's built-in escaping (React `dangerouslySetInnerHTML`, direct `innerHTML`, raw template output, string-built SQL), sanitize or parameterize the input yourself — this is where XSS and injection actually get in.
+- Don't deserialize untrusted input into live objects, and guard state-changing requests against CSRF (anti-CSRF token or `SameSite` cookies) — neither is caught by the escaping rule above.
+- Never hardcode or commit secrets, API keys, or access tokens.
 
 ### Readability and documentation
 
@@ -82,22 +84,15 @@ Rules:
 ### Shell tool preference
 
 - Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
+<!-- source (CLAUDE_CODE_USE_POWERSHELL_TOOL=0): code.claude.com/docs/en/setup → Windows setup — "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to opt in or 0 to opt out." Also verified empirically this session: the PowerShell tool became unavailable once =0 took effect. -->
 - Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
 - If the Bash tool is unavailable, say so before falling back to PowerShell.
 
 ### Knowledge & reference-doc storage (all projects)
 
-Three stores, each with a distinct job. Keep them separate — overlapping stores of the same facts is what causes drift.
+Use three distinct stores. Keep them separate to avoid duplicate sources of truth.
 
-1. **Atomic facts / rules / decisions → memory** (Claude Code's built-in per-project memory). The default. One discrete fact per file. This is the single source of truth for any specific fact; when a fact changes, update the memory file.
-2. **Narrative orientation → ONE memory file** (e.g. `project-overview.md`). For multi-week / multi-session projects, keep a single narrative file that gives the _arc_ — what the work is, the sequence, the current front line — and **points to** the atomic fact files via `[[links]]`. Critical rule: it restates **no facts of its own**, only sequences and links them. Because it holds no facts, it can't go stale when a fact changes. Do NOT maintain a separate standalone overview document outside memory (e.g. a hand-written `MASTER.md`) — a second live copy of the facts drifts. If one exists, retire it (stop referencing it) rather than dual-maintaining.
-   - **When to update it:** only on _arc-level_ events — a task/phase changes status (blocked → active → done), a new task/phase appears, or the "current front line / next action" moves. NOT for individual fact changes (those go in the atomic file the overview points to). Since it auto-loads every session, also reconcile it opportunistically: if what you're doing this session contradicts the arc it describes, update the arc. The user can always say "update the overview" to force a refresh.
-   - **State it when you update the arc:** whenever you change the overview, tell the user in one line what changed (e.g. "Updated the overview — Task B is now active"). Never edit it silently — the user should always know its current state and be able to correct a wrong arc.
-3. **Non-text reference docs I may need to read (Word, PDF, Excel, etc.) → `C:\Users\Aaron.Sherrill\Documents\personal\reference-docs\{projectName}\`** — where `{projectName}` is the current working directory / repo name (e.g. `taoyuansewer2`). If that folder doesn't exist, create it. Single home per project; don't scatter these files elsewhere. To read/work with them, use the dedicated **office skills** (`xlsx`, `docx`, `pdf`, `pptx`) — they trigger on the file type and extract content properly (tables, tracked changes, formulas). Plain images: the Read tool.
-
----
-
-## Company Coding Style
-
-- Use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. Use camelCase for all other identifiers.
-- All code comments should be in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike. This governs code comments only; chat responses stay English per Response behavior.
+1. **Facts, rules, and decisions → auto memory.** This is the single source of truth for any specific fact. Update the existing memory file when a fact changes. (The harness injects the memory mechanics—one fact per file and the `MEMORY.md` index—every session, so they aren't restated here.)
+2. **Narrative arc → `MEMORY.md`** (the only memory file that auto-loads at session start). For multi-week or multi-session work, keep the work sequence, current front line, and project narrative here, linking to topic files instead of duplicating facts. `MEMORY.md` should contain **no facts of its own**, only narrative and references. When the narrative changes, record it in one line rather than editing it silently. Do not create separate overview files (such as `project-overview.md` or `MASTER.md`); if one already exists, fold its contents into `MEMORY.md` and remove it.
+<!-- source (only MEMORY.md auto-loads; 200-line/25KB cap; topic files load on demand): code.claude.com/docs/en/memory → Auto memory / How it works — "The first 200 lines of MEMORY.md, or the first 25KB, whichever comes first, are loaded at the start of every conversation." -->
+3. **Non-text reference documents (Word, PDF, Excel, etc.) → `C:\Users\Aaron.Sherrill\Documents\personal\reference-docs\{projectName}\`**, where `{projectName}` is the current working directory or repository name (for example, `taoyuansewer2`). If the folder doesn't exist, create it. Keep a single location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) to read and work with these files. Use the Read tool for plain images.

@@ -2,8 +2,10 @@
   "env": {
     "API_TIMEOUT_MS": "1200000",
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
-    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
+    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Users\\Aaron.Sherrill\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"
   },
+  "//note_CLAUDE_CODE_GIT_BASH_PATH": "MACHINE-SPECIFIC — on a different PC, delete the CLAUDE_CODE_GIT_BASH_PATH line in env above (and this note). It is only needed here because Git for Windows is installed under %LOCALAPPDATA% (a non-standard location) that Claude Code's auto-detection misses, and CLAUDE_CODE_USE_POWERSHELL_TOOL=0 disables the PowerShell fallback, so startup fails without it. A standard C:\\Program Files\\Git install is detected automatically.",
   "permissions": {
     "ask": [
       "Bash(git push *)",

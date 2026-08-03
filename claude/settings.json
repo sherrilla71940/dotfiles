@@ -24,5 +24,9 @@
   },
   "autoUpdatesChannel": "latest",
   "theme": "auto",
-  "verbose": true
+  "verbose": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  }
 }

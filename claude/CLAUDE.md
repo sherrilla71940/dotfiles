@@ -49,6 +49,9 @@ Rules:
   - Favor SRP, DRY, low coupling, and high cohesion.
   - Prefer intentional duplication over premature abstraction when it keeps the code easier to read and change.
 - Reuse existing utilities, services, and shared modules before creating new ones.
+- Before adding UI or new code, follow the conventions already in that view/file if any —
+  pick by meaning, not proximity, and confirm the class or stylesheet is actually
+  loaded by that page. Say which precedent you followed.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
 
 ### Security
@@ -64,7 +67,7 @@ Rules:
 - Prefer the clearest correct code over the shortest or cleverest code.
 - Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
 - Use JSDoc for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
-- Use standard comments sparingly, for implementation notes that explain *why* a non-obvious decision or workaround was used.
+- Use standard comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was used.
 
 ### Shell tool preference
 
@@ -76,8 +79,8 @@ Rules:
 Three stores, each with a distinct job. Keep them separate — overlapping stores of the same facts is what causes drift.
 
 1. **Atomic facts / rules / decisions → memory** (Claude Code's built-in per-project memory). The default. One discrete fact per file. This is the single source of truth for any specific fact; when a fact changes, update the memory file.
-2. **Narrative orientation → ONE memory file** (e.g. `project-overview.md`). For multi-week / multi-session projects, keep a single narrative file that gives the *arc* — what the work is, the sequence, the current front line — and **points to** the atomic fact files via `[[links]]`. Critical rule: it restates **no facts of its own**, only sequences and links them. Because it holds no facts, it can't go stale when a fact changes. Do NOT maintain a separate standalone overview document outside memory (e.g. a hand-written `MASTER.md`) — a second live copy of the facts drifts. If one exists, retire it (stop referencing it) rather than dual-maintaining.
-   - **When to update it:** only on *arc-level* events — a task/phase changes status (blocked → active → done), a new task/phase appears, or the "current front line / next action" moves. NOT for individual fact changes (those go in the atomic file the overview points to). Since it auto-loads every session, also reconcile it opportunistically: if what you're doing this session contradicts the arc it describes, update the arc. The user can always say "update the overview" to force a refresh.
+2. **Narrative orientation → ONE memory file** (e.g. `project-overview.md`). For multi-week / multi-session projects, keep a single narrative file that gives the _arc_ — what the work is, the sequence, the current front line — and **points to** the atomic fact files via `[[links]]`. Critical rule: it restates **no facts of its own**, only sequences and links them. Because it holds no facts, it can't go stale when a fact changes. Do NOT maintain a separate standalone overview document outside memory (e.g. a hand-written `MASTER.md`) — a second live copy of the facts drifts. If one exists, retire it (stop referencing it) rather than dual-maintaining.
+   - **When to update it:** only on _arc-level_ events — a task/phase changes status (blocked → active → done), a new task/phase appears, or the "current front line / next action" moves. NOT for individual fact changes (those go in the atomic file the overview points to). Since it auto-loads every session, also reconcile it opportunistically: if what you're doing this session contradicts the arc it describes, update the arc. The user can always say "update the overview" to force a refresh.
    - **State it when you update the arc:** whenever you change the overview, tell the user in one line what changed (e.g. "Updated the overview — Task B is now active"). Never edit it silently — the user should always know its current state and be able to correct a wrong arc.
 3. **Non-text reference docs I may need to read (Word, PDF, Excel, etc.) → `C:\Users\Aaron.Sherrill\Documents\personal\reference-docs\{projectName}\`** — where `{projectName}` is the current working directory / repo name (e.g. `taoyuansewer2`). If that folder doesn't exist, create it. Single home per project; don't scatter these files elsewhere. To read/work with them, use the dedicated **office skills** (`xlsx`, `docx`, `pdf`, `pptx`) — they trigger on the file type and extract content properly (tables, tracked changes, formulas). Plain images: the Read tool.
 

@@ -11,6 +11,10 @@
 
 - Always respond in English. This instruction wins over any language-specific rule in a conflict.
 - Be concise and actionable.
+- **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
+  commit messages, docs, messages to others — do not write that something was asked,
+  reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
+  or "suggested" phrasing for anything not yet done.
 - **Handling missing/ambiguous information:** if any input needed for a task — source files, specs, data, or these instructions themselves — is incomplete, unreadable, ambiguous, or missing, do not guess or silently fill the gap. Instead:
   1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
   2. State what's needed from the user to resolve it.
@@ -18,6 +22,10 @@
   - If other parts of the task are unaffected by the gap, implement those and clearly separate what's done from what's blocked.
   - **Minor, low-stakes ambiguity** (e.g., a formatting preference with no real consequence) can be resolved with a stated default instead — say what was assumed and why.
   - The bar: if a wrong guess would break something, change output correctness, or require rework, flag it. Otherwise, assume and proceed.
+  - Before flagging, try to resolve it yourself from the code, data, or history. Only flag
+    what survives a genuine attempt, and say what you tried. Do not record something as an
+    open question when one search would settle it.
+
 - **Scope of in-conversation requests:** a request that specifies how to answer — language, format, length, tone — applies to that one response unless it's phrased as a standing instruction ("from now on", "always", "for the rest of this session"). Do not promote a one-off request into a default. If unsure whether a request was one-off or standing, follow it once and ask.
 - After implementation, summarize:
   - What changed
@@ -49,9 +57,9 @@ Rules:
   - Favor SRP, DRY, low coupling, and high cohesion.
   - Prefer intentional duplication over premature abstraction when it keeps the code easier to read and change.
 - Reuse existing utilities, services, and shared modules before creating new ones.
-- Before adding UI or new code, follow the conventions already in that view/file if any —
-  pick by meaning, not proximity, and confirm the class or stylesheet is actually
-  loaded by that page. Say which precedent you followed.
+- When you do write something new, match the conventions of the surrounding view/file —
+  pick by meaning, not proximity, and confirm any class or stylesheet you use is actually
+  loaded by that page. Name the precedent you followed, or say there wasn't one.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
 
 ### Security

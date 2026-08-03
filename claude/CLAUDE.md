@@ -35,7 +35,7 @@
 
 ## Standing pending-items list
 
-When a response leaves unresolved work (follow-up actions, blockers, or deliberate deferrals), end with a short list of things identified but not yet done. Keep it to ~5 lines, one line per item, no re-explanation. Group as:
+When a response leaves unresolved work (follow-up actions, blockers, or deliberate deferrals), end with a short list of things identified but not yet done. Keep it brief—target ~5 lines where possible, but allow more if a complex task requires it. One line per item, no re-explanation. Group as:
 
 - **Ready now** — mine to do
 - **Blocked** — waiting on a person, a merge, data, or access (name which)

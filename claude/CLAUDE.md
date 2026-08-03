@@ -46,7 +46,7 @@ Rules:
 - **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy.
 - Drop items the moment they are resolved — do not accumulate ✅ entries.
 - Omit the list when nothing remains to track (for example: one-off questions, quick lookups, purely conversational turns, or fully completed work).
-- If the list would exceed ~5 lines, treat that as a signal to collapse finished threads into memory, not to write a longer list.
+- If the list becomes excessively long across multiple tasks, treat that as a signal to collapse finished threads into memory rather than accumulating minor items.
 
 ### Engineering principles
 

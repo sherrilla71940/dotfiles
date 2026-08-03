@@ -1,13 +1,18 @@
 {
   "env": {
     "API_TIMEOUT_MS": "1200000",
-    "BASH_DEFAULT_TIMEOUT_MS": "300000"
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
   },
   "permissions": {
     "ask": [
       "Bash(git push *)",
       "Bash(git commit *)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
     "figma@claude-plugins-official": true,
@@ -24,9 +29,5 @@
   },
   "autoUpdatesChannel": "latest",
   "theme": "auto",
-  "verbose": true,
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
-  }
+  "verbose": true
 }

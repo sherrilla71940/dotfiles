@@ -61,9 +61,7 @@ Rules:
 - Handle errors explicitly — no silent catches; either handle meaningfully or propagate with context. Validate inputs at trust boundaries, and don't leak internals (stack traces, internal messages) in user-facing errors.
 - Flag any change that breaks a public API, wire format, config schema, or persisted-data shape, and describe the migration/compatibility path. Prefer additive, backward-compatible changes; make schema migrations reversible.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
-- Don't commit unless asked. When asked, keep commits atomic and scoped to one logical change; follow Conventional Commits (see the git-commit-reference skill). Stage deliberately — never blind `git add -A`.
-- When the tree holds more than one logical change, state the proposed commit grouping
-  before committing. Split unrelated changes that share a file with patch staging.
+- Don't commit unless asked. When asked, keep commits atomic and scoped to one logical change, and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately — never blind `git add -A`. When the tree holds more than one logical change, state the proposed commit grouping before committing, and split unrelated changes that share a file with patch staging.
 
 ### Security
 
@@ -83,9 +81,9 @@ Rules:
 
 ### Shell tool preference
 
-- Prefer the **Bash tool** for standard Unix-style operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash is installed and these are simpler and more portable than PowerShell equivalents.
+- Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
 - Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
-- If Git Bash is unavailable, say so before falling back to PowerShell equivalents.
+- If the Bash tool is unavailable, say so before falling back to PowerShell.
 
 ### Knowledge & reference-doc storage (all projects)
 

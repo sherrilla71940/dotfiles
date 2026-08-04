@@ -5,7 +5,7 @@
     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
     "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Users\\Aaron.Sherrill\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"
   },
-  "//note_CLAUDE_CODE_GIT_BASH_PATH": "MACHINE-SPECIFIC — on a different PC, delete the CLAUDE_CODE_GIT_BASH_PATH line in env above (and this note). It is only needed here because Git for Windows is installed under %LOCALAPPDATA% (a non-standard location) that Claude Code's auto-detection misses, and CLAUDE_CODE_USE_POWERSHELL_TOOL=0 disables the PowerShell fallback, so startup fails without it. A standard C:\\Program Files\\Git install is detected automatically.",
+  "//note_CLAUDE_CODE_GIT_BASH_PATH": "MACHINE-SPECIFIC — needed only on work PC. Git for Windows lives under %LOCALAPPDATA% (non-standard), which auto-detection misses, so this points at it; CLAUDE_CODE_USE_POWERSHELL_TOOL=0 forces the Bash tool over the PowerShell rollout. Requires Claude Code >= 2.1.220 — older versions ignore GIT_BASH_PATH and leave you with no shell. On a standard C:\\Program Files\\Git install or a different machine, delete both env lines and this note.",
   "permissions": {
     "ask": [
       "Bash(git push *)",

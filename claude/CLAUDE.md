@@ -33,7 +33,7 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
-## Standing pending-items list
+### Standing pending-items list
 
 When a response leaves unresolved work (follow-up actions, blockers, or deliberate deferrals), end with a short list of things identified but not yet done. Keep it brief—target ~5 lines where possible, but allow more if a complex task requires it. One line per item, no re-explanation. Group as:
 
@@ -80,7 +80,7 @@ Rules:
 - Prefer the clearest correct code over the shortest or cleverest code.
 - Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
 - Use JSDoc (`/** */`) for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
-- Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
+- Use inline `//` comments sparingly, for implementation notes that explain *why* a non-obvious decision or workaround was made.
 - Code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike (code comments only; chat responses stay English).
 
 ### Shell tool preference

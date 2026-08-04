@@ -80,6 +80,14 @@ chore(sync): archive unused copilot assets
 ```
 
 ```text
+refactor(config): reorganize rule files and dedupe conventions
+
+- move the JS/TS naming rule into the path-scoped javascript rule
+- keep the zh-tw comment rule global so it covers all languages
+- regroup the html-css guidelines under topic headings
+```
+
+```text
 feat(api)!: require explicit project id
 
 BREAKING CHANGE: config files must now include projectId.

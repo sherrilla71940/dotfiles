@@ -1,79 +1,106 @@
 ---
 name: git-commit-action
-description: 'Create a Conventional Commit from the current git diff with safe staging and message selection. Use when the user asks to commit changes, draft a commit message, or invokes /git-commit-action. Supports draft vs. commit modes, English or Traditional Chinese messages, and fast chat-edit scoping.'
-argument-hint: '[draft|commit] [en|zhtw] [last-chat-edit|all-chat-edits|recent-last|recent-all] optional type, scope, description, or files'
+description: "Create one or more Conventional Commits from the current git diff — batches unrelated changes into separate atomic commits by default, with safe per-group staging. Use when the user asks to commit changes, draft commit messages, or invokes /git-commit-action. Supports draft vs. commit modes, batch vs. single grouping, scope filters (all/staged/chat-edits), and English or Traditional Chinese messages."
+argument-hint: "[draft|commit] [batch|single] [all|staged|last-chat-edit|all-chat-edits] [en|zhtw] optional type, scope, description, or files"
 disable-model-invocation: true
 ---
 
 # Git Commit Action
 
-Create one standardized git commit using the Conventional Commits format. Analyze the actual repository state before choosing the commit message.
+Create one or more standardized commits in Conventional Commits format from the current repository state. By default, group unrelated changes into separate atomic commits (batch). Always analyze the actual repository state before choosing messages.
 
 `disable-model-invocation: true` is set deliberately: this skill has side effects (staging, committing), so it should only run when the user explicitly types `/git-commit-action`, never auto-triggered by Claude on its own judgment.
 
-For the Conventional Commit type table, description/body rules, breaking-change and footer conventions, and message examples, see the `git-commit-reference` skill — this file only covers the `/git-commit-action` workflow itself.
+For the Conventional Commit type table, description/body rules, bullet-body and breaking-change/footer conventions, and message examples, see the `git-commit-reference` skill — this file only covers the `/git-commit-action` workflow itself.
 
 ## Mission
 
-Create one safe Conventional Commit from the current logical diff, or draft the commit message when requested. Prefer the actual diff over user-provided hints when they disagree.
+Turn the current logical diff into atomic Conventional Commits — one per logical change by default (`batch`), or a single commit when asked (`single`). Draft the plan for review, or create the commits. Prefer the actual diff over user-provided hints when they disagree.
 
-## Arguments
+## Options
 
-`$ARGUMENTS` contains the full trailing text typed after `/git-commit-action`. Parse it as optional flags and hints — flags are not strictly positional, so scan the whole string for recognized tokens. Defaults are `draft` mode and `en` language.
+`$ARGUMENTS` contains the full trailing text typed after `/git-commit-action`. Flags are **not positional** — scan the whole string for recognized tokens; anything unrecognized is a hint (type, scope, description, or file selection). Each axis is independent, and any axis you omit falls to its default.
 
-- Mode flags:
-  - `draft`: return the proposed commit message in chat without staging or committing. This is the default.
-  - `commit`: create the commit.
-- Language flags:
-  - `en`: write the generated commit description or body in English. This is the default.
-  - `zhtw`: write the generated commit description or body in Traditional Chinese. Keep type and trailers in English; scope can be in English or Chinese depending on what fits better.
-  - Keep Conventional Commit type/scope tokens and trailers such as `feat`, `fix`, and `BREAKING CHANGE:` in English regardless of language flag.
-- Scope flags:
-  - `last-chat-edit`: fastest scope. Use the latest assistant edit batch from this conversation as the primary commit scope. Assume the user staged it. Inspect staged file names/stat first and avoid full patch reads unless needed.
-  - `all-chat-edits`: fast scope. Use all assistant-made edits from this conversation as the primary commit scope. Assume the user staged them. Inspect staged file names/stat first and avoid full patch reads unless needed.
-  - `recent-last`: alias for `last-chat-edit`.
-  - `recent-all`: alias for `all-chat-edits`.
-  - Do not use plain `recent`; it is ambiguous. Ask the user whether they mean `recent-last` or `recent-all`.
-- Treat all remaining words in `$ARGUMENTS` as hints for type, scope, description, file selection, or commit grouping.
+| Axis         | Options                                                | Default | Answers                                             |
+| ------------ | ------------------------------------------------------ | ------- | --------------------------------------------------- |
+| **Mode**     | `draft` · `commit`                                     | `draft` | Preview, or actually create commits?                |
+| **Grouping** | `batch` · `single`                                     | `batch` | One commit per logical change, or one commit total? |
+| **Scope**    | `all` · `staged` · `last-chat-edit` · `all-chat-edits` | `all`   | Which files are candidates?                         |
+| **Language** | `en` · `zhtw`                                          | `en`    | Message description/body language?                  |
+
+Example invocations (0–4 flags, any order):
+
+| Typed                                      | Behaves as                                                   |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `/git-commit-action`                       | Draft a batched multi-commit plan for all changes            |
+| `/git-commit-action commit`                | Create atomic commits for all changes                        |
+| `/git-commit-action commit single`         | One commit for all changes                                   |
+| `/git-commit-action commit staged single`  | Commit exactly the staged files as one commit (classic path) |
+| `/git-commit-action commit all-chat-edits` | Atomic commits from this session's edits only                |
+| `/git-commit-action commit zhtw`           | Atomic commits with Traditional-Chinese descriptions         |
+
+### Mode
+
+- `draft` (default): show the proposed plan — each group's files plus its message — without staging or committing, then stop. End the draft with the exact command to run next, e.g. `/git-commit-action commit <same flags>`, so the user can execute without re-deriving flags.
+- `commit`: create the commit(s).
+
+### Grouping
+
+- `batch` (default): partition the candidate changes into logical groups and create one Conventional Commit per group. If the candidates form a single logical change, this naturally yields one commit. Always state the proposed grouping before committing.
+- `single`: create exactly one commit from all candidate changes, even when they span multiple logical changes.
+
+### Scope (which files are candidates)
+
+- `all` (default): the whole working tree — staged, unstaged, and untracked.
+- `staged`: only files already staged. Respects a deliberately curated index and ignores unstaged/untracked changes. Combine with `single` for "commit exactly what I staged, as one commit."
+- `last-chat-edit` (alias `recent-last`): only the latest assistant edit batch from this conversation.
+- `all-chat-edits` (alias `recent-all`): all assistant-made edits from this conversation.
+- Do not use plain `recent`; it is ambiguous — ask whether the user means `recent-last` or `recent-all`.
+
+### Language
+
+- `en` (default) — aliases `eng`, `english`. Description/body in English.
+- `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan) — not Simplified. Keep Conventional Commit type/scope tokens and trailers (`feat`, `fix`, `BREAKING CHANGE:`) in English regardless; scope may be English or Chinese, whichever fits.
 
 ## Workflow
 
-1. Parse `$ARGUMENTS` to determine mode, language, scope flags, and any commit hints.
+1. Parse `$ARGUMENTS` for Mode, Grouping, Scope, Language, and hints. Apply defaults for omitted axes (`draft`, `batch`, `all`, `en`).
 2. Inspect repository state with `git status --porcelain`.
-3. When `last-chat-edit`, `recent-last`, `all-chat-edits`, or `recent-all` is provided, use the fast chat-context path:
-   - For `last-chat-edit` or `recent-last`, use only the latest assistant edit batch as the logical commit scope.
-   - For `all-chat-edits` or `recent-all`, use all assistant-made edits in the current conversation as the logical commit scope.
-   - Assume the user staged that scope. Run `git diff --cached --name-status` and `git diff --cached --stat` before drafting.
-   - Do not inspect full patches unless staged files are missing, ambiguous, secret-like, unexpected, or the user requests a detailed commit body.
-   - If staged files do not match the expected chat-edited scope, inspect only targeted diffs for the expected files before deciding whether to draft, ask, stage, or stop.
-4. In `draft` mode without a fast scope flag, inspect staged changes with `git diff --cached --name-status` and `git diff --cached --stat`. If staged changes exist, draft from those summaries and inspect full staged patches only when filenames/stat are insufficient for an accurate message. If nothing is staged, inspect unstaged changes with `git diff --name-status` and `git diff --stat`, then inspect full unstaged patches only when needed. Do not stage files, run commit checks, or create a commit.
-5. In `commit` mode without a fast scope flag, inspect staged changes with `git diff --cached --name-status` and `git diff --cached --stat`. If staged changes exist, draft from those summaries and inspect full staged patches only when needed. If nothing is staged, inspect unstaged changes, then stage the files that belong to one logical change. In fast scope mode, stage only files that match the selected chat-edited scope unless the user explicitly expands the scope.
+3. Determine the candidate file set from Scope:
+   - `all`: staged + unstaged + untracked.
+   - `staged`: `git diff --cached --name-status` only.
+   - `last-chat-edit` / `all-chat-edits`: the assistant-edited files (latest batch / all edits), whether or not they are currently staged.
+     Inspect with `--name-status` and `--stat` first; read full patches only when names/stat are insufficient for an accurate message, or a file looks secret-like, ambiguous, or unexpected.
+4. Check candidate filenames for obvious secrets or private credentials (`.env`, private keys, credential JSON, tokens, generated secret dumps). Stop and explain if any is present.
+5. Group the candidates:
+   - `batch`: partition into logical changes by concern/type/area. Prefer fewer cohesive commits — don't split a single coherent change just because it spans multiple files; split on distinct concern/type, not on file count. Everything that is one logical change is one group. Prefer whole-file grouping; only reach for `git add -p` when one file's hunks genuinely belong to different groups.
+   - `single`: one group containing all candidates.
+6. Load the `git-commit-reference` skill and compose a Conventional Commit message for each group, following its type table, description/body rules, bullet-body guidance, and breaking-change/footer conventions.
+7. **Draft mode** — present the plan: for each group, list its files and show its proposed message in a fenced `text` block. State that nothing was staged or committed. End with the exact next command, e.g. `Next: run /git-commit-action commit <same flags>` to create these. Stop here.
+8. **Commit mode** — create the commit(s). Git has a single index, so batch commits are made by staging and committing **one group at a time**; git will not partition changes on its own. For each group, in order:
+   1. Stage exactly that group's files (prefer the most targeted approach):
+      ```bash
+      git add path/to/file1 path/to/file2   # specific files for this group
+      git add 'src/components/*'            # by pattern
+      git add -p path/to/file               # when one file's hunks span groups
+      git rm path/to/deleted-file           # stage a deletion
+      ```
+   2. Run `git diff --cached --check`.
+   3. Commit — single-line, or a heredoc for a body:
 
-   Use the most targeted staging approach available rather than always staging everything:
-   ```bash
-   # Stage specific files
-   git add path/to/file1 path/to/file2
-   # Stage by pattern
-   git add '*.test.*'
-   git add 'src/components/*'
-   # Interactive staging when a file has unrelated hunks
-   git add -p
-   ```
-6. Check relevant filenames for obvious secrets or private credentials, including `.env`, private keys, credential JSON, tokens, and generated secret dumps.
-7. Load the `git-commit-reference` skill, then choose the type and compose the message following its type table, description/body rules, and breaking-change/footer conventions.
-8. In `draft` mode, respond with the proposed commit message in a fenced `text` block, mention that no commit was created, and stop.
-9. In `commit` mode, run `git diff --cached --check` before committing.
-10. Commit with `git commit -m "<type>[optional scope]: <description>"` or a multi-line message when needed:
-    ```bash
-    git commit -m "$(cat <<'EOF'
-    <type>[scope]: <description>
+      ```bash
+      git commit -m "$(cat <<'EOF'
+      <type>[scope]: <description>
 
-    <optional body>
-    <optional footer>
-    EOF
-    )"
-    ```
-11. Finish with `git status --short` and report the commit hash and message.
+      <optional body>
+      <optional footer>
+      EOF
+      )"
+      ```
+
+      Then move to the next group. Never mix files from different groups in one commit.
+
+9. Finish with `git status --short` and report each commit's hash and message.
 
 ## Safety Rules
 
@@ -81,6 +108,7 @@ Create one safe Conventional Commit from the current logical diff, or draft the 
 - Never run destructive commands such as `git reset --hard`, `git clean`, or force operations unless the user explicitly asks.
 - Never use `--no-verify` unless the user explicitly asks.
 - Never force push to `main` or `master`.
-- Never commit obvious secrets. Stop and explain what needs review if a secret-like file is staged.
+- Never commit obvious secrets. Stop and explain what needs review if a secret-like file is a candidate.
 - Never stage files or create commits in `draft` mode.
-- If hooks fail, fix the reported issue and create a normal commit. Do not amend unless the user asks.
+- In `batch` mode, stage and commit one group at a time; never combine files from different logical groups in a single commit.
+- If hooks fail, fix the reported issue and create a normal commit. Do not amend unless the user asks. In `batch` mode, a hook failure on one group does not roll back commits already made for earlier groups — fix the issue, then continue with the remaining groups.

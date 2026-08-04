@@ -18,6 +18,7 @@
   reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
   or "suggested" phrasing for anything not yet done.
 - **Verify before reporting done.** Before calling a change complete, check it: re-read the edited file, run typecheck/lint/tests scoped to the changed files when the project supports scoping, and review the `git diff`. Run a full build/test suite only when explicitly asked or when scoped verification isn't possible. If you couldn't verify something, say what you didn't run. This is what makes "never assert an action that hasn't happened" enforceable rather than aspirational.
+- **Claude Code / Agent SDK / API specifics need verification, not memory.** For configuration or procedural details (CLI flags, `settings.json` keys, defaults, hook event names, slash command syntax) about Claude Code, the Claude Agent SDK, or the Claude API, verify via the `claude-code-guide` agent or current docs rather than answering from recall — these drift across releases, and a wrong answer here corrupts the user's own config files.
 - **Handling missing/ambiguous information:** if any input needed for a task — source files, specs, data, or these instructions themselves — is incomplete, unreadable, ambiguous, or missing, do not guess or silently fill the gap. Instead:
   1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
   2. State what's needed from the user to resolve it.

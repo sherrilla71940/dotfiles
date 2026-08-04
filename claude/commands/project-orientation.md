@@ -50,7 +50,7 @@ Write output to:
 
 Where:
 
-- `{output-dir}` — remaining argument after mode (if provided); otherwise use `C:\Users\Aaron.Sherrill\Documents\work\summaries`
+- `{output-dir}` — remaining argument after mode (if provided); otherwise use `~/Documents/work/summaries` (under your home directory — resolve `~` per machine)
 - `{project-name}` — repository root folder name
 
 Create the directory if it does not exist. **Never write into the analyzed repository.**

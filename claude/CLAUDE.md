@@ -44,6 +44,8 @@ When a response leaves unresolved work (follow-up actions, blockers, or delibera
 Rules:
 
 - **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy.
+- **Rebuild the view from the store, not from recent memory.** Before writing the list, reconcile it against the open TODOs in project memory (`MEMORY.md`) and include any still-open items — even ones that haven't come up in recent turns. The view must never silently drop what the store still holds.
+- **Persist the blocker, not just the item.** When a still-open item is blocked and matters beyond this conversation, record *what it's blocked on* (person, merge, data, access) inside its `MEMORY.md` entry. The list's Blocked/Watching status is ephemeral and won't survive the session; the blocker written into the memory fact will.
 - Drop items the moment they are resolved — do not accumulate ✅ entries.
 - Omit the list when nothing remains to track (for example: one-off questions, quick lookups, purely conversational turns, or fully completed work).
 - If the list becomes excessively long across multiple tasks, treat that as a signal to collapse finished threads into memory rather than accumulating minor items.
@@ -64,7 +66,7 @@ Rules:
 - Handle errors explicitly — no silent catches; either handle meaningfully or propagate with context. Validate inputs at trust boundaries, and don't leak internals (stack traces, internal messages) in user-facing errors.
 - Flag any change that breaks a public API, wire format, config schema, or persisted-data shape, and describe the migration/compatibility path. Prefer additive, backward-compatible changes; make schema migrations reversible.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
-- Don't commit unless asked. When asked, keep commits atomic and scoped to one logical change, and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately — never blind `git add -A`. When the tree holds more than one logical change, state the proposed commit grouping before committing, and split unrelated changes that share a file with patch staging.
+- Don't commit unless asked. When asked, keep commits atomic — one logical change each — and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately (never blind `git add -A`); when the tree holds several logical changes, state the proposed grouping before committing. The `/git-commit-action` skill executes this (batch grouping by default).
 
 ### Security
 
@@ -79,7 +81,7 @@ Rules:
 - Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
 - Use JSDoc (`/** */`) for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
 - Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
-- Code comments are written in zh-tw — see Company Coding Style.
+- Code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike (code comments only; chat responses stay English).
 
 ### Shell tool preference
 
@@ -95,4 +97,4 @@ Use three distinct stores. Keep them separate to avoid duplicate sources of trut
 1. **Facts, rules, and decisions → auto memory.** This is the single source of truth for any specific fact. Update the existing memory file when a fact changes. (The harness injects the memory mechanics—one fact per file and the `MEMORY.md` index—every session, so they aren't restated here.)
 2. **Narrative arc → `MEMORY.md`** (the only memory file that auto-loads at session start). For multi-week or multi-session work, keep the work sequence, current front line, and project narrative here, linking to topic files instead of duplicating facts. `MEMORY.md` should contain **no facts of its own**, only narrative and references. When the narrative changes, record it in one line rather than editing it silently. Do not create separate overview files (such as `project-overview.md` or `MASTER.md`); if one already exists, fold its contents into `MEMORY.md` and remove it.
 <!-- source (only MEMORY.md auto-loads; 200-line/25KB cap; topic files load on demand): code.claude.com/docs/en/memory → Auto memory / How it works — "The first 200 lines of MEMORY.md, or the first 25KB, whichever comes first, are loaded at the start of every conversation." -->
-3. **Non-text reference documents (Word, PDF, Excel, etc.) → `C:\Users\Aaron.Sherrill\Documents\personal\reference-docs\{projectName}\`**, where `{projectName}` is the current working directory or repository name (for example, `taoyuansewer2`). If the folder doesn't exist, create it. Keep a single location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) to read and work with these files. Use the Read tool for plain images.
+3. **Non-text reference documents (Word, PDF, Excel, etc.) → `~/Documents/personal/reference-docs/{projectName}/`** (under your home directory — resolve `~` per machine), where `{projectName}` is the current working directory or repository name (for example, `taoyuansewer2`). If the folder doesn't exist, create it. Keep a single location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) to read and work with these files. Use the Read tool for plain images.

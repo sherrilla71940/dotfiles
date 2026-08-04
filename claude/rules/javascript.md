@@ -59,4 +59,3 @@ _Applies to JavaScript and TypeScript files. See TypeScript Guidelines and React
 ### Company Coding Style
 
 - Use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. Use camelCase for all other identifiers.
-- All code comments should be in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike. This governs code comments only; chat responses stay English per Response behavior.

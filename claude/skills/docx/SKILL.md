@@ -15,6 +15,7 @@ A .docx file is a ZIP archive containing XML files.
 | Task | Approach |
 |------|----------|
 | Read/analyze content | `pandoc` or unpack for raw XML |
+| View embedded images | Unpack, then use the Read tool on the files under `word/media/` - see Viewing Embedded Images below |
 | Create new document | Use `docx-js` - see Creating New Documents below |
 | Edit existing document | Unpack → edit XML → repack - see Editing Existing Documents below |
 
@@ -35,6 +36,21 @@ pandoc --track-changes=all document.docx -o output.md
 # Raw XML access
 python scripts/office/unpack.py document.docx unpacked/
 ```
+
+`pandoc` extracts text only — it will not surface embedded pictures. **Required:** when analyzing or summarizing an existing document's content, unpack it and check `word/media/` for embedded images. If any exist, Read them before reporting on the document — don't rely on text extraction alone to judge what's in the file.
+
+### Viewing Embedded Images
+
+Unpacking a .docx just extracts its ZIP contents, which places every embedded picture as a plain image file under `unpacked/word/media/` (e.g. `image1.png`, `image2.jpeg`). Read those files directly to view them:
+
+```bash
+python scripts/office/unpack.py document.docx unpacked/
+ls unpacked/word/media/
+```
+
+Then use the Read tool on each file in `unpacked/word/media/`. Cross-reference `word/document.xml` (`r:embed` / `r:id` → `word/_rels/document.xml.rels`) to know where each image sits in the document if position matters.
+
+For layout-in-context instead (how an image sits alongside surrounding text, captions, wrapping), use Converting to Images below to render full pages instead.
 
 ### Converting to Images
 

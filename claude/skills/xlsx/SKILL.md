@@ -280,6 +280,21 @@ The script returns JSON with error details:
 - For large files, read specific columns: `pd.read_excel('file.xlsx', usecols=['A', 'C', 'E'])`
 - Handle dates properly: `pd.read_excel('file.xlsx', parse_dates=['date_column'])`
 
+## Viewing Embedded Images
+
+Neither pandas nor openpyxl's normal cell APIs surface pictures placed on a sheet (logos, pasted screenshots, chart images) — they only read cell data and formulas. **Required:** when analyzing or summarizing an existing workbook, check `xl/media/` (or `ws._images` per sheet) for embedded images. If any exist, Read them before reporting on the workbook — don't rely on cell data alone to judge what's in the file.
+
+To see them:
+
+```bash
+python scripts/office/unpack.py file.xlsx unpacked/
+ls unpacked/xl/media/
+```
+
+Unpacking just extracts the .xlsx ZIP, which drops every embedded picture as a plain file under `unpacked/xl/media/` (e.g. `image1.png`). Read those files directly with the Read tool to view them. Cross-reference `xl/worksheets/_rels/sheetN.xml.rels` and `xl/drawings/` if you need to know which sheet/cell an image is anchored to.
+
+For a quick in-Python alternative without unpacking, `openpyxl`'s `ws._images` lists a sheet's embedded images with their anchor positions.
+
 ## Code Style Guidelines
 **IMPORTANT**: When generating Python code for Excel operations:
 - Write minimal, concise Python code without unnecessary comments

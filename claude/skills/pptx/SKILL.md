@@ -10,7 +10,8 @@ license: Proprietary. LICENSE.txt has complete terms
 
 | Task | Guide |
 |------|-------|
-| Read/analyze content | `python -m markitdown presentation.pptx` |
+| Read/analyze text content | `python -m markitdown presentation.pptx` |
+| View slide visuals (incl. embedded images) | `python scripts/thumbnail.py presentation.pptx` - see Reading Content below |
 | Edit or create from template | Read [editing.md](editing.md) |
 | Create from scratch | Read [pptxgenjs.md](pptxgenjs.md) |
 
@@ -28,6 +29,8 @@ python scripts/thumbnail.py presentation.pptx
 # Raw XML
 python scripts/office/unpack.py presentation.pptx unpacked/
 ```
+
+`markitdown` is text-only — it will not surface embedded pictures, backgrounds, or visual layout. To actually see a slide's images, run `thumbnail.py` and then use the Read tool on the resulting `thumbnails.jpg` (it renders real slides via `soffice`, so embedded images appear in place).
 
 ---
 

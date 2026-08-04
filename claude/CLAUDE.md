@@ -43,18 +43,15 @@ When a response leaves unresolved work (follow-up actions, blockers, or delibera
 
 Rules:
 
-- **The list is a view, not the store.** Anything that still matters after this conversation ends must also be written to project memory. The list renders what is already durable elsewhere; it is never the only copy.
-- **Rebuild the view from the store, not from recent memory.** Before writing the list, reconcile it against the open TODOs in project memory (`MEMORY.md`) and include any still-open items — even ones that haven't come up in recent turns. The view must never silently drop what the store still holds.
-- **Persist the blocker, not just the item.** When a still-open item is blocked and matters beyond this conversation, record *what it's blocked on* (person, merge, data, access) inside its `MEMORY.md` entry. The list's Blocked/Watching status is ephemeral and won't survive the session; the blocker written into the memory fact will.
-- Drop items the moment they are resolved — do not accumulate ✅ entries.
-- Omit the list when nothing remains to track (for example: one-off questions, quick lookups, purely conversational turns, or fully completed work).
-- If the list becomes excessively long across multiple tasks, treat that as a signal to collapse finished threads into memory rather than accumulating minor items.
+- **The list is a view, not the store; `MEMORY.md` is.** Anything durable beyond this conversation must be written there — reconcile against `MEMORY.md`'s open TODOs (not just recent turns) before rendering the list, and never silently drop what the store holds. When an item is blocked, persist *what it's blocked on* (person, merge, data, access) inside its `MEMORY.md` entry — the list's Blocked/Watching status is ephemeral and won't survive the session.
+- Drop items the moment they resolve — do not accumulate ✅ entries. Omit the list entirely when nothing remains to track (one-off questions, quick lookups, purely conversational turns, fully completed work). If it grows long across tasks, collapse finished threads into memory rather than piling up minor items.
 
 ### Engineering principles
 
 - Keep changes minimal, scoped, and architecture-aware.
 - Prefer root-cause fixes over surface-level patches.
 - Before changing shared modules, inspect their callers and preserve existing contracts. If dependent files must change, identify them in the plan and update them together.
+- Before replacing or deleting existing code, understand why it was written that way — code that looks redundant, dead, or overly defensive often encodes a subtle constraint, bug workaround, or edge case.
 - Avoid over-engineering. Do not introduce abstractions, layers, or utilities until they are clearly justified by duplication, variation, or complexity.
 - Apply Clean Code principles pragmatically:
   - Favor SRP, DRY, low coupling, and high cohesion.

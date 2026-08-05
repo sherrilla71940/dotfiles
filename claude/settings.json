@@ -12,7 +12,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention', 'Claude Code')\""
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Claude needs your input\""
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Session complete\""
           }
         ]
       }

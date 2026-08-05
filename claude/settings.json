@@ -5,6 +5,52 @@
     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
     "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Users\\Aaron.Sherrill\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"
   },
+  // windows
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention', 'Claude Code')\""
+          }
+        ]
+      }
+    ]
+  },
+  // mac
+  // {
+  //   "hooks": {
+  //     "Notification": [
+  //       {
+  //         "matcher": "idle_prompt",
+  //         "hooks": [
+  //           {
+  //             "type": "command",
+  //             "command": "osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\"'"
+  //           }
+  //         ]
+  //       }
+  //     ]
+  //   }
+  // },
+  // linux
+  // {
+  //   "hooks": {
+  //     "Notification": [
+  //       {
+  //         "matcher": "idle_prompt",
+  //         "hooks": [
+  //           {
+  //             "type": "command",
+  //             "command": "notify-send 'Claude Code' 'Claude Code needs your attention'"
+  //           }
+  //         ]
+  //       }
+  //     ]
+  //   }
+  // },
   "//note_CLAUDE_CODE_GIT_BASH_PATH": "MACHINE-SPECIFIC — needed only on work PC. Git for Windows lives under %LOCALAPPDATA% (non-standard), which auto-detection misses, so this points at it; CLAUDE_CODE_USE_POWERSHELL_TOOL=0 forces the Bash tool over the PowerShell rollout. Requires Claude Code >= 2.1.220 — older versions ignore GIT_BASH_PATH and leave you with no shell. On a standard C:\\Program Files\\Git install or a different machine, delete both env lines and this note.",
   "permissions": {
     "ask": [

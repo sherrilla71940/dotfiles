@@ -11,8 +11,9 @@
 
 - Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
 - Be concise and actionable.
-  <!-- provenance: kept because artifacts have claimed work was done that wasn't. Edit this note with the real incident; it's stripped before context (zero tokens), so it's for human maintainers only. This is a template — copy the pattern above other hard-won rules. -->
-  <!-- source (block-level HTML comments are stripped before context = zero token cost): code.claude.com/docs/en/memory → "How CLAUDE.md files load" — "Block-level HTML comments … are stripped before the content is injected into Claude's context." Comments inside code blocks are preserved. -->
+  <!-- Personal Notes: -->
+  <!-- - provenance: kept because artifacts have claimed work was done that wasn't. Edit this note with the real incident; it's stripped before context (zero tokens), so it's for human maintainers only. This is a template — copy the pattern above other hard-won rules. -->
+  <!-- - source (block-level HTML comments are stripped before context = zero token cost): code.claude.com/docs/en/memory → "How CLAUDE.md files load" — "Block-level HTML comments … are stripped before the content is injected into Claude's context." Comments inside code blocks are preserved. -->
 - **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
   commit messages, docs, messages to others — do not write that something was asked,
   reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
@@ -65,6 +66,15 @@ Rules:
 - Flag any change that breaks a public API, wire format, config schema, or persisted-data shape, and describe the migration/compatibility path. Prefer additive, backward-compatible changes; make schema migrations reversible.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
 - Don't commit unless asked. When asked, keep commits atomic — one logical change each — and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately (never blind `git add -A`); when the tree holds several logical changes, state the proposed grouping before committing. The `/git-commit-action` skill executes this (batch grouping by default).
+
+### Parallelizing independent work
+
+- When a task decomposes into independent units with no shared state (e.g., the same operation repeated across multiple worktrees, branches, files, or subsystems), default to running them via parallel `Agent` calls rather than working through them one at a time inline. Don't wait to be told "in parallel" or "use agents" — treat independence itself as the trigger.
+  <!-- Personal Notes: -->
+  <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
+  <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
+- This applies mid-task too: if work started sequentially and the remaining steps turn out to be independent, switch to parallel for what's left rather than finishing serially out of momentum.
+- Reserve sequential inline work for cases with a real dependency (each step needs the previous step's output or a decision made along the way) or where the work is small enough that writing a self-contained agent prompt would cost more time than it saves.
 
 ### Security
 

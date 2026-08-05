@@ -100,7 +100,8 @@ Auto memory sharing across git worktrees, and where `autoMemoryDirectory`/`setti
 Windows only — on macOS/Linux, Bash is the only shell tool and this section doesn't apply.
 
 - Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
-<!-- source (CLAUDE_CODE_USE_POWERSHELL_TOOL=0): code.claude.com/docs/en/setup → Windows setup — "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to opt in or 0 to opt out." Also verified empirically this session: the PowerShell tool became unavailable once =0 took effect. -->
+  <!-- Personal Notes: -->
+  <!-- source (CLAUDE_CODE_USE_POWERSHELL_TOOL=0): code.claude.com/docs/en/setup → Windows setup — "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to opt in or 0 to opt out." Also verified empirically this session: the PowerShell tool became unavailable once =0 took effect. -->
 - Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
 - If the Bash tool is unavailable, say so before falling back to PowerShell.
 
@@ -110,5 +111,6 @@ Use three distinct stores. Keep them separate to avoid duplicate sources of trut
 
 1. **Facts, rules, and decisions → auto memory.** This is the single source of truth for any specific fact. Update the existing memory file when a fact changes. (The harness injects the memory mechanics—one fact per file and the `MEMORY.md` index—every session, so they aren't restated here.)
 2. **Narrative arc → `MEMORY.md`** (the only memory file that auto-loads at session start). For multi-week or multi-session work, keep the work sequence, current front line, and project narrative here, linking to topic files instead of duplicating facts. `MEMORY.md` should contain **no facts of its own**, only narrative and references. When the narrative changes, record it in one line rather than editing it silently. Do not create separate overview files (such as `project-overview.md` or `MASTER.md`); if one already exists, fold its contents into `MEMORY.md` and remove it.
-<!-- source (only MEMORY.md auto-loads; 200-line/25KB cap; topic files load on demand): code.claude.com/docs/en/memory → Auto memory / How it works — "The first 200 lines of MEMORY.md, or the first 25KB, whichever comes first, are loaded at the start of every conversation." -->
+   <!-- Personal Notes: -->
+   <!-- source (only MEMORY.md auto-loads; 200-line/25KB cap; topic files load on demand): code.claude.com/docs/en/memory → Auto memory / How it works — "The first 200 lines of MEMORY.md, or the first 25KB, whichever comes first, are loaded at the start of every conversation." -->
 3. **Non-text reference documents (Word, PDF, Excel, etc.) → `~/Documents/personal/reference-docs/{projectName}/`** (under your home directory — resolve `~` per machine), where `{projectName}` is the current working directory or repository name (for example, `taoyuansewer2`). If the folder doesn't exist, create it. Keep a single location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) to read and work with these files. Use the Read tool for plain images (standalone image files, or images already extracted from a container document) — not as a substitute for the office skill on the container file itself.

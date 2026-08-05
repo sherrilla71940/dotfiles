@@ -9,18 +9,21 @@
 
 ### Git worktrees and auto memory (Windows-confirmed gap)
 
-Docs claim auto memory is "per repository, shared across worktrees" (`git rev-parse --git-common-dir` derives the project key), but this was empirically disproven on this machine: separate git worktrees of the same repo each got their own empty `~/.claude/projects/{path}/memory/` folder, with no memory shared from the main checkout. Confirmed as a real, unfixed Claude Code bug — `anthropics/claude-code#39920`, closed "not planned".
+Docs claim auto memory is "per repository, shared across worktrees" (`git rev-parse --git-common-dir` derives the project key), but this was empirically disproven on windows work machine: separate git worktrees of the same repo each got their own empty `~/.claude/projects/{path}/memory/` folder, with no memory shared from the main checkout. Confirmed as a real, unfixed Claude Code bug — `anthropics/claude-code#39920`, closed "not planned".
 
-Before troubleshooting a worktree memory issue, fetch **https://code.claude.com/docs/en/memory#storage-location** directly (not from recall) — it documents `autoMemoryDirectory` (used below) and may have changed since this note was written.
+Before troubleshooting a worktree memory issue, fetch **<https://code.claude.com/docs/en/memory#storage-location>** directly (not from recall) — it documents `autoMemoryDirectory` (used below) and may have changed since this note was written.
+
 <!-- provenance: verified via GitHub API (api.github.com/repos/anthropics/claude-code/issues/39920) on 2026-08-05, not just doc prose. -->
 
-- **Fix:** add an identical `autoMemoryDirectory` entry to `.claude/settings.local.json` (or `settings.json`) in the base repo checkout **and every worktree**, pointing at the same absolute path — e.g. the base repo's existing memory folder, `~/.claude/projects/<base-repo-encoded-path>/memory`. This is a real documented settings key, not a workaround hack (avoid directory junctions — they aren't Claude-Code-aware and can silently break on a future update).
-- Value must be an absolute path or start with `~/`. In project/local settings it's honored only after the workspace-trust dialog is accepted for that folder — expect that prompt the first time a new worktree session starts.
-- **When starting work in a new worktree** (of any repo, not just this one) and `MEMORY.md`/memory content looks unexpectedly empty: don't assume there's no history. Check sibling folders under `~/.claude/projects/` for one matching the same repo without a worktree-path suffix, read memory from there, and apply the fix below in that worktree before proceeding.
-- **Procedure to apply the fix in a worktree:**
-  1. If `.claude/settings.local.json` doesn't exist yet in that worktree, create it; if it exists, merge in the key rather than overwriting the file.
+- **Fix:** set `autoMemoryDirectory` in `.claude/settings.local.json` at the **base repo checkout's root only** — e.g. pointing at its existing memory folder, `~/.claude/projects/<base-repo-encoded-path>/memory`. Since Claude Code v2.1.211, `settings.local.json` "resolves through worktrees to the main checkout, so one file covers sessions started in any subdirectory or worktree of the repository" — do **not** duplicate this file into each worktree; that creates a second, lower-priority source of truth for no benefit (repo root wins on conflicting non-permission keys anyway). Check the installed version (`claude --version`) before relying on this — pre-2.1.211 the file lived only in the starting directory, so older installs genuinely do need a per-worktree copy.
+- This is a real documented settings key, not a workaround hack (avoid directory junctions — they aren't Claude-Code-aware and can silently break on a future update).
+- **Exception:** a directory that is _not_ itself part of a git repository (e.g. a plain folder one level above several worktrees, used only as a launch point) does NOT get the worktree-resolution behavior — its `settings.local.json` stays local to that exact directory and needs its own `autoMemoryDirectory` entry.
+- Value must be an absolute path or start with `~/`. In project/local settings it's honored only after the workspace-trust dialog is accepted for that folder — expect that prompt the first time a new session starts there.
+- **When starting work in a new worktree** (of any repo, not just this one) and `MEMORY.md`/memory content looks unexpectedly empty: don't assume there's no history. Check sibling folders under `~/.claude/projects/` for one matching the same repo without a worktree-path suffix, read memory from there, and confirm/apply `autoMemoryDirectory` at the base repo root (not the worktree) before proceeding.
+- **Procedure to apply the fix (base repo root, once):**
+  1. If `.claude/settings.local.json` doesn't exist yet at the repo root, create it; if it exists, merge in the key rather than overwriting the file.
   2. Add/update the `autoMemoryDirectory` key to point at the shared memory path.
-  3. Check whether `.claude/settings.local.json` is actually gitignored there (`git status --porcelain .claude/settings.local.json` — no output means ignored or unchanged-and-tracked; check which). Don't assume a global gitignore rule covers it just because it did elsewhere.
+  3. Check whether `.claude/settings.local.json` is actually gitignored (`git status --porcelain .claude/settings.local.json` — no output means ignored or unchanged-and-tracked; check which). Don't assume a global gitignore rule covers it without checking.
   4. If it is **not** ignored, add `.claude/settings.local.json` to the repo's (or a personal) `.gitignore` — this file can contain machine-specific absolute paths and shouldn't be committed as-is.
   5. After editing `.gitignore`, remind the user to commit that `.gitignore` change (do not commit it yourself unless asked — see the standing "don't commit unless asked" rule).
 

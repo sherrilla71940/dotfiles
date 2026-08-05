@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Session complete\""
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Claude session complete\""
           }
         ]
       }

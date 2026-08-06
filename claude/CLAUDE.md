@@ -91,17 +91,6 @@ Rules:
 - Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
 - Code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike (code comments only; chat responses stay English).
 
-### Git worktrees and auto memory (confirmed gap, Windows work PC)
-
-Auto memory sharing across git worktrees, and where `autoMemoryDirectory`/`settings.local.json` actually take effect, has a confirmed, live-tested gap on the Windows work PC — including the working fix, the reproducible verification test, and how session-launch location interacts with subagents/Agent View. When troubleshooting Claude Code worktree memory or `autoMemoryDirectory` behavior — or deciding whether a subagent/Agent View session will have memory access — use the `claude-worktree-memory` skill instead of relying on memory.
-
-<!-- Personal Notes: -->
-<!-- - Docs claim auto memory is "per repository, shared across worktrees" (`git rev-parse --git-common-dir` derives the project key) — this is the documented design, but it's exactly what's empirically broken on this Windows machine per the skill above: separate worktrees each get their own empty memory folder unless `autoMemoryDirectory` is set at the base repo root. Don't take the docs' claim at face value for this machine; the skill's empirical test is the source of truth here. -->
-<!-- - Agents View = separate top-level sessions (not subagents), each independently quota'd/transcript'd, dispatched via `claude agents`. Combine with the `autoMemoryDirectory` fix above so each session gets correct shared memory when pinned to a worktree of the same repo — this is the piece that actually makes "one main session per worktree" workflows viable, not something the docs guarantee out of the box. -->
-<!-- - Agent Teams (code.claude.com/docs/en/agent-teams, verified 2026-08-05): a lead agent coordinates teammates that talk directly to each other (not just report back to the lead) — this is the feature that removes the "human must be root orchestrator across sessions" limitation of Agents View. Confirmed real, but EXPERIMENTAL and disabled by default (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`). Nothing to change in workflow yet — revisit once it's stable. -->
-<!-- - Subagents spawned via the Agent tool do NOT auto-create worktrees for isolation — verified against code.claude.com/docs/en/worktrees. Isolation is opt-in per call (`isolation: 'worktree'`) or per subagent config, or by explicitly asking Claude to "use worktrees for your agents." The one exception is background-job sessions, which this harness's own system prompt mandates enter a worktree before any code edit — don't generalize that mandate to ordinary foreground subagent spawning. -->
-<!-- - source: code.claude.com/docs/en/memory.md, /agent-view.md, /agent-teams.md, /worktrees.md, /sub-agents.md, verified via claude-code-guide agent 2026-08-05. -->
-
 ### Shell tool preference
 
 Windows only — on macOS/Linux, Bash is the only shell tool and this section doesn't apply.

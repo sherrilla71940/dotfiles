@@ -3,7 +3,8 @@
     "API_TIMEOUT_MS": "1200000",
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
-    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Users\\Aaron.Sherrill\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"
+    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Users\\Aaron.Sherrill\\AppData\\Local\\Programs\\Git\\bin\\bash.exe",
+    "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1"
   },
   "permissions": {
     "ask": [
@@ -55,5 +56,6 @@
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
   "theme": "auto",
-  "verbose": true
+  "verbose": true,
+  "tui": "default"
 }

@@ -1,33 +1,44 @@
-#!/bin/bash
-input=$(cat)
+#!/usr/bin/env bash
+set -euo pipefail
 
-extract() { echo "$input" | grep -o "\"$1\":[^,}]*" | head -1 | sed 's/.*: *"\?\([^",}]*\)"\?.*/\1/'; }
+if ! command -v node >/dev/null 2>&1; then
+  echo "Claude status line requires Node.js" >&2
+  exit 1
+fi
 
-MODEL=$(echo "$input" | grep -o '"display_name":"[^"]*"' | head -1 | cut -d'"' -f4)
-DIR=$(echo "$input" | grep -o '"current_dir":"[^"]*"' | head -1 | cut -d'"' -f4)
-PCT=$(echo "$input" | grep -o '"used_percentage":[0-9.]*' | head -1 | cut -d: -f2 | cut -d. -f1)
-COST=$(echo "$input" | grep -o '"total_cost_usd":[0-9.]*' | head -1 | cut -d: -f2)
-DURATION_MS=$(echo "$input" | grep -o '"total_duration_ms":[0-9]*' | head -1 | cut -d: -f2)
+node -e '
+let input = "";
 
-PCT=${PCT:-0}
-COST=${COST:-0}
-DURATION_MS=${DURATION_MS:-0}
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  input += chunk;
+});
+process.stdin.on("end", () => {
+  try {
+    const data = JSON.parse(input);
+    const cwd = data.cwd ?? data.workspace?.current_dir ?? "";
+    const model = data.model?.display_name ?? "";
+    const repository = data.workspace?.repo;
+    const used = data.context_window?.used_percentage;
+    const parts = [];
 
-CYAN='\033[36m'; YELLOW='\033[33m'; RED='\033[31m'; GREEN='\033[32m'; RESET='\033[0m'
+    if (cwd) {
+      parts.push(cwd.replace(/[\\/]+$/, "").split(/[\\/]/).pop());
+    }
+    if (repository?.owner && repository?.name) {
+      parts.push(`${repository.owner}/${repository.name}`);
+    }
+    if (model) {
+      parts.push(model);
+    }
+    if (Number.isFinite(used)) {
+      parts.push(`ctx:${Math.round(used)}%`);
+    }
 
-if [ "$PCT" -ge 90 ]; then BAR_COLOR="$RED"
-elif [ "$PCT" -ge 70 ]; then BAR_COLOR="$YELLOW"
-else BAR_COLOR="$GREEN"; fi
-
-FILLED=$((PCT / 10)); EMPTY=$((10 - FILLED))
-printf -v FILL "%${FILLED}s"; printf -v PAD "%${EMPTY}s"
-BAR="${FILL// /█}${PAD// /░}"
-
-MINS=$((DURATION_MS / 60000)); SECS=$(((DURATION_MS % 60000) / 1000))
-
-BRANCH=""
-git rev-parse --git-dir > /dev/null 2>&1 && BRANCH=" | 🌿 $(git branch --show-current 2>/dev/null)"
-
-COST_FMT=$(printf '$%.2f' "$COST")
-echo -e "${CYAN}[${MODEL:-unknown}]${RESET} 📁 ${DIR##*/}${BRANCH}"
-echo -e "${BAR_COLOR}${BAR}${RESET} ${PCT}% | ${YELLOW}${COST_FMT}${RESET} | ⏱️ ${MINS}m ${SECS}s"
+    process.stdout.write(parts.join(" | "));
+  } catch (error) {
+    process.stderr.write(`Claude status line received invalid JSON: ${error.message}\n`);
+    process.exitCode = 1;
+  }
+});
+'

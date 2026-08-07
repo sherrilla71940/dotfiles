@@ -10,6 +10,8 @@ user-invocable: false
 
 **Auto memory is shared across real git worktrees by default. No configuration needed.** Documented and empirically confirmed (v2.1.221, Windows, 2026-08-06). If memory looks missing in a worktree, suspect one of the two traps below before suspecting a bug.
 
+**When to re-verify:** a Claude Code upgrade is the only event likely to invalidate this. If the installed version has moved past the stamp above and memory behaviour looks off, re-run the verification below (~30 seconds) rather than trusting this file's snapshot.
+
 > **Correction notice.** An earlier version of this skill claimed the opposite — that worktrees each got isolated memory, caused by a "drive-letter case-sensitivity bug," fixed by per-worktree `autoMemoryDirectory`. **All of that was wrong**, from misreading the two traps below. The prescribed fix was a no-op and has been removed from this machine. Don't re-derive it.
 
 ## The two traps (this is the actually useful part)

@@ -35,7 +35,7 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
-### Cross-session continuity
+### Task continuity
 
 - When closing out an active item, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
 - When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.

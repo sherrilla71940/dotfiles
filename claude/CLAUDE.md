@@ -24,12 +24,12 @@
   1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
   2. State what's needed from the user to resolve it.
   3. Prefix the flag with `⚠️ Needs clarification:` so it's easy to spot.
-  - If other parts of the task are unaffected by the gap, implement those and clearly separate what's done from what's blocked.
-  - **Minor, low-stakes ambiguity** (e.g., a formatting preference with no real consequence) can be resolved with a stated default instead — say what was assumed and why.
-  - The bar: if a wrong guess would break something, change output correctness, or require rework, flag it. Otherwise, assume and proceed.
-  - Before flagging, try to resolve it yourself from the code, data, or history. Only flag
-    what survives a genuine attempt, and say what you tried. Do not record something as an
-    open question when one search would settle it.
+     - If other parts of the task are unaffected by the gap, implement those and clearly separate what's done from what's blocked.
+     - **Minor, low-stakes ambiguity** (e.g., a formatting preference with no real consequence) can be resolved with a stated default instead — say what was assumed and why.
+     - The bar: if a wrong guess would break something, change output correctness, or require rework, flag it. Otherwise, assume and proceed.
+     - Before flagging, try to resolve it yourself from the code, data, or history. Only flag
+       what survives a genuine attempt, and say what you tried. Do not record something as an
+       open question when one search would settle it.
 - **Scope of in-conversation requests:** a request that specifies how to answer — language, format, length, tone — applies to that one response unless it's phrased as a standing instruction ("from now on", "always", "for the rest of this session"). Do not promote a one-off request into a default. If unsure whether a request was one-off or standing, follow it once and ask.
 - After non-trivial implementation (multiple files, a shared module, or meaningful
   architectural impact), summarize what changed, why, and any assumptions or remaining

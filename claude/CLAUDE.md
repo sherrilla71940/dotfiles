@@ -73,6 +73,7 @@ Rules:
   <!-- Personal Notes: -->
   <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the main exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
   <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
+- Subagents inherit neither this file nor the project's auto memory. Brief each one with the facts, constraints, and conventions its task actually depends on — proportionate to the task, not a blanket context dump — and don't assume it can look anything up itself.
 - This applies mid-task too: if work started sequentially and the remaining steps turn out to be independent, switch to parallel for what's left rather than finishing serially out of momentum.
 - Reserve sequential inline work for cases with a real dependency (each step needs the previous step's output or a decision made along the way) or where the work is small enough that writing a self-contained agent prompt would cost more time than it saves.
 

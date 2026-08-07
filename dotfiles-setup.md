@@ -77,6 +77,10 @@ Conflicting paths move to a timestamped directory under
 you may remove that backup manually. Restore the tracked VS Code extension list
 only when wanted:
 
+On Windows PowerShell 5.1, the installer first tries `New-Item`, then falls back
+to the native Windows symbolic-link API with Developer Mode's unprivileged flag.
+This avoids requiring elevation when Developer Mode is active.
+
 ```powershell
 .\setup-windows.ps1 -InstallVSCodeExtensions
 ```

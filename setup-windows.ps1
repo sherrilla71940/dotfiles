@@ -25,6 +25,36 @@ function Move-ToBackup([string]$LivePath, [string]$BackupName) {
     return $destination
 }
 
+function New-DotfilesSymbolicLink([string]$LivePath, [string]$SourcePath) {
+    try {
+        New-Item -ItemType SymbolicLink -Path $LivePath -Target $SourcePath -ErrorAction Stop | Out-Null
+        return
+    } catch {
+        if (-not ("DotfilesNativeSymlink" -as [type])) {
+            Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class DotfilesNativeSymlink {
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool CreateSymbolicLink(string linkPath, string targetPath, int flags);
+}
+"@
+        }
+
+        $allowUnprivilegedCreate = 2
+        $directoryFlag = if (Test-Path -LiteralPath $SourcePath -PathType Container) { 1 } else { 0 }
+        $created = [DotfilesNativeSymlink]::CreateSymbolicLink(
+            $LivePath,
+            $SourcePath,
+            ($allowUnprivilegedCreate -bor $directoryFlag)
+        )
+        if (-not $created) {
+            $errorCode = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+            throw (New-Object ComponentModel.Win32Exception($errorCode))
+        }
+    }
+}
+
 function Ensure-SymbolicLink([string]$LivePath, [string]$SourcePath, [string]$BackupName) {
     $backupDestination = $null
     if (-not (Test-Path -LiteralPath $SourcePath)) {
@@ -46,7 +76,7 @@ function Ensure-SymbolicLink([string]$LivePath, [string]$SourcePath, [string]$Ba
 
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $LivePath) | Out-Null
     try {
-        New-Item -ItemType SymbolicLink -Path $LivePath -Target $SourcePath | Out-Null
+        New-DotfilesSymbolicLink -LivePath $LivePath -SourcePath $SourcePath
         Write-Host "ADD $LivePath -> $SourcePath"
     } catch {
         if ($backupDestination -and -not (Test-Path -LiteralPath $LivePath) -and (Test-Path -LiteralPath $backupDestination)) {

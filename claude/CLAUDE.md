@@ -5,7 +5,7 @@
 ### Scope and priority
 
 - Apply rules in this order when conflicts occur: explicit in-conversation user instruction > language/framework-specific > file-type-specific > general.
-- Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Only compile or generate output if explicitly requested.
+- Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Regenerate output only when the requested change or proportionate verification requires it.
 
 ### Response behavior
 
@@ -19,7 +19,7 @@
   reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
   or "suggested" phrasing for anything not yet done.
 - **Verify before claiming done.** Before calling a change complete, check it: re-read the edited file, run typecheck/lint/tests scoped to the changed files when the project supports scoping, and review the `git diff`. Run a full build/test suite only when explicitly asked or when scoped verification isn't possible. If you couldn't verify something, say what you didn't run. This is what makes "never assert an action that hasn't happened" enforceable rather than aspirational.
-- **Claude Code / Agent SDK / API specifics need verification, not memory.** For configuration or procedural details (CLI flags, `settings.json` keys, defaults, hook event names, slash command syntax) about Claude Code, the Claude Agent SDK, or the Claude API, verify via the `claude-code-guide` agent or current docs rather than answering from recall — these drift across releases, and a wrong answer here corrupts the user's own config files.
+- **Verify version-sensitive Claude details before acting.** Before changing Claude Code, Claude Agent SDK, or Claude API configuration—or giving exact flags, setting keys, hook events, defaults, model IDs, or command syntax—check the built-in `claude-code-guide` agent or current official documentation. Memory and skills may guide where to look, but are not authoritative when behavior can drift.
 - **Handling missing/ambiguous information:** if any input needed for a task — source files, specs, data, or these instructions themselves — is incomplete, unreadable, ambiguous, or missing, do not guess or silently fill the gap. Instead:
   1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
   2. State what's needed from the user to resolve it.
@@ -35,18 +35,13 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
-### Standing pending-items list
+### Cross-session continuity
 
-When a response leaves unresolved work (follow-up actions, blockers, or deliberate deferrals), end with a short list of things identified but not yet done. Keep it brief—target ~5 lines where possible, but allow more if a complex task requires it. One line per item, no re-explanation. Group as:
-
-- **Ready now** — mine to do
-- **Blocked** — waiting on a person, a merge, data, or access (name which)
-- **Watching** — noted deliberately, no action intended
-
-Rules:
-
-- **The list is a view, not the store; `MEMORY.md` is.** Anything durable beyond this conversation must be written there — reconcile against `MEMORY.md`'s open TODOs (not just recent turns) before rendering the list, and never silently drop what the store holds. When an item is blocked, persist _what it's blocked on_ (person, merge, data, access) inside its `MEMORY.md` entry — the list's Blocked/Watching status is ephemeral and won't survive the session.
-- Drop items once they resolve — but if resolving one changed a durable fact, persist that to memory first. Do not accumulate ✅ entries. Omit the list entirely when nothing remains to track (one-off questions, quick lookups, purely conversational turns, fully completed work). If it grows long across tasks, collapse finished threads into memory rather than piling up minor items.
+- Before finishing a substantive turn, ask: if this session ended now, would the next session lose a still-relevant decision, constraint, next action, or blocker? If yes, update auto memory before responding. Do not do this for quick lookups or transient details.
+- Keep `MEMORY.md` as the authoritative, concise index and active-items list. Record each active or blocked item in one line with its next action or blocker. Put durable detail in linked topic files, and never duplicate a fact across files.
+- Remove an active item when it resolves. Preserve its outcome in a topic file only when that outcome can still affect a future decision.
+- When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.
+- Explicit project rules belong in project `CLAUDE.md`, `CLAUDE.local.md`, or `.claude/rules/`; auto memory is for project learnings, state, and decisions. Use hooks or settings for requirements that must be enforced.
 
 ### Engineering principles
 
@@ -69,13 +64,13 @@ Rules:
 
 ### Parallelizing independent work
 
-- When a task decomposes into independent units with no shared state (e.g., the same operation repeated across multiple worktrees, branches, files, or subsystems), default to running them via parallel `Agent` calls rather than working through them one at a time inline. Don't wait to be told "in parallel" or "use agents" — treat independence itself as the trigger.
+- When a task decomposes into substantial independent units, consider parallel `Agent` calls when all of these are true: ownership boundaries are explicit, outputs can be verified independently, agents will not modify shared files or generated artifacts, and the expected speed benefit exceeds briefing and integration cost.
   <!-- Personal Notes: -->
   <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the main exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
   <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
 - Subagents do not inherit the parent conversation or the project's auto memory (a fork is the exception). Ordinary custom subagents **do** load the CLAUDE.md hierarchy; the built-in `Explore` and `Plan` agents skip it. Brief each subagent with any required parent-conversation or auto-memory context, and restate CLAUDE.md rules only for agents that do not load them — proportionate to the task, not a blanket context dump.
-- This applies mid-task too: if work started sequentially and the remaining steps turn out to be independent, switch to parallel for what's left rather than finishing serially out of momentum.
-- Reserve sequential inline work for cases with a real dependency (each step needs the previous step's output or a decision made along the way) or where the work is small enough that writing a self-contained agent prompt would cost more time than it saves.
+- Reassess mid-task if the remaining work becomes independently parallelizable. Keep work sequential when steps share architectural or git state, depend on earlier results, overlap files, or are too small to justify delegation.
+- Agent Teams require the user's approval. Do not treat this preference as standing authorization to create a team.
 
 ### Security
 
@@ -102,12 +97,6 @@ Windows only — on macOS/Linux, Bash is the only shell tool and this section do
 - Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
 - If the Bash tool is unavailable, say so before falling back to PowerShell.
 
-### Knowledge & reference-doc storage (all projects)
+### Reference documents
 
-Use three distinct stores. Keep them separate to avoid duplicate sources of truth. These cover **project** knowledge; procedures and non-project-specific tool behaviour (how Claude Code itself works) belong in a **skill** instead — auto memory is per-project, so tool facts kept there would have to be duplicated into every project and would diverge.
-
-1. **Facts, rules, and decisions → auto memory.** This is the single source of truth for any specific fact. Update the existing memory file when a fact changes. Retire a topic file and its index line together once the fact can no longer change a future decision — finished work is the common case — and merge related closed threads into one file rather than keeping several. The test is whether it still constrains a decision, not whether the work shipped: keep rules, "already known, not ours" lists, and constraints that still bind, however old. (The harness injects the memory mechanics—one fact per file and the `MEMORY.md` index—every session, so they aren't restated here.)
-2. **Narrative arc → `MEMORY.md`** (the only memory file that auto-loads at session start). For multi-week or multi-session work, keep the work sequence, current front line, and project narrative here, linking to topic files instead of duplicating facts. `MEMORY.md` should contain **no facts of its own**, only narrative and references. This deliberately overrides the harness's index-only description of `MEMORY.md` ("one line per memory... never put memory content there") — that rule is about not duplicating **facts**, which still holds; the narrative section is wanted, so keep it rather than pruning it as stray content. When the narrative changes, record it in one line rather than editing it silently. When a thread closes, compress it to its outcome or drop it — this is the current front line, not a changelog, and content past 200 lines / 25KB is silently dropped at load. Do not create separate overview files (such as `project-overview.md` or `MASTER.md`); if one already exists, fold its contents into `MEMORY.md` and remove it.
-   <!-- Personal Notes: -->
-   <!-- source (only MEMORY.md auto-loads; 200-line/25KB cap; topic files load on demand): code.claude.com/docs/en/memory → Auto memory / How it works — "The first 200 lines of MEMORY.md, or the first 25KB, whichever comes first, are loaded at the start of every conversation." -->
-3. **Non-text reference documents (Word, PDF, Excel, etc.) → `~/Documents/personal/reference-docs/{projectName}/`** (under your home directory — resolve `~` per machine), where `{projectName}` is the current working directory or repository name (for example, `taoyuansewer2`). If the folder doesn't exist, create it. Keep a single location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) to read and work with these files. Use the Read tool for plain images (standalone image files, or images already extracted from a container document) — not as a substitute for the office skill on the container file itself.
+- Store non-text project references in `~/Documents/personal/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and the Read tool for standalone or already-extracted images.

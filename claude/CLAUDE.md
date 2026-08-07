@@ -37,11 +37,8 @@
 
 ### Cross-session continuity
 
-- Before finishing a substantive turn, ask: if this session ended now, would the next session lose a still-relevant decision, constraint, next action, or blocker? If yes, update auto memory before responding. Do not do this for quick lookups or transient details.
-- Keep `MEMORY.md` as the authoritative, concise index and active-items list. Record each active or blocked item in one line with its next action or blocker. Put durable detail in linked topic files, and never duplicate a fact across files.
-- Remove an active item when it resolves. Preserve its outcome in a topic file only when that outcome can still affect a future decision.
+- When closing out an active item, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
 - When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.
-- Explicit project rules belong in project `CLAUDE.md`, `CLAUDE.local.md`, or `.claude/rules/`; auto memory is for project learnings, state, and decisions. Use hooks or settings for requirements that must be enforced.
 
 ### Engineering principles
 

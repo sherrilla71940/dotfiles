@@ -37,7 +37,7 @@
 
 ### Task continuity
 
-- When closing out an active item, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
+- When closing out an active item in auto memory, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
 - When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.
 
 ### Engineering principles

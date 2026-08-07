@@ -1,0 +1,32 @@
+# 延遲載入 NVM，避免每次啟動 shell 都付出初始化成本。
+export NVM_DIR="$HOME/.nvm"
+
+_load_nvm() {
+    unset -f nvm node npm npx
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+}
+
+nvm() { _load_nvm; nvm "$@"; }
+node() { _load_nvm; node "$@"; }
+npm() { _load_nvm; npm "$@"; }
+npx() { _load_nvm; npx "$@"; }
+
+# 從 Git for Windows、Apple Silicon Homebrew 或 Intel Homebrew 載入 Git 補全。
+for git_completion in \
+    /mingw64/share/git/completion/git-completion.bash \
+    /opt/homebrew/etc/bash_completion.d/git-completion.bash \
+    /usr/local/etc/bash_completion.d/git-completion.bash; do
+    if [ -f "$git_completion" ]; then
+        . "$git_completion"
+        break
+    fi
+done
+unset git_completion
+
+# 使用 HOME，讓捷徑可跨 Windows Git Bash 與 macOS。
+alias work='cd "$HOME/Documents/work"'
+alias personal='cd "$HOME/Documents/personal"'
+
+# 每次指令後重新計算終端尺寸，避免換行與文字顯示錯位。
+shopt -s checkwinsize

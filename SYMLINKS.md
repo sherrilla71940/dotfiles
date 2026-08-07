@@ -1,132 +1,175 @@
-# Dotfiles symlink guide
+# Dotfiles setup
 
-This repository stores selected durable configuration files. Application state,
-credentials, sessions, caches, logs, databases, and generated files stay local.
+This repository tracks selected durable configuration for Claude Code, Codex,
+and VS Code. Credentials, sessions, caches, logs, memory, workspace state, and
+other generated machine state stay local. Never link an application's entire
+configuration directory.
 
-## Current Claude link map
+## Managed paths
 
-| Live path | Repository source |
-| --- | --- |
-| `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
-| `~/.claude/commands` | `claude/commands` |
-| `~/.claude/rules` | `claude/rules` |
-| `~/.claude/settings.json` | `claude/settings.json` |
-| `~/.claude/skills` | `claude/skills` |
+| Application | Live path | Repository source |
+| --- | --- | --- |
+| Claude Code | `~/.claude/dotfiles` | `claude/` |
+| Claude Code | `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
+| Claude Code | `~/.claude/commands` | `claude/commands` |
+| Claude Code | `~/.claude/rules` | `claude/rules` |
+| Claude Code | `~/.claude/skills` | `claude/skills` |
+| Codex | `~/.codex/AGENTS.md` | `codex/AGENTS.md` |
+| Shared agents | `~/.agents/skills` | `agents/skills` |
+| VS Code | user `settings.json` | `vscode/settings.json` |
+| VS Code | user `keybindings.json` | `vscode/keybindings.json` |
+| VS Code | user `mcp.json` | `vscode/mcp.json` |
+| VS Code | user `prompts/` | `vscode/prompts/` |
+| Bash | `~/.bashrc` | `shell/bashrc` |
+| Bash | `~/.bash_profile` | `shell/bash_profile` |
 
-Do not link the whole `~/.claude` directory. Claude owns the remaining files
-and directories as local runtime state.
+Claude's settings source is platform-specific: Windows links
+`claude/settings.json`; macOS links `claude/settings.macos.json`.
 
-The linked `settings.json` invokes these repository scripts directly, so they
-do not need separate links under `~/.claude`:
+VS Code's user directory is `%APPDATA%\Code\User` on Windows and
+`~/Library/Application Support/Code/User` on macOS. The extension manifest is
+`vscode/extensions.txt`; extension binaries are not tracked.
 
-| Purpose | Repository source |
-| --- | --- |
-| Worktree launch check | `claude/hooks/check-worktree-launch.ps1` |
-| Desktop notifications | `claude/hooks/show-claude-notification.ps1` |
-| Session status line | `claude/claude-session-statusline.ps1` |
+The Bash configuration keeps the existing lazy NVM loading, Git completion,
+navigation shortcuts, and terminal-size correction. Paths use `$HOME` so the
+same source works in Git Bash and macOS Bash. macOS uses zsh by default, so
+these files affect macOS only when Bash is launched; add a separately reviewed
+`shell/zshrc` later if zsh customization is wanted.
 
-`%APPDATA%\Claude\claude_desktop_config.json` also remains local. It contains
-Claude Desktop application state and is not Claude Code's shared settings file.
+Codex is intentionally different. `~/.codex/config.toml` mixes durable choices
+with app-written paths, project trust, marketplace refresh data, notification
+commands, and runtime hashes. The installers bootstrap a missing config from
+`codex/config.shared.toml` (plus `codex/config.windows.toml` on Windows) but do
+not link or overwrite an existing config. Review the tracked templates when you
+want to reapply a durable change. Codex officially supports user config at
+`~/.codex/config.toml` and trusted project overrides at `.codex/config.toml`.
+Keep the canonical global instructions only at `~/.codex/AGENTS.md`. A separate
+`~/AGENTS.md` is discovered as project-level instructions whenever Codex works
+below your home directory and can therefore duplicate the global file; the
+installer warns about it but does not delete an intentional project file.
 
-Codex configuration is not managed by this guide yet.
+User-authored Codex skills deliberately live under `agents/skills` in this
+repository and link to `~/.agents/skills`; they do not belong in `~/.codex/skills`,
+which also contains Codex's bundled `.system` skills. Codex discovers additions
+automatically. In the CLI or IDE extension, run `/skills` or type `$` to select
+a skill; restart Codex if a new or changed skill still does not appear. Large
+skill sets can be shortened or partially omitted from the initial context list.
 
-## Windows prerequisites
+## Install on Windows
 
-Enable Windows Developer Mode so an unelevated terminal can create symbolic
-links. If that is unavailable, use directory junctions for directories and
-understand that file hardlinks can break when an application replaces a file.
-
-Test symbolic-link creation in PowerShell:
-
-```powershell
-$testLink = Join-Path $env:TEMP "dotfiles-symlink-test"
-New-Item -ItemType SymbolicLink -Path $testLink -Target $env:USERPROFILE
-Get-Item -LiteralPath $testLink | Select-Object LinkType, Target
-Remove-Item -LiteralPath $testLink
-```
-
-## Relink one file safely on Windows
-
-1. Fully close every application that may use the file.
-2. Open a new PowerShell window.
-3. Set the exact live and repository paths.
-4. Move the live file to a recoverable `.bak` file.
-5. Create and verify the symbolic link.
-6. Reopen the application and smoke-test it.
-7. Delete the backup only after the smoke test succeeds.
-
-Example:
-
-```powershell
-$live = "$env:USERPROFILE\.claude\CLAUDE.md"
-$source = "$env:USERPROFILE\dotfiles\claude\CLAUDE.md"
-$backup = "$live.bak"
-
-if (-not (Test-Path -LiteralPath $source)) {
-  throw "Missing repository source: $source"
-}
-if (Test-Path -LiteralPath $backup) {
-  throw "Backup already exists: $backup"
-}
-
-Move-Item -LiteralPath $live -Destination $backup
-cmd /c mklink "$live" "$source"
-
-if ($LASTEXITCODE -ne 0) {
-  Move-Item -LiteralPath $backup -Destination $live
-  throw "Link creation failed; the original file was restored."
-}
-
-Get-Item -LiteralPath $live | Select-Object FullName, LinkType, Target
-```
-
-Rollback before deleting the backup:
+Install Git, Claude Code, Codex, and VS Code. Enable Windows Developer Mode so
+an unelevated terminal can create symbolic links, or run PowerShell as
+Administrator. From the repository root:
 
 ```powershell
-$live = "$env:USERPROFILE\.claude\CLAUDE.md"
-$backup = "$live.bak"
-
-Remove-Item -LiteralPath $live
-Move-Item -LiteralPath $backup -Destination $live
+.\setup-windows.ps1
 ```
 
-## Directory links
-
-Use `mklink /D` for an individual managed directory after backing up the live
-directory. Never use it for an entire application home such as `~/.claude` or
-`~/.codex`.
+The normal mode is no-overwrite. On the first migration of an existing machine,
+use:
 
 ```powershell
-cmd /c mklink /D "C:\path\to\live-directory" "C:\path\to\repo-directory"
+.\setup-windows.ps1 -Migrate
 ```
 
-## Verification
-
-Inspect every managed link:
+Conflicting paths move to a timestamped directory under
+`~/.dotfiles-backups/`; nothing is silently deleted. After verifying all apps,
+you may remove that backup manually. Restore the tracked VS Code extension list
+only when wanted:
 
 ```powershell
-$paths = @(
-  "$env:USERPROFILE\.claude\CLAUDE.md",
-  "$env:USERPROFILE\.claude\commands",
-  "$env:USERPROFILE\.claude\rules",
-  "$env:USERPROFILE\.claude\settings.json",
-  "$env:USERPROFILE\.claude\skills"
-)
-
-Get-Item -LiteralPath $paths | Select-Object FullName, LinkType, Target
-git -C "$env:USERPROFILE\dotfiles" status --short
+.\setup-windows.ps1 -InstallVSCodeExtensions
 ```
 
-Every link target must exist inside this repository. A configuration edit made
-through the live path should appear in `git status`.
+## Install on macOS
 
-## Adding another managed item
+Install Claude Code, Codex, VS Code, and `jq`, then run:
 
-Before adding a link:
+```bash
+bash ./setup-macos.sh
+```
 
-1. Confirm the file is durable user configuration rather than runtime state.
-2. Check it for credentials, tokens, account identifiers, and machine-only data.
-3. Copy it into a clearly owned repository directory.
-4. Add the narrowest necessary allowlist entry to `.gitignore`.
-5. Back up and link only that file or subdirectory.
-6. Verify application behavior and rollback before deleting the backup.
+For an existing machine or extension restoration:
+
+```bash
+bash ./setup-macos.sh --migrate
+bash ./setup-macos.sh --install-vscode-extensions
+```
+
+The same no-overwrite and `~/.dotfiles-backups/` behavior applies. Claude
+notifications use `osascript`; run the test printed by the installer and allow
+Script Editor notifications in System Settings if necessary.
+
+## Verify
+
+On Windows:
+
+```powershell
+Get-Item -Force `
+  "$env:USERPROFILE\.claude\settings.json", `
+  "$env:USERPROFILE\.codex\AGENTS.md", `
+  "$env:USERPROFILE\.agents\skills", `
+  "$env:APPDATA\Code\User\settings.json", `
+  "$env:APPDATA\Code\User\keybindings.json", `
+  "$env:APPDATA\Code\User\mcp.json", `
+  "$env:APPDATA\Code\User\prompts", `
+  "$env:USERPROFILE\.bashrc", `
+  "$env:USERPROFILE\.bash_profile" |
+  Select-Object FullName, LinkType, Target
+```
+
+On macOS:
+
+```bash
+for path in \
+  "$HOME/.claude/settings.json" \
+  "$HOME/.codex/AGENTS.md" \
+  "$HOME/.agents/skills" \
+  "$HOME/Library/Application Support/Code/User/settings.json" \
+  "$HOME/Library/Application Support/Code/User/keybindings.json" \
+  "$HOME/Library/Application Support/Code/User/mcp.json" \
+  "$HOME/Library/Application Support/Code/User/prompts" \
+  "$HOME/.bashrc" \
+  "$HOME/.bash_profile"; do
+  printf '%s -> %s\n' "$path" "$(readlink "$path")"
+done
+```
+
+Every reported target should exist inside this repository. Editing a managed
+file through its live path should appear in `git status`. Run the installer a
+second time to verify idempotency.
+
+## Decide what Git should track
+
+Track a file only when it expresses durable intent, is maintained by you, has
+no secrets or account state, and is portable (or explicitly platform-specific).
+Examples are instructions, rules, user-authored skills and prompts, keybindings,
+secret-free settings, extension IDs, hook scripts, and setup scripts.
+
+Ignore authentication, tokens, sessions, transcripts, auto memory, logs,
+caches, backups, state databases, workspace storage, VS Code History and Sync
+state, generated profiles, Codex marketplace caches and revisions, project trust
+records, runtime executable paths and hashes, and Claude local overrides such as
+`.claude/settings.local.json` or `CLAUDE.local.md`.
+
+Prompted secret references are safe to track when the secret value is not in
+the file. For example, `vscode/mcp.json` contains `${input:figma-api-key}` and a
+password prompt definition, not the token itself. Re-scan diffs before every
+commit. VS Code Settings Sync can also synchronize settings, keybindings, and
+extensions; decide whether Git or Settings Sync is authoritative for each item
+to avoid surprising merges.
+
+References:
+
+- [VS Code user settings and platform paths](https://code.visualstudio.com/docs/configure/settings)
+- [VS Code Settings Sync](https://code.visualstudio.com/docs/configure/settings-sync)
+- [Codex configuration reference](https://developers.openai.com/codex/config-reference/)
+- [Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md/)
+
+## Add another managed item
+
+1. Apply the tracking test above and scan the candidate for secrets.
+2. Add the narrowest necessary source path and ignore rules.
+3. Add the corresponding mapping to both installers when cross-platform.
+4. Update the managed-path table.
+5. Run the installer twice and verify the application before deleting backups.

@@ -1,0 +1,3 @@
+# 登入 shell 先載入一般環境，再載入互動式 Bash 設定。
+[ -f "$HOME/.profile" ] && . "$HOME/.profile"
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"

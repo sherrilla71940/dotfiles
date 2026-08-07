@@ -1,0 +1,44 @@
+// Place your key bindings in this file to override the defaults
+[
+  // open Git Graph on Windows
+  {
+    "key": "ctrl+alt+g",
+    "command": "git-graph.view",
+    "when": "!isMac",
+  },
+  // open Git Graph on Mac
+  {
+    "key": "cmd+alt+g",
+    "command": "git-graph.view",
+    "when": "isMac",
+  },
+  {
+    "key": "ctrl+n", // "cmd+n" on mac
+    "command": "extension.advancedNewFile",
+  },
+  {
+    "key": "shift+enter",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": {
+      "text": "\u001b\r"
+    },
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+9",
+    "command": "claude-vscode.sidebar.open"
+  },
+  // below doesn't work for some reason
+  // // open Copilot Chat Panel on Windows
+  // {
+  //   "key": "ctrl+k ctrl+h",
+  //   "command": "workbench.panel.chat.view.copilot.active",
+  //   "when": "!isMac",
+  // },
+  // // open Copilot Chat Panel on Mac
+  // {
+  //   "key": "cmd+k cmd+h",
+  //   "command": "workbench.panel.chat.view.copilot.active",
+  //   "when": "isMac",
+  // },
+]

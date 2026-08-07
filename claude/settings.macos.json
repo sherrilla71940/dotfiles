@@ -2,7 +2,6 @@
   "env": {
     "API_TIMEOUT_MS": "1200000",
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
-    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
     "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1"
   },
   "permissions": {
@@ -19,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/dotfiles/hooks/show-claude-notification.ps1\"",
+            "command": "bash \"$HOME/.claude/dotfiles/hooks/show-claude-notification-macos.sh\"",
             "timeout": 10
           }
         ]
@@ -31,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/dotfiles/hooks/check-worktree-launch.ps1\"",
+            "command": "bash \"$HOME/.claude/dotfiles/hooks/check-worktree-launch.sh\"",
             "timeout": 5
           }
         ]
@@ -40,7 +39,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/dotfiles/claude-session-statusline.ps1\""
+    "command": "bash \"$HOME/.claude/dotfiles/claude-session-statusline.sh\""
   },
   "enabledPlugins": {
     "figma@claude-plugins-official": true,

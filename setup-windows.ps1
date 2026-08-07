@@ -10,6 +10,7 @@ $repositoryRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $claudeHome = Join-Path $env:USERPROFILE ".claude"
 $codexHome = Join-Path $env:USERPROFILE ".codex"
 $agentsHome = Join-Path $env:USERPROFILE ".agents"
+$copilotHome = Join-Path $env:USERPROFILE ".copilot"
 $vscodeHome = Join-Path $env:APPDATA "Code\User"
 $backupRoot = Join-Path $env:USERPROFILE (".dotfiles-backups\" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 
@@ -61,8 +62,8 @@ function Ensure-SymbolicLink([string]$LivePath, [string]$SourcePath, [string]$Ba
         throw "Missing repository source: $SourcePath"
     }
 
-    if (Test-Path -LiteralPath $LivePath) {
-        $item = Get-Item -Force -LiteralPath $LivePath
+    $item = Get-Item -Force -LiteralPath $LivePath -ErrorAction SilentlyContinue
+    if ($null -ne $item) {
         $target = [string]($item.Target -join "")
         if ($item.LinkType -in @("SymbolicLink", "Junction") -and (Normalize-Path $target) -eq (Normalize-Path $SourcePath)) {
             Write-Host "OK  $LivePath"
@@ -87,7 +88,7 @@ function Ensure-SymbolicLink([string]$LivePath, [string]$SourcePath, [string]$Ba
     }
 }
 
-New-Item -ItemType Directory -Force -Path $claudeHome, $codexHome, $agentsHome, $vscodeHome | Out-Null
+New-Item -ItemType Directory -Force -Path $claudeHome, $codexHome, $agentsHome, $copilotHome, $vscodeHome | Out-Null
 
 $links = @(
     @{ Live = Join-Path $claudeHome "dotfiles"; Source = Join-Path $repositoryRoot "claude"; Backup = "claude/dotfiles" },
@@ -98,10 +99,13 @@ $links = @(
     @{ Live = Join-Path $claudeHome "skills"; Source = Join-Path $repositoryRoot "claude/skills"; Backup = "claude/skills" },
     @{ Live = Join-Path $codexHome "AGENTS.md"; Source = Join-Path $repositoryRoot "codex/AGENTS.md"; Backup = "codex/AGENTS.md" },
     @{ Live = Join-Path $agentsHome "skills"; Source = Join-Path $repositoryRoot "agents/skills"; Backup = "agents/skills" },
+    @{ Live = Join-Path $copilotHome "agents"; Source = Join-Path $repositoryRoot "copilot/agents"; Backup = "copilot/agents" },
+    @{ Live = Join-Path $copilotHome "instructions"; Source = Join-Path $repositoryRoot "copilot/instructions"; Backup = "copilot/instructions" },
+    @{ Live = Join-Path $copilotHome "skills"; Source = Join-Path $repositoryRoot "copilot/skills"; Backup = "copilot/skills" },
     @{ Live = Join-Path $vscodeHome "settings.json"; Source = Join-Path $repositoryRoot "vscode/settings.json"; Backup = "vscode/settings.json" },
     @{ Live = Join-Path $vscodeHome "keybindings.json"; Source = Join-Path $repositoryRoot "vscode/keybindings.json"; Backup = "vscode/keybindings.json" },
     @{ Live = Join-Path $vscodeHome "mcp.json"; Source = Join-Path $repositoryRoot "vscode/mcp.json"; Backup = "vscode/mcp.json" },
-    @{ Live = Join-Path $vscodeHome "prompts"; Source = Join-Path $repositoryRoot "vscode/prompts"; Backup = "vscode/prompts" },
+    @{ Live = Join-Path $vscodeHome "prompts"; Source = Join-Path $repositoryRoot "copilot/prompts"; Backup = "copilot/prompts" },
     @{ Live = Join-Path $env:USERPROFILE ".bashrc"; Source = Join-Path $repositoryRoot "shell/bashrc"; Backup = "shell/bashrc" },
     @{ Live = Join-Path $env:USERPROFILE ".bash_profile"; Source = Join-Path $repositoryRoot "shell/bash_profile"; Backup = "shell/bash_profile" }
 )

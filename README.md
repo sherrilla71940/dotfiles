@@ -1,8 +1,8 @@
 # Dotfiles
 
 Personal repository for tracking dotfiles and keeping configuration consistent
-across machines. It currently includes Claude Code, Codex, VS Code, and shell
-configuration.
+across machines. It currently includes Claude Code, Codex, GitHub Copilot,
+VS Code, and shell configuration.
 
 See [dotfiles-setup.md](./dotfiles-setup.md) for installation and managed paths.
 

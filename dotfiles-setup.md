@@ -16,10 +16,13 @@ configuration directory.
 | Claude Code | `~/.claude/skills` | `claude/skills` |
 | Codex | `~/.codex/AGENTS.md` | `codex/AGENTS.md` |
 | Shared agents | `~/.agents/skills` | `agents/skills` |
+| GitHub Copilot | `~/.copilot/agents` | `copilot/agents` |
+| GitHub Copilot | `~/.copilot/instructions` | `copilot/instructions` |
+| GitHub Copilot | `~/.copilot/skills` | `copilot/skills` |
 | VS Code | user `settings.json` | `vscode/settings.json` |
 | VS Code | user `keybindings.json` | `vscode/keybindings.json` |
 | VS Code | user `mcp.json` | `vscode/mcp.json` |
-| VS Code | user `prompts/` | `vscode/prompts/` |
+| GitHub Copilot in VS Code | user `prompts/` | `copilot/prompts/` |
 | Bash | `~/.bashrc` | `shell/bashrc` |
 | Bash | `~/.bash_profile` | `shell/bash_profile` |
 
@@ -29,6 +32,12 @@ Claude's settings source is platform-specific: Windows links
 VS Code's user directory is `%APPDATA%\Code\User` on Windows and
 `~/Library/Application Support/Code/User` on macOS. The extension manifest is
 `vscode/extensions.txt`; extension binaries are not tracked.
+
+GitHub Copilot agents, instructions, and skills use the cross-editor
+`~/.copilot` locations. VS Code user prompt files remain in the active VS Code
+profile's user-data directory, but their repository source lives under
+`copilot/prompts` to group assets by owner. `~/.copilot/config.json`, `ide/`, and
+`logs/` remain local because Copilot manages them as runtime state.
 
 The Bash configuration keeps the existing lazy NVM loading, Git completion,
 navigation shortcuts, and terminal-size correction. Paths use `$HOME` so the
@@ -113,6 +122,9 @@ Get-Item -Force `
   "$env:USERPROFILE\.claude\settings.json", `
   "$env:USERPROFILE\.codex\AGENTS.md", `
   "$env:USERPROFILE\.agents\skills", `
+  "$env:USERPROFILE\.copilot\agents", `
+  "$env:USERPROFILE\.copilot\instructions", `
+  "$env:USERPROFILE\.copilot\skills", `
   "$env:APPDATA\Code\User\settings.json", `
   "$env:APPDATA\Code\User\keybindings.json", `
   "$env:APPDATA\Code\User\mcp.json", `
@@ -129,6 +141,9 @@ for path in \
   "$HOME/.claude/settings.json" \
   "$HOME/.codex/AGENTS.md" \
   "$HOME/.agents/skills" \
+  "$HOME/.copilot/agents" \
+  "$HOME/.copilot/instructions" \
+  "$HOME/.copilot/skills" \
   "$HOME/Library/Application Support/Code/User/settings.json" \
   "$HOME/Library/Application Support/Code/User/keybindings.json" \
   "$HOME/Library/Application Support/Code/User/mcp.json" \

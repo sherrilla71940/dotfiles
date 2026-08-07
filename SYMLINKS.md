@@ -9,14 +9,21 @@ credentials, sessions, caches, logs, databases, and generated files stay local.
 | --- | --- |
 | `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
 | `~/.claude/commands` | `claude/commands` |
-| `~/.claude/hooks/notify.ps1` | `claude/hooks/notify.ps1` |
 | `~/.claude/rules` | `claude/rules` |
 | `~/.claude/settings.json` | `claude/settings.json` |
 | `~/.claude/skills` | `claude/skills` |
-| `~/.claude/statusline.sh` | `claude/statusline.sh` |
 
 Do not link the whole `~/.claude` directory. Claude owns the remaining files
 and directories as local runtime state.
+
+The linked `settings.json` invokes these repository scripts directly, so they
+do not need separate links under `~/.claude`:
+
+| Purpose | Repository source |
+| --- | --- |
+| Worktree launch check | `claude/hooks/check-worktree-launch.ps1` |
+| Desktop notifications | `claude/hooks/show-claude-notification.ps1` |
+| Session status line | `claude/claude-session-statusline.ps1` |
 
 `%APPDATA%\Claude\claude_desktop_config.json` also remains local. It contains
 Claude Desktop application state and is not Claude Code's shared settings file.
@@ -51,8 +58,8 @@ Remove-Item -LiteralPath $testLink
 Example:
 
 ```powershell
-$live = "$env:USERPROFILE\.claude\hooks\notify.ps1"
-$source = "$env:USERPROFILE\dotfiles\claude\hooks\notify.ps1"
+$live = "$env:USERPROFILE\.claude\CLAUDE.md"
+$source = "$env:USERPROFILE\dotfiles\claude\CLAUDE.md"
 $backup = "$live.bak"
 
 if (-not (Test-Path -LiteralPath $source)) {
@@ -76,7 +83,7 @@ Get-Item -LiteralPath $live | Select-Object FullName, LinkType, Target
 Rollback before deleting the backup:
 
 ```powershell
-$live = "$env:USERPROFILE\.claude\hooks\notify.ps1"
+$live = "$env:USERPROFILE\.claude\CLAUDE.md"
 $backup = "$live.bak"
 
 Remove-Item -LiteralPath $live
@@ -101,11 +108,9 @@ Inspect every managed link:
 $paths = @(
   "$env:USERPROFILE\.claude\CLAUDE.md",
   "$env:USERPROFILE\.claude\commands",
-  "$env:USERPROFILE\.claude\hooks\notify.ps1",
   "$env:USERPROFILE\.claude\rules",
   "$env:USERPROFILE\.claude\settings.json",
-  "$env:USERPROFILE\.claude\skills",
-  "$env:USERPROFILE\.claude\statusline.sh"
+  "$env:USERPROFILE\.claude\skills"
 )
 
 Get-Item -LiteralPath $paths | Select-Object FullName, LinkType, Target

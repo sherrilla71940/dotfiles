@@ -16,21 +16,11 @@
   "hooks": {
     "Notification": [
       {
-        "matcher": "permission_prompt",
+        "matcher": "permission_prompt|elicitation_dialog|idle_prompt",
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Claude needs permission\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Claude needs your input\"",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\dotfiles\\claude\\hooks\\show-claude-notification.ps1\"",
             "timeout": 10
           }
         ]
@@ -47,22 +37,11 @@
           }
         ]
       }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\Aaron.Sherrill\\.claude\\hooks\\notify.ps1\" -Title \"Claude Code\" -Message \"Claude session ended\"",
-            "timeout": 10
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Aaron.Sherrill/dotfiles/claude/claude-session-statusline.ps1\""
   },
   "enabledPlugins": {
     "figma@claude-plugins-official": true,

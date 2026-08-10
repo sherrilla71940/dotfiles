@@ -75,6 +75,6 @@ has no rules folder because it cannot path-scope, and Copilot's prompt file belo
 VS Code profile rather than `~/.copilot`. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md)
 explains each case.
 
-- [dotfiles-setup.md](./dotfiles-setup.md) — installing, onboarding, secrets, verification
+- [docs/setup.md](./docs/setup.md) — installing, onboarding, secrets, verification
 - [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — adding, changing and **removing** files
 - [AGENTS.md](./AGENTS.md) — read before letting a coding agent modify this repo

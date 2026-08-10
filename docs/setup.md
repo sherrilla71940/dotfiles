@@ -9,30 +9,58 @@ stays readable.
 
 ## Onboarding a new machine
 
-**macOS**
+### What to install first
+
+**Only chezmoi and git are required.** Everything else is optional, and the order does not
+matter — see [What if an app isn't installed](#what-if-an-app-isnt-installed) below.
+
+| Step | macOS | Windows |
+| --- | --- | --- |
+| 1. Package manager | [Homebrew](https://brew.sh) | App Installer (winget), preinstalled on Win 11 |
+| 2. Baseline tools | `bash scripts/bootstrap-macos.sh` | `powershell -File scripts/bootstrap-windows.ps1` |
+| 3. Apply the dotfiles | `chezmoi init --apply <repo-url>` | `chezmoi init --apply <repo-url>` |
+| 4. The apps themselves | Claude Code, Codex, VS Code, Copilot — any subset, any time | same |
+
+The bootstrap script installs git, jq and chezmoi, and is safe to re-run. If you would
+rather not run it, install chezmoi directly:
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <your-repo-url>
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <repo-url>
 ```
-
-**Windows** (PowerShell)
 
 ```powershell
 winget install twpayne.chezmoi
-chezmoi init --apply <your-repo-url>
+chezmoi init --apply <repo-url>
 ```
 
 `init --apply` clones the repo, renders every template for this OS, and writes the files.
-Restart each application afterwards — editors and CLIs read these files at startup.
 
-To install the baseline tools (git, jq, chezmoi) first, run the one-time bootstrap by hand:
-`bash scripts/bootstrap-macos.sh` or `powershell -File scripts/bootstrap-windows.ps1`.
-These are deliberately **not** chezmoi scripts — anything under `home/.chezmoiscripts/`
-runs on every `chezmoi apply`, which meant a routine apply could install software
-unexpectedly.
+### What if an app isn't installed?
 
-VS Code extensions are kept out of the automatic bootstrap because the manifest holds 114
-of them. Restore them on request:
+**Nothing breaks.** chezmoi writes plain files and directories; it never asks whether an
+application exists. If you have no Codex, `~/.codex/AGENTS.md` is still created, and Codex
+picks it up the first time you run it. The same is true for Claude Code, Copilot and
+VS Code.
+
+That means the two orders both work:
+
+- **Apply first, install apps later** — each app finds its configuration already in place
+  on first launch. This is the simpler path on a fresh machine.
+- **Install apps first, then apply** — lets you verify immediately (see [Verify](#verify)),
+  at the cost of `--migrate`-style cleanup if an app already wrote its own defaults.
+
+Two caveats worth knowing:
+
+- **`chezmoi apply` overwrites an app's own edits** to any managed file. If Claude Code or
+  VS Code has already written `settings.json`, applying replaces it with this repo's
+  version. Run `chezmoi diff` first to see exactly what would change. `~/.codex/config.toml`
+  is exempt — it uses `create_`, so it is written once and never overwritten.
+- **Restart each application after applying.** Editors and CLIs read these files at
+  startup, so a running session will not see them.
+
+### VS Code extensions
+
+Kept out of the bootstrap because the manifest holds 114 of them. Restore on request:
 
 ```bash
 grep -v '^#' vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
@@ -68,16 +96,19 @@ need the same treatment under `%APPDATA%\Code\User` or
 
 | Task | Command |
 | --- | --- |
-| Edit a managed file | `chezmoi edit ~/.claude/CLAUDE.md` |
 | Preview pending changes | `chezmoi diff` |
 | Apply | `chezmoi apply -v` |
+| Edit a managed file | `chezmoi edit ~/.claude/CLAUDE.md` |
+| Capture an edit you made directly to a live file | `chezmoi re-add ~/.bashrc` |
 | Pull another machine's changes | `chezmoi update -v` |
-| Adopt an edit made directly to a live file | `chezmoi re-add ~/.zshrc` |
 | Open the source repo | `chezmoi cd` |
 
-Because chezmoi copies rather than links, editing a live file directly does **not** show up
-in `git status`. Either edit through `chezmoi edit`, or make the change live and pull it
-back with `chezmoi re-add`.
+You can edit live files directly instead of using `chezmoi edit` — but chezmoi will not
+notice, and the next `apply` overwrites your change unless you `chezmoi re-add` it. That
+works for plain files; for **templates** `re-add` silently skips the file and your edit is
+lost. See
+[Editing something already managed](./chezmoi-workflow.md#editing-something-already-managed)
+for which files are templates and which route is safe.
 
 ## Adding a file
 
@@ -102,7 +133,7 @@ repeating after any bulk move.
 
 ## Adding, changing and removing files
 
-See [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — it covers where a file belongs,
+See [docs/chezmoi-workflow.md](./chezmoi-workflow.md) — it covers where a file belongs,
 why the per-tool folders look uneven, and how to remove something properly (deleting the
 source is not enough; the rendered file survives until `chezmoi destroy` or
 `.chezmoiremove`).

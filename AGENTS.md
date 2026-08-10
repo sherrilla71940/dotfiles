@@ -73,5 +73,5 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand. S
 
 Configuration details for these tools drift between releases — discovery directories,
 frontmatter keys, deprecations. Check current official documentation before changing a
-path or a key. `dotfiles-setup.md` lists the specific details known to be version-sensitive
+path or a key. `docs/setup.md` lists the specific details known to be version-sensitive
 and links the references.

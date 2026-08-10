@@ -158,18 +158,50 @@ file starts with `---` on line 1. The frontmatter is real; only the glob is subs
 
 ## Editing something already managed
 
-Edit the **source**, not the rendered file, and never re-add a template:
+**You do not have to use chezmoi commands.** Editing a file directly in your home
+directory works — but chezmoi does not notice, so the source becomes older than the target
+and your next `chezmoi apply` overwrites the edit. You have to bring it back.
 
-| You want to | Do this | Not this |
+Which route is safe depends on whether the file is a template:
+
+| The file | Edit live, then… | Or edit the source |
 | --- | --- | --- |
-| Change a shared rule's text | edit `.chezmoitemplates/rules/<name>.md` | `chezmoi add` |
-| Change a glob | edit `.chezmoidata.yaml` | `chezmoi add` |
-| Change a single-tool rule | edit the plain file in that tool's folder | `chezmoi add` |
-| Adopt a brand-new file | `chezmoi add ~/.newfile` | — |
+| **Not a template** — `dot_bashrc`, skills, a single-tool rule | `chezmoi re-add ~/.bashrc` ✅ captures it | `chezmoi edit ~/.bashrc` |
+| **A template** — `.tmpl` files: shared rules, `CLAUDE.md`, `settings.json` | `chezmoi re-add` **silently skips it** ⚠️ | `chezmoi edit` opens the `.tmpl` |
 
-`chezmoi add` on a managed template prompts
-`would remove template attribute, continue?` — answering yes flattens the template into a
-literal copy and loses both the shared body and the single-source glob. Use `chezmoi edit`.
+`chezmoi re-add` is safe against templates by design — its help says *"chezmoi will not
+overwrite templates"*. The danger is the opposite of what you might expect: it does not
+destroy your template, it **ignores your live edit**, which then vanishes on the next
+apply with no warning. Verified by test.
+
+`chezmoi add` on a template is the destructive one. It prompts
+`would remove template attribute, continue?`, and answering yes flattens the template into
+a literal copy, losing the shared body and the single-source glob.
+
+Rules of thumb:
+
+- **Templated file** → always `chezmoi edit`, or edit the source under `home/` directly.
+  Remember that for a shared rule the text lives in `.chezmoitemplates/`, not in the
+  `.tmpl` wrapper.
+- **Plain file** → edit live if you prefer, then `chezmoi re-add`. Run `chezmoi diff` first
+  to see what will change.
+- **Brand-new file** → `chezmoi add ~/.newfile`.
+
+Which files are templates? `chezmoi managed` lists everything; anything whose source name
+ends in `.tmpl` is one. In this repo that is: all shared rules, `CLAUDE.md`,
+`settings.json`, `AGENTS.md`, `config.toml`, the Copilot instruction wrappers, the VS Code
+files and `dot_zshrc`.
+
+### Apps that write their own config
+
+VS Code writes `settings.json` whenever you change a setting through the UI. Because that
+file is a template here, `chezmoi re-add` will not pick your change up and the next apply
+will revert it. Change VS Code settings in `home/.chezmoitemplates/vscode/settings.json`
+instead, then `chezmoi apply`.
+
+`~/.codex/config.toml` is the deliberate exception: it uses the `create_` prefix, so
+chezmoi writes it once and never touches it again. Codex is free to write machine state
+into it.
 
 ## Adding a skill
 

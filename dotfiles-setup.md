@@ -25,6 +25,12 @@ chezmoi init --apply <your-repo-url>
 `init --apply` clones the repo, renders every template for this OS, and writes the files.
 Restart each application afterwards — editors and CLIs read these files at startup.
 
+To install the baseline tools (git, jq, chezmoi) first, run the one-time bootstrap by hand:
+`bash scripts/bootstrap-macos.sh` or `powershell -File scripts/bootstrap-windows.ps1`.
+These are deliberately **not** chezmoi scripts — anything under `home/.chezmoiscripts/`
+runs on every `chezmoi apply`, which meant a routine apply could install software
+unexpectedly.
+
 VS Code extensions are kept out of the automatic bootstrap because the manifest holds 114
 of them. Restore them on request:
 
@@ -94,16 +100,16 @@ the office skills would otherwise not be created at all, breaking their imports.
 caught by comparing file counts between the source tree and a rendered copy — worth
 repeating after any bulk move.
 
-## Adding a shared instruction
+## Adding, changing and removing files
 
-This is the one workflow worth memorising, because a missed step silently drops a tool.
+See [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — it covers where a file belongs,
+why the per-tool folders look uneven, and how to remove something properly (deleting the
+source is not enough; the rendered file survives until `chezmoi destroy` or
+`.chezmoiremove`).
 
-1. Write the body in `home/.chezmoitemplates/rules/<name>.md` — **no frontmatter**.
-2. Add the glob to `home/.chezmoidata.yaml` under `rules:`.
-3. Add one thin template per consuming tool:
-   - `home/dot_claude/rules/<name>.md.tmpl` — `paths:` + `includeTemplate`
-   - `home/dot_copilot/instructions/<name>.instructions.md.tmpl` — `applyTo:` + `includeTemplate`
-4. `chezmoi diff`, then confirm both render with identical bodies.
+The short version for a shared instruction: body in
+`home/.chezmoitemplates/rules/<name>.md` with no frontmatter, glob in
+`home/.chezmoidata.yaml`, then one thin `.tmpl` per consuming tool.
 
 Codex is deliberately absent from that list: it has no path-scoping, so per-language rules
 would be always-on against its 32 KiB `project_doc_max_bytes` budget. Codex receives only

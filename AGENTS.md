@@ -56,8 +56,10 @@ Known traps, all already handled — preserve them:
 Files beginning with `.` in the source state are ignored by chezmoi. That is why
 `home/dot_agents/skills/.gitignore` stays a repo-only file and is not deployed.
 
-**`--exclude=scripts` when testing.** `home/.chezmoiscripts/` runs package installers on
-apply. A test render without that flag will install software.
+**Do not put package installers in `home/.chezmoiscripts/`.** Anything there runs on every
+`chezmoi apply`, so a routine apply — or a test render — installs software. That happened
+once during this repo's migration. Bootstrap lives in `scripts/`, run by hand. Still pass
+`--exclude=scripts` when test-rendering, in case a script is ever added.
 
 ## Adding a shared instruction
 

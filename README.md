@@ -41,14 +41,15 @@ Codex gets it verbatim as `AGENTS.md` with no frontmatter, Copilot gets it as
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
   .chezmoitemplates/             shared bodies (core.md, rules/, vscode/)
-  .chezmoiscripts/               bootstrap
   dot_claude/                    CLAUDE.md, rules, settings, hooks, commands
   dot_codex/                     AGENTS.md, config.toml
   dot_copilot/                   instructions, agents, skills
   dot_agents/skills/             17 portable skills
   dot_zshrc.tmpl  dot_bashrc     shells
   AppData/ · Library/            VS Code, one per OS
-PROVENANCE.md                    why individual shared rules exist
+docs/chezmoi-workflow.md         where files go, how to add and remove them
+docs/rules-provenance.md         why individual shared rules exist
+scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
 vscode-extensions.txt            extension manifest (installed on request)
 ```
 
@@ -66,6 +67,12 @@ chezmoi update -v                  # pull and apply on another machine
 chezmoi cd                         # open the source repo
 ```
 
-See [dotfiles-setup.md](./dotfiles-setup.md) for onboarding a machine, adding a file,
-handling OS differences and secrets, and the verification checklist. See
-[AGENTS.md](./AGENTS.md) before letting a coding agent modify this repo.
+**Where do the per-tool folders differ?** Skills live once in `home/dot_agents/skills`
+(Codex and Copilot read it natively; Claude reaches it through the single symlink), Codex
+has no rules folder because it cannot path-scope, and Copilot's prompt file belongs to the
+VS Code profile rather than `~/.copilot`. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md)
+explains each case.
+
+- [dotfiles-setup.md](./dotfiles-setup.md) — installing, onboarding, secrets, verification
+- [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — adding, changing and **removing** files
+- [AGENTS.md](./AGENTS.md) — read before letting a coding agent modify this repo

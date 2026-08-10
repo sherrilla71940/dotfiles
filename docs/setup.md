@@ -9,88 +9,96 @@ stays readable.
 
 ## Onboarding a new machine
 
-### What to install first
+> **`chezmoi apply` overwrites existing configuration without asking.** It does not merge
+> and it does not prompt by default. If this machine already has a `~/.claude/CLAUDE.md`,
+> `~/.bashrc`, VS Code settings or similar, they will be replaced by this repo's versions.
+> Follow the safe path below rather than `chezmoi init --apply`.
 
-**Only chezmoi and git are required.** Everything else is optional, and the order does not
-matter — see [What if an app isn't installed](#what-if-an-app-isnt-installed) below.
+You do **not** clone this repo by hand — `chezmoi init` clones it for you into chezmoi's
+source directory. Only chezmoi and git need to exist first.
 
-| Step | macOS | Windows |
-| --- | --- | --- |
-| 1. Package manager | [Homebrew](https://brew.sh) | App Installer (winget), preinstalled on Win 11 |
-| 2. Baseline tools | `bash scripts/bootstrap-macos.sh` | `powershell -File scripts/bootstrap-windows.ps1` |
-| 3. Apply the dotfiles | `chezmoi init --apply <repo-url>` | `chezmoi init --apply <repo-url>` |
-| 4. The apps themselves | Claude Code, Codex, VS Code, Copilot — any subset, any time | same |
-
-The bootstrap script installs git, jq and chezmoi, and is safe to re-run. If you would
-rather not run it, install chezmoi directly:
+### Step 1 — install chezmoi
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <repo-url>
+sh -c "$(curl -fsLS get.chezmoi.io)"          # macOS/Linux
+```
+```powershell
+winget install twpayne.chezmoi                # Windows, then restart the shell
 ```
 
-```powershell
-winget install twpayne.chezmoi
+### Step 2 — clone, without applying
+
+```bash
+chezmoi init <repo-url>
+```
+
+This clones the repository and writes nothing to your home directory yet. `chezmoi cd`
+opens a shell in the clone.
+
+### Step 3 — see exactly what would change
+
+```bash
+chezmoi diff
+```
+
+Read this properly on a machine that is already in use. Every line removed is configuration
+you are about to lose. Back up anything you want to keep, or fold it into the source first.
+
+### Step 4 — apply
+
+```bash
+chezmoi apply -v
+```
+
+Safer variants when the machine already has config:
+
+| Flag | Behaviour |
+| --- | --- |
+| `--dry-run --verbose` | show what would happen, change nothing |
+| `--interactive` | prompt for every change |
+| `--less-interactive` | prompt only for changed or pre-existing targets |
+
+Restart each application afterwards — editors and CLIs read these files at startup.
+
+### On a genuinely fresh machine
+
+If nothing is configured yet, steps 2–4 collapse into one command:
+
+```bash
 chezmoi init --apply <repo-url>
 ```
 
-`init --apply` clones the repo, renders every template for this OS, and writes the files.
+Use this **only** when you are certain there is nothing to lose.
 
 ### What if an app isn't installed?
 
-**Nothing breaks.** chezmoi writes plain files and directories; it never asks whether an
-application exists. If you have no Codex, `~/.codex/AGENTS.md` is still created, and Codex
-picks it up the first time you run it. The same is true for Claude Code, Copilot and
-VS Code.
+**Nothing breaks.** chezmoi writes plain files and directories; it never checks whether an
+application exists. With no Codex installed, `~/.codex/AGENTS.md` is still created and Codex
+picks it up the first time it runs. The same holds for Claude Code, Copilot and VS Code.
 
-That means the two orders both work:
+So both orders work: apply first and install apps later (each finds its configuration
+already in place), or install first and apply after (lets you verify immediately, but that
+is exactly the case where the overwrite warning above applies).
 
-- **Apply first, install apps later** — each app finds its configuration already in place
-  on first launch. This is the simpler path on a fresh machine.
-- **Install apps first, then apply** — lets you verify immediately (see [Verify](#verify)),
-  at the cost of `--migrate`-style cleanup if an app already wrote its own defaults.
+### Optional extras
 
-Two caveats worth knowing:
+The bootstrap scripts install baseline tools (git, jq, chezmoi). They live *inside* the
+repo, so they can only run after step 2:
 
-- **`chezmoi apply` overwrites an app's own edits** to any managed file. If Claude Code or
-  VS Code has already written `settings.json`, applying replaces it with this repo's
-  version. Run `chezmoi diff` first to see exactly what would change. `~/.codex/config.toml`
-  is exempt — it uses `create_`, so it is written once and never overwritten.
-- **Restart each application after applying.** Editors and CLIs read these files at
-  startup, so a running session will not see them.
+```bash
+bash scripts/bootstrap-macos.sh                    # from the clone; chezmoi cd gets you there
+powershell -File scripts/bootstrap-windows.ps1
+```
 
-### VS Code extensions
-
-Kept out of the bootstrap because the manifest holds 114 of them. Restore on request:
+VS Code extensions are kept out of the bootstrap because the manifest holds 114 of them:
 
 ```bash
 grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
 ```
-
 ```powershell
 Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
 ```
-
-## Migrating a machine that used the old symlink installer
-
-Earlier revisions symlinked live paths into this repo. chezmoi writes **real files**, and
-applying over a surviving symlink would write *through* it and modify the repo. Remove the
-old links first, then confirm the diff is clean:
-
-```bash
-for p in ~/.claude/dotfiles ~/.claude/CLAUDE.md ~/.claude/commands ~/.claude/rules \
-         ~/.claude/shared ~/.claude/settings.json ~/.claude/skills ~/.codex/AGENTS.md \
-         ~/.agents/skills ~/.copilot/agents ~/.copilot/instructions ~/.copilot/skills \
-         ~/.bashrc ~/.bash_profile; do
-  [ -L "$p" ] && rm -f "$p"
-done
-chezmoi diff        # additions only, and no path inside the repo
-chezmoi apply -v
-```
-
-The VS Code profile links (`settings.json`, `keybindings.json`, `mcp.json`, `prompts`)
-need the same treatment under `%APPDATA%\Code\User` or
-`~/Library/Application Support/Code/User`.
 
 ## Enable the pre-commit check
 

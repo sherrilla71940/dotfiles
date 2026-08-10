@@ -4,8 +4,12 @@ Personal Repository for managing dotfiles and keeping configuration consistent
 across machines. It currently includes Claude Code, Codex, GitHub Copilot,
 VS Code, and shell configuration.
 
-Managed with [chezmoi](https://www.chezmoi.io). One `chezmoi init --apply <repo-url>` gets a
-new Mac or Windows machine working; only chezmoi and git need to exist first.
+Managed with [chezmoi](https://www.chezmoi.io). `chezmoi init <repo-url>` clones this repo
+for you — no manual `git clone` — and only chezmoi and git need to exist first.
+
+⚠️ On a machine that already has configuration, run `chezmoi diff` before `chezmoi apply`:
+**apply overwrites existing files without prompting.** See
+[docs/setup.md](./docs/setup.md#onboarding-a-new-machine).
 
 ## The idea
 

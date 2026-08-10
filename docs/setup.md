@@ -92,6 +92,31 @@ The VS Code profile links (`settings.json`, `keybindings.json`, `mcp.json`, `pro
 need the same treatment under `%APPDATA%\Code\User` or
 `~/Library/Application Support/Code/User`.
 
+## Enable the pre-commit check
+
+One command per clone:
+
+```bash
+git config core.hooksPath scripts/git-hooks
+```
+
+`scripts/git-hooks/pre-commit` renders the source state into a temporary directory and
+refuses the commit if:
+
+1. a template fails to render,
+2. the skill file count changes between source and render — the symptom of a filename
+   colliding with a chezmoi attribute prefix,
+3. a shared rule is missing its Claude or Copilot template, or renders different bodies,
+4. `~/.codex/AGENTS.md` gains YAML frontmatter, which Codex would display as text.
+
+It never touches your home directory and passes `--exclude=scripts`, so validating never
+installs software. If chezmoi is not on PATH the hook warns and lets the commit through
+rather than blocking work.
+
+Each check exists because that failure has actually occurred here: four skills were
+silently dropped in one refactor, and the office skills' empty `__init__.py` package
+markers were omitted in another. Neither was visible in `git diff`.
+
 ## Daily workflow
 
 | Task | Command |

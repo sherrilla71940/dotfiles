@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Validate the chezmoi source state before it can be committed.
+#
+# This is deliberately non-destructive: it renders into a temporary directory and never
+# touches your home directory. It exists because two classes of failure have actually
+# happened in this repo and neither was visible in `git diff`:
+#
+#   1. A broken template renders garbage config, or fails outright.
+#   2. chezmoi reads attributes off the front of filenames, so files can be silently
+#      renamed or dropped. Four skills vanished in one refactor, and the empty
+#      __init__.py package markers in the office skills were omitted in another.
+#
+# Enable it once per clone:  git config core.hooksPath scripts/git-hooks
+set -uo pipefail
+
+repo="$(git rev-parse --show-toplevel)"
+cd "$repo" || exit 1
+
+# chezmoi may not be on PATH (winget installs it under LOCALAPPDATA and needs a new shell).
+chezmoi_bin="$(command -v chezmoi || true)"
+if [[ -z "$chezmoi_bin" ]]; then
+  for candidate in "$LOCALAPPDATA/Microsoft/WinGet/Packages/twpayne.chezmoi"*/chezmoi.exe; do
+    [[ -x "$candidate" ]] && { chezmoi_bin="$candidate"; break; }
+  done
+fi
+if [[ -z "$chezmoi_bin" ]]; then
+  printf 'pre-commit: chezmoi not found; skipping source-state validation.\n' >&2
+  exit 0
+fi
+
+render="$(mktemp -d)"
+trap 'rm -rf "$render"' EXIT
+
+fail() { printf 'pre-commit: %s\n' "$1" >&2; exit 1; }
+
+# 1. The source state must render. --exclude=scripts so validation never installs software.
+if ! "$chezmoi_bin" apply --source="$repo" --destination="$render" \
+       --exclude=scripts --no-tty --force >"$render/.log" 2>&1; then
+  printf 'pre-commit: the source state failed to render.\n' >&2
+  sed 's/^/    /' "$render/.log" >&2
+  exit 1
+fi
+
+# 2. Every skill file must survive the rename rules. Source dotfiles are ignored by
+#    chezmoi by design, so they are excluded from the count rather than treated as loss.
+src_skills=$(find home/dot_agents/skills -type f ! -name '.*' 2>/dev/null | wc -l)
+out_skills=$(find "$render/.agents/skills" -type f 2>/dev/null | wc -l)
+if [[ "$src_skills" -ne "$out_skills" ]]; then
+  fail "skill file count changed on render: $src_skills in source, $out_skills rendered.
+    A filename probably collided with a chezmoi attribute prefix (create_, run_, symlink_,
+    empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Filename rules that will bite you'."
+fi
+
+# 3. A shared rule must reach every consuming tool with an identical body.
+for src in home/.chezmoitemplates/rules/*.md; do
+  name="$(basename "$src" .md)"
+  claude="$render/.claude/rules/$name.md"
+  copilot="$render/.copilot/instructions/$name.instructions.md"
+  [[ -f "$claude" ]]  || fail "shared rule '$name' has no Claude template (dot_claude/rules/$name.md.tmpl)."
+  [[ -f "$copilot" ]] || fail "shared rule '$name' has no Copilot template (dot_copilot/instructions/$name.instructions.md.tmpl)."
+  a=$(sed '1,/^---$/d;1,/^---$/d' "$claude"  | md5sum | cut -d' ' -f1)
+  b=$(sed '1,/^---$/d;1,/^---$/d' "$copilot" | md5sum | cut -d' ' -f1)
+  [[ "$a" == "$b" ]] || fail "shared rule '$name' renders different bodies for Claude and Copilot."
+done
+
+# 4. Codex reads AGENTS.md literally; YAML frontmatter would show up as visible text.
+if head -1 "$render/.codex/AGENTS.md" | grep -q '^---$'; then
+  fail "~/.codex/AGENTS.md starts with YAML frontmatter. Codex renders it as visible text
+    and it counts against project_doc_max_bytes. Keep .chezmoitemplates/core.md frontmatter-free."
+fi
+
+printf 'pre-commit: source state OK (%s skill files, %s shared rules).\n' \
+  "$src_skills" "$(ls home/.chezmoitemplates/rules/*.md 2>/dev/null | wc -l)"

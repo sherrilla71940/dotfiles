@@ -6,6 +6,25 @@ Practical guide: where a file goes, how to change it, and how to remove it.
 renders them into your home directory. `.chezmoiroot` (containing `home`) is what points
 chezmoi at that subdirectory, so the repo root stays readable.
 
+## Source vs target — the distinction everything else rests on
+
+| | Path | Purpose |
+| --- | --- | --- |
+| **Source** | `home/.chezmoitemplates/core.md`, `home/dot_claude/…` | what you edit and commit |
+| **Target** | `~/.claude/CLAUDE.md`, `~/.bashrc` | what the tools read |
+
+`chezmoi apply` turns source into target. The two never swap roles, which decides every
+command you use:
+
+- **Edited a source file** (anything under `home/`) → just `chezmoi apply`. There is nothing
+  to "add"; it is already in the source state.
+- **Edited a target file** (something in your home directory) → `chezmoi re-add` to pull it
+  back, and note that this silently skips templates.
+
+**`chezmoi add` always takes a target path, never a source path.** `chezmoi add ~/.bashrc`
+is correct; `chezmoi add home/.chezmoitemplates/core.md` is meaningless — it would try to
+manage a repo file as if it were one of your dotfiles.
+
 ## Where does my file go?
 
 Start here whenever you add something.

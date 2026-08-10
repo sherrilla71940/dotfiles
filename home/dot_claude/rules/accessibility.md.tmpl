@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/accessibility.md -- edit the body there, not here. */ -}}
+---
+paths:
+  - "{{ (index .rules "accessibility").glob }}"
+---
+
+{{ includeTemplate "rules/accessibility.md" -}}

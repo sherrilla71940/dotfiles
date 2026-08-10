@@ -1,0 +1,25 @@
+# Single source for the path-scoped rule globs.
+#
+# Each rule body lives once in .chezmoitemplates/rules/<key>.md. Each assistant renders
+# that body with its own frontmatter key -- Claude uses `paths:`, Copilot uses `applyTo:`,
+# and Codex understands neither, so it receives only the always-on core. Changing a glob is
+# one edit here rather than one per tool.
+#
+# `title` is used in the Copilot file's description field.
+
+rules:
+  accessibility:
+    glob: "**/*.{html,cshtml,css,scss,js,jsx,ts,tsx}"
+    title: Accessibility
+  html-css:
+    glob: "**/*.{html,cshtml,css,scss,js,jsx,ts,tsx}"
+    title: HTML / CSS / SCSS
+  javascript:
+    glob: "**/*.{js,jsx,ts,tsx}"
+    title: JavaScript
+  react:
+    glob: "**/*.{js,jsx,ts,tsx}"
+    title: React
+  typescript:
+    glob: "**/*.{ts,tsx}"
+    title: TypeScript

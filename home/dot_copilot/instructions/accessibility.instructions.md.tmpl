@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/accessibility.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "accessibility").glob }}"
+description: '{{ (index .rules "accessibility").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/accessibility.md" -}}

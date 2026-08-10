@@ -1,0 +1,17 @@
+{{ if eq .chezmoi.os "windows" -}}
+# Idempotent: winget exits non-zero when a package is already installed, so each result is
+# checked rather than trusted. Kept deliberately short.
+$ErrorActionPreference = "Stop"
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Warning "winget is unavailable; install App Installer from the Microsoft Store, then rerun: chezmoi apply"
+    exit 0
+}
+
+foreach ($id in @("Git.Git", "jqlang.jq")) {
+    $installed = winget list --id $id --exact 2>$null | Select-String -SimpleMatch $id
+    if (-not $installed) {
+        winget install --id $id --exact --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+    }
+}
+{{- end }}

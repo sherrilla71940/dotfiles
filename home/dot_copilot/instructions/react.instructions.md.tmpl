@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/react.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "react").glob }}"
+description: '{{ (index .rules "react").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/react.md" -}}

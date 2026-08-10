@@ -1,0 +1,37 @@
+{{- /* The shared working agreement is inlined from .chezmoitemplates/core.md.
+       Edit the body there, not here. Codex reads the same body as AGENTS.md and
+       Copilot as core-principles.instructions.md.
+       Everything below the marker is Claude Code-specific and is deliberately
+       absent from the shared body -- it is not reworded into a neutral twin. */ -}}
+{{ includeTemplate "core.md" }}
+# Claude Code only
+
+Everything below depends on a Claude Code feature that Codex and Copilot do not have.
+
+## Response behavior
+
+- **Verify version-sensitive Claude details before acting.** Before changing Claude Code, Claude Agent SDK, or Claude API configuration—or giving exact flags, setting keys, hook events, defaults, model IDs, or command syntax—check the built-in `claude-code-guide` agent or current official documentation. Memory and skills may guide where to look, but are not authoritative when behavior can drift.
+
+## Session workflow
+
+- When closing out an active item in auto memory, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
+
+## Parallelizing independent work
+
+- When a task decomposes into substantial independent units, consider parallel `Agent` calls when all of these are true: ownership boundaries are explicit, outputs can be verified independently, agents will not modify shared files or generated artifacts, and the expected speed benefit exceeds briefing and integration cost.
+  <!-- Personal Notes: -->
+  <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the main exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
+  <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
+- Subagents do not inherit the parent conversation or the project's auto memory (a fork is the exception). Ordinary custom subagents **do** load the CLAUDE.md hierarchy; the built-in `Explore` and `Plan` agents skip it. Brief each subagent with any required parent-conversation or auto-memory context, and restate CLAUDE.md rules only for agents that do not load them — proportionate to the task, not a blanket context dump.
+- Reassess mid-task if the remaining work becomes independently parallelizable. Keep work sequential when steps share architectural or git state, depend on earlier results, overlap files, or are too small to justify delegation.
+- Agent Teams require the user's approval. Do not treat this preference as standing authorization to create a team.
+
+## Shell tool preference
+
+Windows only — on macOS/Linux, Bash is the only shell tool and this section doesn't apply.
+
+- Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
+  <!-- Personal Notes: -->
+  <!-- source (CLAUDE_CODE_USE_POWERSHELL_TOOL=0): code.claude.com/docs/en/setup → Windows setup — "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to opt in or 0 to opt out." Also verified empirically this session: the PowerShell tool became unavailable once =0 took effect. -->
+- Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
+- If the Bash tool is unavailable, say so before falling back to PowerShell.

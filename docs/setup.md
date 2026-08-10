@@ -22,9 +22,17 @@ source directory. Only chezmoi and git need to exist first.
 ```bash
 sh -c "$(curl -fsLS get.chezmoi.io)"          # macOS/Linux
 ```
+
 ```powershell
 winget install twpayne.chezmoi                # Windows, then restart the shell
 ```
+
+> **Note for Git Bash users:** Winget installs executables into WinGet's `Links` directory. If Git Bash reports `bash: chezmoi: command not found`, add the path to your `~/.bashrc`:
+>
+> ```bash
+> echo 'export PATH="$PATH:$HOME/AppData/Local/Microsoft/WinGet/Links"' >> ~/.bashrc
+> source ~/.bashrc
+> ```
 
 ### Step 2 — clone, without applying
 
@@ -52,11 +60,11 @@ chezmoi apply -v
 
 Safer variants when the machine already has config:
 
-| Flag | Behaviour |
-| --- | --- |
-| `--dry-run --verbose` | show what would happen, change nothing |
-| `--interactive` | prompt for every change |
-| `--less-interactive` | prompt only for changed or pre-existing targets |
+| Flag                  | Behaviour                                       |
+| --------------------- | ----------------------------------------------- |
+| `--dry-run --verbose` | show what would happen, change nothing          |
+| `--interactive`       | prompt for every change                         |
+| `--less-interactive`  | prompt only for changed or pre-existing targets |
 
 Restart each application afterwards — editors and CLIs read these files at startup.
 
@@ -82,7 +90,7 @@ is exactly the case where the overwrite warning above applies).
 
 ### Optional extras
 
-The bootstrap scripts install baseline tools (git, jq, chezmoi). They live *inside* the
+The bootstrap scripts install baseline tools (git, jq, chezmoi). They live _inside_ the
 repo, so they can only run after step 2:
 
 ```bash
@@ -95,6 +103,7 @@ VS Code extensions are kept out of the bootstrap because the manifest holds 114 
 ```bash
 grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
 ```
+
 ```powershell
 Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
@@ -127,14 +136,14 @@ markers were omitted in another. Neither was visible in `git diff`.
 
 ## Daily workflow
 
-| Task | Command |
-| --- | --- |
-| Preview pending changes | `chezmoi diff` |
-| Apply | `chezmoi apply -v` |
-| Edit a managed file | `chezmoi edit ~/.claude/CLAUDE.md` |
-| Capture an edit you made directly to a live file | `chezmoi re-add ~/.bashrc` |
-| Pull another machine's changes | `chezmoi update -v` |
-| Open the source repo | `chezmoi cd` |
+| Task                                             | Command                            |
+| ------------------------------------------------ | ---------------------------------- |
+| Preview pending changes                          | `chezmoi diff`                     |
+| Apply                                            | `chezmoi apply -v`                 |
+| Edit a managed file                              | `chezmoi edit ~/.claude/CLAUDE.md` |
+| Capture an edit you made directly to a live file | `chezmoi re-add ~/.bashrc`         |
+| Pull another machine's changes                   | `chezmoi update -v`                |
+| Open the source repo                             | `chezmoi cd`                       |
 
 You can edit live files directly instead of using `chezmoi edit` — but chezmoi will not
 notice, and the next `apply` overwrites your change unless you `chezmoi re-add` it. That
@@ -143,6 +152,15 @@ lost. See
 [Editing something already managed](./chezmoi-workflow.md#editing-something-already-managed)
 for which files are templates and which route is safe.
 
+### Working from a custom directory (~/dotfiles)
+
+If you prefer your repository to live in `~/dotfiles` rather than chezmoi's default location (`~/.local/share/chezmoi`), create a symbolic link so chezmoi discovers `.chezmoiroot` automatically without needing machine-specific `sourceDir` configuration:
+
+```bash
+mkdir -p ~/.local/share
+ln -s ~/dotfiles ~/.local/share/chezmoi
+```
+
 ## Adding a file
 
 1. `chezmoi add ~/.some-config` — chezmoi copies it into `home/` with the right name.
@@ -150,13 +168,13 @@ for which files are templates and which route is safe.
 
 Naming rules that bite, all handled by chezmoi's source-state attributes:
 
-| Situation | Source name |
-| --- | --- |
-| Target starts with `.` | `dot_name` |
+| Situation                                                       | Source name           |
+| --------------------------------------------------------------- | --------------------- |
+| Target starts with `.`                                          | `dot_name`            |
 | Target name really starts with `create_`, `run_`, `symlink_`, … | `literal_create_name` |
-| Target must exist but be empty (e.g. `__init__.py`) | `empty___init__.py` |
-| Write once, never overwrite (the app owns the file) | `create_name` |
-| Needs templating | `name.tmpl` |
+| Target must exist but be empty (e.g. `__init__.py`)             | `empty___init__.py`   |
+| Write once, never overwrite (the app owns the file)             | `create_name`         |
+| Needs templating                                                | `name.tmpl`           |
 
 Two of these are load-bearing here. `literal_create_validation_image.py` in the pdf skill
 would otherwise lose its `create_` prefix, and the empty `__init__.py` package markers in
@@ -240,13 +258,12 @@ Then per tool:
   file and re-check. `/skills` lists 17.
 - **Codex** — `~/.codex/AGENTS.md` starts with `# Core Principles` and contains **no** YAML
   frontmatter. `/skills` lists the shared set.
-- **Copilot** — *Chat: Open Customizations* lists 9 instruction files. *Chat → Diagnostics*
+- **Copilot** — _Chat: Open Customizations_ lists 9 instruction files. _Chat → Diagnostics_
   shows `javascript` and `typescript` applying for a `.ts` file and not for a `.css` file.
 - **Bodies match across tools:**
 
   ```bash
-  diff <(sed '1,/^---$/d;1,/^---$/d' ~/.claude/rules/javascript.md) \
-       <(sed '1,/^---$/d;1,/^---$/d' ~/.copilot/instructions/javascript.instructions.md)
+  diff <(sed '1,/^---$/d;1,/^---$/d' ~/.claude/rules/javascript.md)        <(sed '1,/^---$/d;1,/^---$/d' ~/.copilot/instructions/javascript.instructions.md)
   ```
 
 ## Copilot reads more folders than you think
@@ -258,7 +275,7 @@ its own `.instructions.md`, once bare from Claude's `.md`.
 
 Worse, `chat.useClaudeMdFile` made Copilot ingest `~/.claude/CLAUDE.md`, whose lower half is
 Claude Code-only: `Agent` calls, the `claude-code-guide` agent, and the Bash-vs-PowerShell
-*tools*. Those instructions are wrong for Copilot.
+_tools_. Those instructions are wrong for Copilot.
 
 Both are switched off in `vscode/settings.json`:
 
@@ -269,7 +286,7 @@ Both are switched off in `vscode/settings.json`:
   "~/.copilot/instructions": true,
   "~/.claude/rules": false
 },
-"chat.useClaudeMdFile": false,
+"chat.useClaudeMdFile": false
 ```
 
 Copilot gets the shared rules from its own `~/.copilot/instructions` copies, which carry

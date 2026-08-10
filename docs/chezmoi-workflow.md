@@ -27,30 +27,44 @@ cannot serve all of them:
 | GitHub Copilot | `applyTo:` frontmatter | Markdown links only, same directory |
 | Codex | **nothing** | **no** |
 
-## Why the per-tool folders look uneven
+## Where each customization type lives
 
-This trips people up, so it is written down:
+Folders that exist are ready to use. Folders that are **absent are absent on purpose** —
+each one is listed below with the reason, so a future you does not "helpfully" recreate a
+broken one.
 
-| | Instructions | Skills | Prompts / commands |
-| --- | --- | --- | --- |
-| `dot_claude/` | `rules/` ✔ | — see below | `commands/` ✔ |
-| `dot_copilot/` | `instructions/` ✔ | `skills/` ✔ (Copilot-only) | — see below |
-| `dot_codex/` | `AGENTS.md.tmpl` only | — see below | — none, deprecated |
+| | Instructions | Skills | Subagents | Prompts / commands |
+| --- | --- | --- | --- | --- |
+| `dot_claude/` | `rules/` | *symlink* | `agents/` | `commands/` |
+| `dot_copilot/` | `instructions/` | `skills/` | `agents/` | *VS Code profile* |
+| `dot_codex/` | `AGENTS.md.tmpl` | *shared tree* | — | *none* |
+| shared | `.chezmoitemplates/` | `dot_agents/skills/` | — | — |
 
-- **Skills live in `home/dot_agents/skills/`**, which becomes `~/.agents/skills`. Codex and
-  Copilot read that path natively. Claude reads personal skills from `~/.claude/skills` and
-  nowhere else, so `dot_claude/symlink_skills.tmpl` points that one path at the shared
-  tree. That symlink is the only one in the whole setup.
-- **`dot_copilot/skills/`** exists because four skills are Copilot-only (`prompt-builder`,
-  `remember`, and the two `suggest-awesome-github-copilot-*`). There is no
-  `dot_claude/skills/` because no skill is currently Claude-only.
-- **Codex has no skills or prompts folder.** Skills come from `~/.agents/skills`; custom
-  prompts (`~/.codex/prompts`) are deprecated by OpenAI in favour of skills, so this repo
-  deliberately does not use them.
-- **Copilot's prompt file is not under `dot_copilot/`.** VS Code reads `*.prompt.md` from
-  the **profile** directory, not `~/.copilot`, so its body sits in
-  `.chezmoitemplates/vscode/` and is rendered into `home/AppData/...` and
-  `home/Library/...`.
+### Why a folder is missing
+
+- **`dot_claude/skills/` cannot exist.** `~/.claude/skills` is already claimed by
+  `symlink_skills.tmpl`, which points at the shared tree. Adding the folder makes chezmoi
+  fail with `.claude/skills: inconsistent state`. Claude reads personal skills from that
+  one path only, so a Claude-exclusive skill has nowhere to go without abandoning the
+  symlink and merging per skill instead. If that need ever arises, that is the trade to
+  reopen.
+- **`dot_codex/skills/` would be wrong.** `~/.codex/skills` holds Codex's own bundled
+  `.system` skills. User skills belong in `~/.agents/skills`, which Codex scans natively —
+  that is what `dot_agents/skills/` is.
+- **`dot_codex/prompts/` is deliberately unused.** Custom prompts (`~/.codex/prompts`) are
+  deprecated by OpenAI in favour of skills. Write a skill instead.
+- **`dot_copilot/prompts/` would do nothing.** VS Code reads `*.prompt.md` from the
+  **profile** directory, not `~/.copilot`. The body lives in `.chezmoitemplates/vscode/`
+  and renders into `home/AppData/...` and `home/Library/...`.
+- **`dot_codex/rules/` is impossible.** Codex has no path-scoping mechanism at all.
+
+### Placeholders
+
+`dot_claude/agents/` ships empty, holding only a `.gitkeep`. chezmoi ignores files starting
+with `.`, but still creates the directory, so `~/.claude/agents/` exists before a session
+starts — the docs note that a running session will not pick up an `agents` directory
+created part-way through. Use the same pattern for any future folder: create it with a
+`.gitkeep` rather than waiting until you need it.
 
 ## Adding a shared instruction
 

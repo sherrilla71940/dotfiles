@@ -63,11 +63,11 @@ Two caveats worth knowing:
 Kept out of the bootstrap because the manifest holds 114 of them. Restore on request:
 
 ```bash
-grep -v '^#' vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
+grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
 ```
 
 ```powershell
-Get-Content vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
+Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
 ```
 

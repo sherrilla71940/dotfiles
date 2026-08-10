@@ -30,15 +30,17 @@ all. Nothing is ever reworded into a tool-neutral twin.
 ```
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
-  .chezmoitemplates/             shared bodies (core.md, rules/, vscode/)
+  .chezmoitemplates/             SHARED bodies (core.md, rules/, vscode/)
   dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
-  dot_agents/skills/             17 portable skills -> ~/.agents/skills, read by all three
+  dot_agents/skills/             SHARED skills -> ~/.agents/skills, read by all three
+  .README.md                     how to read this tree (repo-only, never deployed)
   dot_zshrc.tmpl  dot_bashrc     shells
   AppData/ · Library/            VS Code, one per OS
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
-vscode-extensions.txt            extension manifest (installed on request)
+scripts/git-hooks/pre-commit     validates the source state before each commit
+scripts/vscode-extensions.txt    extension manifest (installed on request)
 ```
 
 ## Where to go next

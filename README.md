@@ -4,24 +4,15 @@ Personal Repository for managing dotfiles and keeping configuration consistent
 across machines. It currently includes Claude Code, Codex, GitHub Copilot,
 VS Code, and shell configuration.
 
-Managed with [chezmoi](https://www.chezmoi.io). One `chezmoi init` gets a new Mac or
-Windows machine working.
+Managed with [chezmoi](https://www.chezmoi.io). One `chezmoi init --apply <repo-url>` gets a
+new Mac or Windows machine working; only chezmoi and git need to exist first.
 
 ## The idea
 
-An instruction that applies to more than one assistant is written **once**. Each tool then
-receives a real file in **its own** format, because the three disagree about how to scope
-instructions:
-
-| Tool | Scoping | Imports other files? |
-| --- | --- | --- |
-| Claude Code | `paths:` frontmatter | yes (`@path`) |
-| GitHub Copilot | `applyTo:` frontmatter | only via Markdown links, same directory |
-| Codex | **none** | **no** |
-
-Because Codex can neither import nor path-scope, a single shared file cannot serve all
-three. chezmoi's templates solve it: the body lives once, and each tool's file is rendered
-with the frontmatter that tool actually understands.
+An instruction used by more than one assistant is written **once**, and each tool receives a
+real file in **its own** format. That indirection exists for one reason: the three tools
+disagree about how to scope an instruction, and Codex can neither import another file nor
+path-scope at all — so no single shared file can serve all three.
 
 ```
 home/.chezmoitemplates/rules/javascript.md   <-- the body, written once
@@ -31,11 +22,8 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-The core working agreement is shared by **all three**: Claude gets it inlined in
-`CLAUDE.md`, Codex verbatim as `AGENTS.md` with no frontmatter, Copilot as
-`core-principles.instructions.md`. The five language rules are shared by Claude and Copilot
-only — Codex has no path-scoping, so per-language rules would be always-on against its
-32 KiB budget.
+Anything used by only one tool is a plain file in that tool's folder, with no templating at
+all. Nothing is ever reworded into a tool-neutral twin.
 
 ## Layout
 
@@ -49,34 +37,20 @@ home/                            chezmoi source state
   dot_agents/skills/             17 portable skills -> ~/.agents/skills, read by all three
   dot_zshrc.tmpl  dot_bashrc     shells
   AppData/ · Library/            VS Code, one per OS
-docs/chezmoi-workflow.md         where files go, how to add and remove them
-docs/rules-provenance.md         why individual shared rules exist
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
 vscode-extensions.txt            extension manifest (installed on request)
 ```
 
-Tool-exclusive material stays in that tool's folder — `dot_copilot/skills/` holds skills
-that only make sense in Copilot, and `dot_claude/CLAUDE.md.tmpl` holds rules that depend on
-Claude Code features. Nothing is reworded into a tool-neutral twin.
+## Where to go next
 
-## Daily use
+| I want to… | Read |
+| --- | --- |
+| Set up a machine, or understand what happens if an app isn't installed | [docs/setup.md](./docs/setup.md) |
+| Add, change or **remove** an instruction, skill or config file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
+| Know why a particular shared rule exists before trimming it | [docs/rules-provenance.md](./docs/rules-provenance.md) |
+| Let a coding agent work in this repo | [AGENTS.md](./AGENTS.md) |
 
-```bash
-chezmoi edit ~/.claude/CLAUDE.md   # edit the source
-chezmoi diff                       # preview
-chezmoi apply -v                   # write it out
-chezmoi update -v                  # pull and apply on another machine
-chezmoi cd                         # open the source repo
-```
-
-**Where do the per-tool folders differ?** Skills live once in `home/dot_agents/skills`
-(Codex and Copilot read it natively; Claude reaches it through the single symlink), Codex
-has no rules folder because it cannot path-scope, and Copilot's prompt file belongs to the
-VS Code profile rather than `~/.copilot`. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md)
-explains each case.
-
-- [docs/setup.md](./docs/setup.md) — installing, onboarding, secrets, verification
-- [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — adding, changing and **removing** files
-- [AGENTS.md](./AGENTS.md) — always-on constraints for coding agents working in this repo.
-  Codex and the Copilot CLI load it automatically; the root `CLAUDE.md` imports it so Claude
-  Code gets the same rules
+`AGENTS.md` is the one file here written for a machine rather than a person: Codex and the
+Copilot CLI load it automatically, and the root `CLAUDE.md` imports it so Claude Code gets
+the same constraints. It stays deliberately short, since it costs context in every agent
+session — procedures live in the workflow guide instead.

@@ -11,32 +11,99 @@ the applications installed on it; see [Selecting components](#selecting-componen
 
 ## Managed paths
 
-| Component | Application | Live path | Repository source |
-| --- | --- | --- | --- |
-| `claude` | Claude Code | `~/.claude/dotfiles` | `claude/` |
-| `claude` | Claude Code | `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
-| `claude` | Claude Code | `~/.claude/commands` | `claude/commands` |
-| `claude` | Claude Code | `~/.claude/rules` | `claude/rules` |
-| `claude` | Claude Code | `~/.claude/settings.json` | `claude/settings.json` (macOS: `claude/settings.macos.json`) |
-| `claude` | Claude Code | `~/.claude/skills` | `claude/skills` |
-| `codex` | Codex | `~/.codex/AGENTS.md` | `codex/AGENTS.md` |
-| `codex` | Shared agents | `~/.agents/skills` | `agents/skills` |
-| `copilot` | GitHub Copilot | `~/.copilot/agents` | `copilot/agents` |
-| `copilot` | GitHub Copilot | `~/.copilot/instructions` | `copilot/instructions` |
-| `copilot` | GitHub Copilot | `~/.copilot/skills` | `copilot/skills` |
-| `vscode` | VS Code | user `settings.json` | `vscode/settings.json` |
-| `vscode` | VS Code | user `keybindings.json` | `vscode/keybindings.json` |
-| `vscode` | VS Code | user `mcp.json` | `vscode/mcp.json` |
-| `vscode` | GitHub Copilot in VS Code | user `prompts/` | `copilot/prompts/` |
-| `shell` | Bash | `~/.bashrc` | `shell/bashrc` |
-| `shell` | Bash | `~/.bash_profile` | `shell/bash_profile` |
+**[`links.tsv`](./links.tsv) is the authoritative list.** Both installers read it, so a
+managed path is added or changed in exactly one place and the two platforms cannot drift.
+It is deliberately not restated here; read it directly.
 
-Claude's settings source is platform-specific: Windows links
-`claude/settings.json`; macOS links `claude/settings.macos.json`.
+Each row is `component`, `live path`, `repository source`, and an optional `platform`
+(`windows` or `macos`, empty for both). `{HOME}` and `{VSCODE_USER}` are substituted at
+install time. The installers reject a row naming an unknown component, mapping the same
+live path twice, or producing a duplicate backup name.
+
+Backup names are keyed on the **live** path, not the source, because two live paths can
+share one source — `~/.claude/skills` and `~/.agents/skills` both point at `skills/` — and
+identical names would collide inside one timestamped backup directory.
+
+Claude's settings source is platform-specific: the `windows` row links
+`claude/settings.json`, the `macos` row links `claude/settings.macos.json`.
 
 VS Code's user directory is `%APPDATA%\Code\User` on Windows and
 `~/Library/Application Support/Code/User` on macOS. The extension manifest is
 `vscode/extensions.txt`; extension binaries are not tracked.
+
+### Shared sources of truth
+
+Claude Code is the base. Its files are the canonical text; every other tool's folder holds
+thin files that **import** them rather than restating them in different words. Nothing is
+generated and there is no build step.
+
+| Canonical source | Content | Format |
+| --- | --- | --- |
+| `shared/core.md` | The working agreement | Claude's `CLAUDE.md` prose, no frontmatter |
+| `shared/rules/*.md` | Path-scoped language rules | Claude's `paths:` frontmatter, verbatim |
+| `skills/` | Portable skills | `SKILL.md` directories |
+
+How each tool reaches them:
+
+| Tool | Core | Language rules | Skills |
+| --- | --- | --- | --- |
+| Claude Code | `CLAUDE.md` opens with `@~/.claude/shared/core.md` | `~/.claude/rules` → `shared/rules` | `~/.claude/skills` → `skills` |
+| Codex | `~/.codex/AGENTS.md` **is** `shared/core.md` | not supported | `~/.agents/skills` → `skills` |
+| Copilot | `core-principles.instructions.md` imports it | one `*.instructions.md` importer per rule | reads `~/.agents/skills` and `~/.claude/skills` |
+
+Why the three differ:
+
+- **Claude Code** supports `@path` imports including `~/`-rooted ones, the pattern the
+  best-practices guide documents as `@~/.claude/my-project-instructions.md`. The import
+  targets `~/.claude/shared`, a link the installer creates, rather than a relative path:
+  `CLAUDE.md` is itself reached through a symlink, and a relative import would depend on
+  whether Claude resolves against the link or its target.
+- **Codex has no import mechanism at all** — an `@path` is read as literal text. Its
+  `AGENTS.md` must be one self-contained file, so it links straight at `shared/core.md`.
+  That is also why `core.md` carries no YAML frontmatter (Codex would render it as visible
+  text) and why Codex gets only the core: it has no `paths:` equivalent, so language rules
+  would be always-on against a 32 KiB `project_doc_max_bytes` budget.
+- **Copilot** discovers `*.instructions.md` in `~/.copilot/instructions` and scopes them
+  with `applyTo:`. Each importer carries the glob in Copilot's native key and then imports
+  the Claude file, two ways: `@../../shared/rules/<name>.md` for the Copilot CLI and a
+  Markdown link for VS Code, which expands it when `chat.includeReferencedInstructions` is
+  set. Each ends with a plain-language fallback telling the agent to read the file itself
+  if neither expanded, so the worst case is one extra file read.
+
+**No rule is written twice.** A rule that names Claude machinery stays in `claude/CLAUDE.md`
+and is absent from `core.md` — it is not reworded into a tool-neutral twin. Three rules are
+Claude-only for that reason: the `claude-code-guide` verification rule, the `Agent`/subagent
+parallelization rules, and the Bash-vs-PowerShell **tool** preference. Codex and Copilot
+therefore do not receive those; generalizing any of them means editing the shared file
+deliberately, not duplicating it.
+
+**Tool-exclusive material stays out of `shared/`:**
+
+- `skills/` (17) — portable.
+- `copilot/skills/` (4) — `prompt-builder` and `remember` write VS Code `.prompt.md` /
+  `vscode-userdata:` files; the two `suggest-awesome-github-copilot-*` skills browse
+  Copilot's own catalog.
+- `copilot/instructions/` — the importers above, plus Copilot-only guidance for authoring
+  `.instructions.md`, `.prompt.md`, and skill files.
+
+One skill sits in `skills/` despite being Claude-specific: `claude-worktree-memory`.
+Isolating it would require `~/.claude/skills` to merge two source roots via per-skill links,
+and that machinery is not worth one skill — an earlier revision of it deleted through a
+directory symlink and destroyed two skills in the repository. Codex and Copilot list it;
+skills load on demand, so the cost is one description line.
+
+Skill portability was checked rather than assumed: every frontmatter key in use
+(`name`, `description`, `user-invocable`, `disable-model-invocation`, `argument-hint`) is
+supported by Claude and Copilot, with Codex needing only `name` and `description` and
+ignoring the rest. Bodies were scrubbed of harness-specific tool names. **One known gap:**
+`disable-model-invocation: true` on `git-commit-action` exists so nothing auto-runs a skill
+that stages and commits; Codex has no documented equivalent, so verify its behavior there
+before relying on that guard.
+
+Maintainer notes about *why* a shared rule exists go in `shared/PROVENANCE.md`, which is
+deliberately not linked anywhere. Claude Code strips block-level HTML comments before
+loading a file, but Codex and Copilot do not — a `<!-- note -->` inside `core.md` would be
+read verbatim by both. Only Claude-only files keep inline comments.
 
 ### Why each customization type lives where it does
 
@@ -51,11 +118,11 @@ none of them may be flattened into the VS Code `prompts` directory.
   of the harness-agnostic user-level folders VS Code reads (alongside
   `~/.claude/rules`). Discovery requires the `.instructions.md` suffix; the
   optional `applyTo` glob scopes a file to matching files.
-- **Skills** stay as complete directories in `~/.copilot/skills`. Each skill is a
-  folder whose name matches the `name` in its `SKILL.md` frontmatter, and a skill
-  may bundle scripts, examples, and reference files. Linking the whole `skills`
-  directory (rather than individual Markdown files) is what keeps those bundled
-  resources reachable.
+- **Skills** stay as complete directories in `~/.copilot/skills`, which now carries only
+  the Copilot-exclusive skills; portable ones arrive via `~/.agents/skills`. Each skill is
+  a folder whose name matches the `name` in its `SKILL.md` frontmatter, and a skill may
+  bundle scripts, examples, and reference files. Linking whole directories (rather than
+  individual Markdown files) is what keeps those bundled resources reachable.
 - **Prompt files** (`*.prompt.md`) are the exception: they live in the active VS
   Code profile's user-data `prompts/` directory, not under `~/.copilot`. Their
   repository source stays at `copilot/prompts` so Copilot-owned assets remain
@@ -125,12 +192,21 @@ Keep the canonical global instructions only at `~/.codex/AGENTS.md`. A separate
 below your home directory and can therefore duplicate the global file; the
 installer warns about it but does not delete an intentional project file.
 
-User-authored Codex skills deliberately live under `agents/skills` in this
-repository and link to `~/.agents/skills`; they do not belong in `~/.codex/skills`,
-which also contains Codex's bundled `.system` skills. Codex discovers additions
-automatically. In the CLI or IDE extension, run `/skills` or type `$` to select
-a skill; restart Codex if a new or changed skill still does not appear. Large
-skill sets can be shortened or partially omitted from the initial context list.
+`~/.codex/AGENTS.md` links to `shared/core.md` — there is no longer a
+`codex/AGENTS.md` in this repository. The previous copy had been produced by
+find-and-replacing "Claude" with "Codex" in `CLAUDE.md`, which left it instructing
+Codex to consult a nonexistent `Codex-guide` agent and citing `code.Codex.com`
+URLs. Sharing the real file removes that whole class of drift. Note that Codex
+also reads `~/.codex/AGENTS.override.md` in preference to `AGENTS.md` if present;
+leave that path unused unless you deliberately want to bypass the shared file.
+
+Portable skills link from `skills/` to `~/.agents/skills`, the user-level location
+Codex scans (alongside `.agents/skills` inside repositories). They do not belong in
+`~/.codex/skills`, which also contains Codex's bundled `.system` skills. Codex
+discovers additions automatically. In the CLI or IDE extension, run `/skills` or
+type `$` to select a skill; restart Codex if a new or changed skill still does not
+appear. Large skill sets can be shortened or partially omitted from the initial
+context list.
 
 ## Prerequisites
 
@@ -246,6 +322,7 @@ On Windows:
 ```powershell
 Get-Item -Force `
   "$env:USERPROFILE\.claude\settings.json", `
+  "$env:USERPROFILE\.claude\rules", `
   "$env:USERPROFILE\.codex\AGENTS.md", `
   "$env:USERPROFILE\.agents\skills", `
   "$env:USERPROFILE\.copilot\agents", `
@@ -265,6 +342,7 @@ On macOS:
 ```bash
 for path in \
   "$HOME/.claude/settings.json" \
+  "$HOME/.claude/rules" \
   "$HOME/.codex/AGENTS.md" \
   "$HOME/.agents/skills" \
   "$HOME/.copilot/agents" \
@@ -299,10 +377,31 @@ discovers them. Restart VS Code first.
    Starting the `framelinkFigma` or `filesystem` server should prompt for its
    `${input:...}` value; the Figma prompt must mask the token.
 
-Expected discovery counts: 6 agents, 10 instruction files, 13 skills, 4 prompt
-files. Every file in `copilot/instructions` uses the `.instructions.md` suffix, so
-a file appearing in that folder but missing from the Customizations list means its
-name or frontmatter is wrong.
+After the shared-sources refactor, check these specifically:
+
+1. **Instructions.** 9 files in `~/.copilot/instructions`: 6 importers
+   (`core-principles` plus one per language rule) and 3 Copilot-only authoring guides. All
+   use the `.instructions.md` suffix; a file in that folder missing from the Customizations
+   list means its name or frontmatter is wrong.
+2. **Confirm the imports actually inlined.** Open **Chat view → Diagnostics** and check that
+   the working agreement's *text* is present, not just the importer. If only the importer
+   loaded, `chat.includeReferencedInstructions` is not expanding `../../shared/...` through
+   the symlinked folder. That fails gracefully — each importer tells the agent to read the
+   file itself — but if you want it inlined, link the shared file in directly under the
+   `.instructions.md` name instead of using an importer.
+3. **`applyTo` scoping.** Diagnostics shows which customization files loaded for a request;
+   open a `.ts` file and confirm the TypeScript and JavaScript importers apply and the
+   others do not.
+4. **Skills, and whether they are double-reported.** Copilot reads `~/.copilot/skills`,
+   `~/.claude/skills`, *and* `~/.agents/skills`. The 4 Copilot-only skills come from the
+   first; the 17 shared skills are reachable through both of the others. If each shared
+   skill is listed twice that is cosmetic, and it can be removed by dropping the
+   `~/.agents/skills` link on a machine with no Codex install.
+
+In Claude Code, run `/context` and confirm `CLAUDE.md` loaded and the shared core's text
+came in through the `@~/.claude/shared/core.md` import. The five language rules are
+path-scoped, so they will not appear until Claude reads a matching file — open a `.ts` file
+and re-check. Run `/skills` to confirm 17 personal skills.
 
 ## Decide what Git should track
 
@@ -336,18 +435,29 @@ References:
 - [VS Code MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
 - [VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)
 - [VS Code Settings Sync](https://code.visualstudio.com/docs/configure/settings-sync)
-- [Codex configuration reference](https://developers.openai.com/codex/config-reference/)
-- [Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md/)
+- [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+- [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+- [Codex skills](https://learn.chatgpt.com/docs/build-skills)
+- [Claude Code memory, rules, and imports](https://code.claude.com/docs/en/memory)
+- [Claude Code skills](https://code.claude.com/docs/en/skills)
+- [GitHub Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
 
 ## Add another managed item
 
+0. **Decide shared or tool-specific first.** Put it in `shared/` or `skills/` only if it
+   would be correct for every assistant that reads it — no harness-specific tool names,
+   file formats, settings keys, or slash commands in the text. If it names one tool's
+   machinery, it belongs in `claude/`, `codex/`, or `copilot/`. When a rule is mostly shared
+   with one tool-specific wrinkle, keep the shared file authoritative and put the wrinkle in
+   that tool's own file — do **not** write a reworded twin of the shared rule. Never resolve
+   a conflict by copying a shared file into a tool folder.
 1. Apply the tracking test above and scan the candidate for secrets.
 2. Add the narrowest necessary source path and ignore rules.
-3. Confirm the live location against current official documentation rather than
-   assuming, especially for Copilot: `~/.copilot` and VS Code's profile directory
-   own different customization types.
-4. Add the corresponding mapping to both installers when cross-platform, tagging it
-   with the owning component (`Component = "..."` on Windows, the matching
-   `component_selected` block on macOS).
-5. Update the managed-path table, including the component column.
-6. Run the installer twice and verify the application before deleting backups.
+3. Confirm the live location against current official documentation rather than assuming,
+   especially for Copilot: `~/.copilot` and VS Code's profile directory own different
+   customization types.
+4. Add one row to [`links.tsv`](./links.tsv) — component, live path, repository source, and
+   a `platform` value only if the row is Windows- or macOS-only. Both installers pick it up;
+   there is no second place to edit.
+5. Run the installer twice — the second run must report `OK` for every path and change
+   nothing — then verify inside the application before deleting backups.

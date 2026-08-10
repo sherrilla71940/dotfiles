@@ -147,43 +147,39 @@ if component_selected codex; then mkdir -p "$codex_home" "$agents_home"; fi
 if component_selected copilot; then mkdir -p "$copilot_home"; fi
 if component_selected vscode; then mkdir -p "$vscode_home"; fi
 
-if component_selected claude; then
-  ensure_symbolic_link "$claude_home/dotfiles" "$repository_root/claude" "claude/dotfiles"
-  ensure_symbolic_link "$claude_home/CLAUDE.md" "$repository_root/claude/CLAUDE.md" "claude/CLAUDE.md"
-  ensure_symbolic_link "$claude_home/commands" "$repository_root/claude/commands" "claude/commands"
-  ensure_symbolic_link "$claude_home/rules" "$repository_root/claude/rules" "claude/rules"
-  ensure_symbolic_link "$claude_home/settings.json" "$repository_root/claude/settings.macos.json" "claude/settings.json"
-  ensure_symbolic_link "$claude_home/skills" "$repository_root/claude/skills" "claude/skills"
-fi
-
-if component_selected codex; then
-  ensure_symbolic_link "$codex_home/AGENTS.md" "$repository_root/codex/AGENTS.md" "codex/AGENTS.md"
-  ensure_symbolic_link "$agents_home/skills" "$repository_root/agents/skills" "agents/skills"
-fi
+# The link table lives in links.tsv so both installers read one source of truth.
+cr="$(printf '\r')"   # so a CRLF checkout of links.tsv cannot corrupt the last field
+seen_backups=""
+while IFS=$'	' read -r component live source platform; do
+  component="${component%$cr}"; live="${live%$cr}"; source="${source%$cr}"; platform="${platform%$cr}"
+  [[ -z "$component" || "$component" == \#* ]] && continue
+  [[ -n "$source" ]] || { printf 'Malformed row in links.tsv: %s\n' "$component" >&2; exit 1; }
+  [[ -z "$platform" || "$platform" == "macos" ]] || continue
+  is_known_component "$component" || { printf 'links.tsv references unknown component: %s\n' "$component" >&2; exit 1; }
+  component_selected "$component" || continue
+  live="${live//\{HOME\}/$HOME}"
+  live="${live//\{VSCODE_USER\}/$vscode_home}"
+  # Backup name is keyed on the live path, not the source: two live paths can share one
+  # source (both ~/.claude/skills and ~/.agents/skills point at skills/), and identical
+  # backup names would collide in the same timestamped backup directory.
+  backup_name="$component/$(basename -- "$live")"
+  case " $seen_backups " in
+    *" $backup_name "*)
+      printf 'links.tsv rows produce colliding backup names: %s\n' "$backup_name" >&2
+      exit 1
+      ;;
+  esac
+  seen_backups="${seen_backups:+$seen_backups }$backup_name"
+  ensure_symbolic_link "$live" "$repository_root/$source" "$backup_name"
+done < "$repository_root/links.tsv"
 
 if component_selected copilot; then
-  ensure_symbolic_link "$copilot_home/agents" "$repository_root/copilot/agents" "copilot/agents"
-  ensure_symbolic_link "$copilot_home/instructions" "$repository_root/copilot/instructions" "copilot/instructions"
-  ensure_symbolic_link "$copilot_home/skills" "$repository_root/copilot/skills" "copilot/skills"
-
   # Copilot writes these itself; they stay local and untracked.
   for runtime_path in "config.json" "ide" "logs"; do
     if [[ -e "$copilot_home/$runtime_path" ]]; then
       printf 'LOCAL %s (Copilot runtime state; intentionally not linked)\n' "$copilot_home/$runtime_path"
     fi
   done
-fi
-
-if component_selected vscode; then
-  ensure_symbolic_link "$vscode_home/settings.json" "$repository_root/vscode/settings.json" "vscode/settings.json"
-  ensure_symbolic_link "$vscode_home/keybindings.json" "$repository_root/vscode/keybindings.json" "vscode/keybindings.json"
-  ensure_symbolic_link "$vscode_home/mcp.json" "$repository_root/vscode/mcp.json" "vscode/mcp.json"
-  ensure_symbolic_link "$vscode_home/prompts" "$repository_root/copilot/prompts" "copilot/prompts"
-fi
-
-if component_selected shell; then
-  ensure_symbolic_link "$HOME/.bashrc" "$repository_root/shell/bashrc" "shell/bashrc"
-  ensure_symbolic_link "$HOME/.bash_profile" "$repository_root/shell/bash_profile" "shell/bash_profile"
 fi
 
 if component_selected codex; then

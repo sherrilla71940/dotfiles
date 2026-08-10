@@ -132,27 +132,43 @@ foreach ($component in $selectedComponents) {
     }
 }
 
-# VS Code paths below target the default profile. Named profiles keep their own
-# storage under %APPDATA%\Code\User\profiles\<id>; see dotfiles-setup.md.
-$links = @(
-    @{ Component = "claude";  Live = Join-Path $claudeHome "dotfiles"; Source = Join-Path $repositoryRoot "claude"; Backup = "claude/dotfiles" },
-    @{ Component = "claude";  Live = Join-Path $claudeHome "CLAUDE.md"; Source = Join-Path $repositoryRoot "claude/CLAUDE.md"; Backup = "claude/CLAUDE.md" },
-    @{ Component = "claude";  Live = Join-Path $claudeHome "commands"; Source = Join-Path $repositoryRoot "claude/commands"; Backup = "claude/commands" },
-    @{ Component = "claude";  Live = Join-Path $claudeHome "rules"; Source = Join-Path $repositoryRoot "claude/rules"; Backup = "claude/rules" },
-    @{ Component = "claude";  Live = Join-Path $claudeHome "settings.json"; Source = Join-Path $repositoryRoot "claude/settings.json"; Backup = "claude/settings.json" },
-    @{ Component = "claude";  Live = Join-Path $claudeHome "skills"; Source = Join-Path $repositoryRoot "claude/skills"; Backup = "claude/skills" },
-    @{ Component = "codex";   Live = Join-Path $codexHome "AGENTS.md"; Source = Join-Path $repositoryRoot "codex/AGENTS.md"; Backup = "codex/AGENTS.md" },
-    @{ Component = "codex";   Live = Join-Path $agentsHome "skills"; Source = Join-Path $repositoryRoot "agents/skills"; Backup = "agents/skills" },
-    @{ Component = "copilot"; Live = Join-Path $copilotHome "agents"; Source = Join-Path $repositoryRoot "copilot/agents"; Backup = "copilot/agents" },
-    @{ Component = "copilot"; Live = Join-Path $copilotHome "instructions"; Source = Join-Path $repositoryRoot "copilot/instructions"; Backup = "copilot/instructions" },
-    @{ Component = "copilot"; Live = Join-Path $copilotHome "skills"; Source = Join-Path $repositoryRoot "copilot/skills"; Backup = "copilot/skills" },
-    @{ Component = "vscode";  Live = Join-Path $vscodeHome "settings.json"; Source = Join-Path $repositoryRoot "vscode/settings.json"; Backup = "vscode/settings.json" },
-    @{ Component = "vscode";  Live = Join-Path $vscodeHome "keybindings.json"; Source = Join-Path $repositoryRoot "vscode/keybindings.json"; Backup = "vscode/keybindings.json" },
-    @{ Component = "vscode";  Live = Join-Path $vscodeHome "mcp.json"; Source = Join-Path $repositoryRoot "vscode/mcp.json"; Backup = "vscode/mcp.json" },
-    @{ Component = "vscode";  Live = Join-Path $vscodeHome "prompts"; Source = Join-Path $repositoryRoot "copilot/prompts"; Backup = "copilot/prompts" },
-    @{ Component = "shell";   Live = Join-Path $env:USERPROFILE ".bashrc"; Source = Join-Path $repositoryRoot "shell/bashrc"; Backup = "shell/bashrc" },
-    @{ Component = "shell";   Live = Join-Path $env:USERPROFILE ".bash_profile"; Source = Join-Path $repositoryRoot "shell/bash_profile"; Backup = "shell/bash_profile" }
-)
+# The link table lives in links.tsv so both installers read one source of truth.
+# VS Code paths target the default profile. Named profiles keep their own storage
+# under %APPDATA%\Code\User\profiles\<id>; see dotfiles-setup.md.
+$links = Get-Content -LiteralPath (Join-Path $repositoryRoot "links.tsv") |
+    Where-Object { $_.Trim() -and -not $_.TrimStart().StartsWith("#") } |
+    ForEach-Object {
+        $fields = $_ -split "`t"
+        if ($fields.Count -lt 3) { throw "Malformed row in links.tsv (need 3 tab-separated columns): $_" }
+        $platform = if ($fields.Count -ge 4) { $fields[3].Trim() } else { "" }
+        $live = $fields[1].Trim().Replace("{HOME}", $env:USERPROFILE).Replace("{VSCODE_USER}", $vscodeHome)
+        [pscustomobject]@{
+            Component = $fields[0].Trim()
+            Live      = Normalize-Path $live
+            Source    = Normalize-Path (Join-Path $repositoryRoot $fields[2].Trim())
+            # Keyed on the live path, not the source: two live paths can share one source
+            # (both ~/.claude/skills and ~/.agents/skills point at skills/), and identical
+            # backup names would collide in the same timestamped backup directory.
+            Backup    = "$($fields[0].Trim())/$(Split-Path -Leaf $live)"
+            Platform  = $platform
+        }
+    } |
+    Where-Object { $_.Platform -eq "" -or $_.Platform -eq "windows" }
+
+$unknownInTable = $links | Where-Object { $knownComponents -notcontains $_.Component }
+if ($unknownInTable) {
+    throw "links.tsv references unknown component(s): $(($unknownInTable.Component | Select-Object -Unique) -join ', ')"
+}
+
+$duplicateBackups = $links | Group-Object Backup | Where-Object { $_.Count -gt 1 }
+if ($duplicateBackups) {
+    throw "links.tsv rows produce colliding backup names: $(($duplicateBackups.Name) -join ', '). Rename a live path or add a component."
+}
+$duplicateLive = $links | Group-Object Live | Where-Object { $_.Count -gt 1 }
+if ($duplicateLive) {
+    throw "links.tsv maps the same live path more than once: $(($duplicateLive.Name) -join ', ')"
+}
+
 
 foreach ($link in $links) {
     if ($selectedComponents -notcontains $link.Component) { continue }

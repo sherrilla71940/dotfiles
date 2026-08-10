@@ -163,6 +163,19 @@
     "last 2 versions"
   ],
   "chat.includeReferencedInstructions": true,
+  // Copilot reads several harness-agnostic user folders by default, and this dotfiles repo
+  // renders the same rules into more than one of them. Without these two settings each
+  // shared rule is listed twice, and Copilot also ingests ~/.claude/CLAUDE.md, whose lower
+  // half is Claude Code-only (Agent calls, claude-code-guide, the Bash/PowerShell tools).
+  // Copilot gets its own copies from ~/.copilot/instructions instead.
+  // This affects VS Code only; Claude Code still reads ~/.claude/rules itself.
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true,
+    ".claude/rules": true,
+    "~/.copilot/instructions": true,
+    "~/.claude/rules": false
+  },
+  "chat.useClaudeMdFile": false,
   "workbench.browser.enableChatTools": true,
   "debug.breakpointsView.presentation": "tree",
   "chat.tools.urls.autoApprove": {

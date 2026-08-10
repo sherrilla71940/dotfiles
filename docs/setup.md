@@ -216,6 +216,37 @@ Then per tool:
        <(sed '1,/^---$/d;1,/^---$/d' ~/.copilot/instructions/javascript.instructions.md)
   ```
 
+## Copilot reads more folders than you think
+
+VS Code discovers user-level instructions from several harness-agnostic folders at once,
+including `~/.copilot/instructions` **and** `~/.claude/rules`. Because this repo renders the
+same rules into both, Copilot listed every shared rule twice — once with a description from
+its own `.instructions.md`, once bare from Claude's `.md`.
+
+Worse, `chat.useClaudeMdFile` made Copilot ingest `~/.claude/CLAUDE.md`, whose lower half is
+Claude Code-only: `Agent` calls, the `claude-code-guide` agent, and the Bash-vs-PowerShell
+*tools*. Those instructions are wrong for Copilot.
+
+Both are switched off in `vscode/settings.json`:
+
+```jsonc
+"chat.instructionsFilesLocations": {
+  ".github/instructions": true,
+  ".claude/rules": true,
+  "~/.copilot/instructions": true,
+  "~/.claude/rules": false
+},
+"chat.useClaudeMdFile": false,
+```
+
+Copilot gets the shared rules from its own `~/.copilot/instructions` copies, which carry
+`applyTo:` and a description. **This affects VS Code only** — Claude Code still reads
+`~/.claude/rules` itself, and the Copilot CLI reads `~/.copilot/instructions`, so neither
+loses anything.
+
+Confirm with **Chat: Open Customizations**: each rule should appear once, with its
+description, and no `CLAUDE.md` under Agent Instructions.
+
 ## Version-sensitive details
 
 Confirm these against current documentation rather than assuming; they have changed before:

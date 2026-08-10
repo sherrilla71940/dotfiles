@@ -31,9 +31,11 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-The same applies to the core working agreement: Claude gets it inlined in `CLAUDE.md`,
-Codex gets it verbatim as `AGENTS.md` with no frontmatter, Copilot gets it as
-`core-principles.instructions.md`.
+The core working agreement is shared by **all three**: Claude gets it inlined in
+`CLAUDE.md`, Codex verbatim as `AGENTS.md` with no frontmatter, Copilot as
+`core-principles.instructions.md`. The five language rules are shared by Claude and Copilot
+only — Codex has no path-scoping, so per-language rules would be always-on against its
+32 KiB budget.
 
 ## Layout
 
@@ -41,10 +43,10 @@ Codex gets it verbatim as `AGENTS.md` with no frontmatter, Copilot gets it as
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
   .chezmoitemplates/             shared bodies (core.md, rules/, vscode/)
-  dot_claude/                    CLAUDE.md, rules, settings, hooks, commands
-  dot_codex/                     AGENTS.md, config.toml
-  dot_copilot/                   instructions, agents, skills
-  dot_agents/skills/             17 portable skills
+  dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents
+  dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
+  dot_copilot/                   instructions, agents, skills (Copilot-only ones)
+  dot_agents/skills/             17 portable skills -> ~/.agents/skills, read by all three
   dot_zshrc.tmpl  dot_bashrc     shells
   AppData/ · Library/            VS Code, one per OS
 docs/chezmoi-workflow.md         where files go, how to add and remove them

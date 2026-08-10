@@ -26,7 +26,7 @@ unset git_completion
 
 # 使用 HOME，讓捷徑可跨 Windows Git Bash 與 macOS。
 alias work='cd "$HOME/Documents/work"'
-alias personal='cd "$HOME/Documents/personal"'
+alias personal='cd "$HOME/Documents"'
 
 # 每次指令後重新計算終端尺寸，避免換行與文字顯示錯位。
 shopt -s checkwinsize

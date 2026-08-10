@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/html-css.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "html-css").glob }}"
+description: '{{ (index .rules "html-css").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/html-css.md" -}}

@@ -1,0 +1,9 @@
+{{- /* VS Code keeps its user files in a different place on each OS. Both trees exist in the
+       source state and the wrong one is ignored here, so the file bodies stay in
+       .chezmoitemplates/vscode and are never duplicated. */ -}}
+{{ if ne .chezmoi.os "windows" }}
+AppData
+{{ end }}
+{{ if ne .chezmoi.os "darwin" }}
+Library
+{{ end }}

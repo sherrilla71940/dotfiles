@@ -1,0 +1,71 @@
+{{- /* create_ prefix: chezmoi writes this only when the file does not exist and never
+       overwrites it, because Codex writes project trust, marketplace and runtime state
+       into the same file. Review this template when reapplying a durable change. */ -}}
+[marketplaces.claude-plugins-official]
+source_type = "git"
+source = "https://github.com/anthropics/claude-plugins-official.git"
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."outlook-calendar@openai-curated"]
+enabled = true
+
+[plugins."teams@openai-curated"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."figma@claude-plugins-official"]
+enabled = true
+
+[plugins."playwright@claude-plugins-official"]
+enabled = true
+
+[plugins."typescript-lsp@claude-plugins-official"]
+enabled = true
+
+[features]
+js_repl = false
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+    "--registry",
+    "https://registry.npmjs.org",
+    "chrome-devtools-mcp@latest",
+    "--autoConnect",
+]
+
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+API_TIMEOUT_MS = "1200000"
+BASH_DEFAULT_TIMEOUT_MS = "300000"
+
+[desktop]
+external-agent-import-sync-enabled = false
+conversationDetailMode = "STEPS_COMMANDS"
+ambient-suggestions-enabled = true
+
+{{ if eq .chezmoi.os "windows" -}}
+[windows]
+sandbox = "unelevated"
+{{- end }}

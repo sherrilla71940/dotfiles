@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/typescript.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "typescript").glob }}"
+description: '{{ (index .rules "typescript").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/typescript.md" -}}

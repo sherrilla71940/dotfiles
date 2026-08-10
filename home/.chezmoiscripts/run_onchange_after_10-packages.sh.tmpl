@@ -1,0 +1,17 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+# Idempotent: Homebrew skips anything already installed. Kept deliberately short --
+# add tools here only when a new machine genuinely needs them on day one.
+set -euo pipefail
+
+if ! command -v brew >/dev/null 2>&1; then
+  printf 'Homebrew is not installed. Install it from https://brew.sh, then rerun: chezmoi apply\n' >&2
+  exit 0
+fi
+
+for formula in git jq; do
+  brew list --formula "$formula" >/dev/null 2>&1 || brew install "$formula"
+done
+
+command -v code >/dev/null 2>&1 || printf 'VS Code CLI not on PATH; install VS Code and run "Shell Command: Install code command".\n' >&2
+{{- end }}

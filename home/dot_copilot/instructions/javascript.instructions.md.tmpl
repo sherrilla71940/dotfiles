@@ -1,0 +1,7 @@
+{{- /* Generated from .chezmoitemplates/rules/javascript.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "javascript").glob }}"
+description: '{{ (index .rules "javascript").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/javascript.md" -}}

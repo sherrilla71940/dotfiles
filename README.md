@@ -77,4 +77,6 @@ explains each case.
 
 - [docs/setup.md](./docs/setup.md) — installing, onboarding, secrets, verification
 - [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — adding, changing and **removing** files
-- [AGENTS.md](./AGENTS.md) — read before letting a coding agent modify this repo
+- [AGENTS.md](./AGENTS.md) — always-on constraints for coding agents working in this repo.
+  Codex and the Copilot CLI load it automatically; the root `CLAUDE.md` imports it so Claude
+  Code gets the same rules

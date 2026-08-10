@@ -1,77 +1,64 @@
 # Working in this repository
 
-Read this before changing anything here. This repo configures Claude Code, Codex and
-Copilot themselves, so a mistake silently changes how every future session behaves.
+Always-on constraints for coding agents. This file is loaded into your context
+automatically, so it stays short: it lists only what you could get **wrong**, not how to do
+things. Procedures live in [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it
+before adding, changing or removing anything.
 
-`home/` is the [chezmoi](https://www.chezmoi.io) source state. Files under it are **not**
-live config — they are rendered into the home directory by `chezmoi apply`.
+This repo configures Claude Code, Codex and Copilot themselves, so a mistake here silently
+changes how every future session behaves.
 
-## Rules
+## The one thing to understand
 
-**Never edit a live file to change this repo.** Editing `~/.claude/rules/javascript.md`
-changes nothing durably; chezmoi will overwrite it on the next apply. Edit the source in
-`home/`, or use `chezmoi re-add <live path>` to pull a live edit back in.
+`home/` is the [chezmoi](https://www.chezmoi.io) **source state**. Files there are not live
+config — `chezmoi apply` renders them into the home directory. Editing a live file does not
+change this repo, and editing this repo does not change anything until you apply.
+
+## Constraints
 
 **Never duplicate a shared instruction.** Bodies live once in `home/.chezmoitemplates/`.
-If a rule needs different frontmatter per tool, that is what the per-tool `.tmpl` files are
-for — add a template, do not copy the text.
+When a rule needs different frontmatter per tool, add a thin `.tmpl` wrapper — do not copy
+the text.
 
-**Never reword a rule to make it "tool-neutral".** If a rule names one tool's machinery it
-belongs in that tool's own file only. A neutral paraphrase living alongside the original is
-the failure mode this structure exists to prevent.
+**Never reword a rule to be "tool-neutral".** A rule that names one tool's machinery
+belongs in that tool's file only. A paraphrase living alongside the original is the exact
+failure this structure exists to prevent.
 
 **Codex cannot import and cannot path-scope.** `~/.codex/AGENTS.md` must stay one literal
 file with no YAML frontmatter — Codex renders frontmatter as visible text and it counts
-against `project_doc_max_bytes` (32 KiB). Do not add per-language rules for Codex.
+against `project_doc_max_bytes` (32 KiB). Never add a per-language rule for Codex.
 
-**Do not commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a
-value. Keep it that way.
+**Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
+because Codex writes machine state into it. Keep it that way.
+
+**Never put package installers in `home/.chezmoiscripts/`.** Anything there runs on every
+`chezmoi apply`, so a routine apply — or a test render — installs software. That happened
+once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
+
+**Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish
 
-Run these. The first two catch the failure modes that have actually happened here.
-
 ```bash
-chezmoi diff                     # must not target any path inside this repo
-chezmoi status                   # empty after apply
+chezmoi diff     # must not target any path inside this repo
+chezmoi status   # empty after apply
 ```
 
-**File-count parity after any bulk move.** chezmoi's source-state naming silently
-transforms filenames, and this has caused real loss:
+**Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
+filenames, so real names are transformed silently and files can vanish. This has caused
+real loss here twice — four skills dropped in one refactor, and empty `__init__.py` package
+markers omitted in another.
 
 ```bash
 chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
-# then compare file counts between home/dot_agents/skills and the rendered copy
+# compare file counts against the source tree
 ```
 
-Known traps, all already handled — preserve them:
-
-| Trap | Handling |
-| --- | --- |
-| Real filename starts with an attribute prefix | `literal_create_validation_image.py` |
-| Empty file must still exist | `empty___init__.py` (office skills' package markers) |
-| App owns the file, must not be overwritten | `create_config.toml.tmpl` (Codex) |
-| Dotfile inside a managed tree | `dot_security-scan-passed` |
-
-Files beginning with `.` in the source state are ignored by chezmoi. That is why
-`home/dot_agents/skills/.gitignore` stays a repo-only file and is not deployed.
-
-**Do not put package installers in `home/.chezmoiscripts/`.** Anything there runs on every
-`chezmoi apply`, so a routine apply — or a test render — installs software. That happened
-once during this repo's migration. Bootstrap lives in `scripts/`, run by hand. Still pass
-`--exclude=scripts` when test-rendering, in case a script is ever added.
-
-## Adding a shared instruction
-
-1. Body → `home/.chezmoitemplates/rules/<name>.md`, no frontmatter.
-2. Glob → `home/.chezmoidata.yaml`.
-3. One thin template per tool: `dot_claude/rules/<name>.md.tmpl` (`paths:`) and
-   `dot_copilot/instructions/<name>.instructions.md.tmpl` (`applyTo:`).
-4. Verify the rendered bodies are byte-identical apart from frontmatter.
+Always pass `--exclude=scripts` when test-rendering.
 
 ## Verify against docs, not memory
 
 Configuration details for these tools drift between releases — discovery directories,
-frontmatter keys, deprecations. Check current official documentation before changing a
-path or a key. `docs/setup.md` lists the specific details known to be version-sensitive
+frontmatter keys, deprecations. Check current official documentation before changing a path
+or a key. [docs/setup.md](./docs/setup.md) lists the details known to be version-sensitive
 and links the references.

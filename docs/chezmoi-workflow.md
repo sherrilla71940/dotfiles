@@ -62,22 +62,22 @@ broken one.
 
 | | Instructions | Skills | Subagents | Prompts / commands |
 | --- | --- | --- | --- | --- |
-| `dot_claude/` | `rules/` | *symlink* | `agents/` | `commands/` |
+| `dot_claude/` | `rules/` | `skills/` | `agents/` | `commands/` |
 | `dot_copilot/` | `instructions/` | `skills/` | `agents/` | *VS Code profile* |
 | `dot_codex/` | `AGENTS.md.tmpl` | *shared tree* | — | *none* |
 | shared | `.chezmoitemplates/` | `dot_agents/skills/` | — | — |
 
 ### Why a folder is missing
 
-- **`dot_claude/skills/` cannot exist.** `~/.claude/skills` is already claimed by
-  `symlink_skills.tmpl`, which points at the shared tree. Adding the folder makes chezmoi
-  fail with `.claude/skills: inconsistent state`. Claude reads personal skills from that
-  one path only, so a Claude-exclusive skill has nowhere to go without abandoning the
-  symlink and merging per skill instead. If that need ever arises, that is the trade to
-  reopen.
+- **`dot_claude/skills/` contains both kinds.** A regular skill directory is Claude-only.
+  Each `symlink_<name>.tmpl` entry points to one portable skill in `~/.agents/skills`, so
+  shared and Claude-only skills can coexist without copying skill bodies.
 - **`dot_codex/skills/` would be wrong.** `~/.codex/skills` holds Codex's own bundled
-  `.system` skills. User skills belong in `~/.agents/skills`, which Codex scans natively —
-  that is what `dot_agents/skills/` is.
+  `.system` skills and is not a documented personal-skill location. Codex user skills
+  belong in `~/.agents/skills`, which Copilot also scans. Therefore a standalone personal
+  skill cannot be both Codex-only and hidden from Copilot. Use a Codex plugin when true
+  Codex-only distribution is required; plugins are not available in the Codex IDE
+  extension.
 - **`dot_codex/prompts/` is deliberately unused.** Custom prompts (`~/.codex/prompts`) are
   deprecated by OpenAI in favour of skills. Write a skill instead.
 - **`dot_copilot/prompts/` would do nothing.** VS Code reads `*.prompt.md` from the
@@ -247,12 +247,25 @@ The aliases are defined in `home/dot_bashrc` and `home/dot_zshrc.tmpl`:
 
 ## Adding a skill
 
-Portable skill → `home/dot_agents/skills/<name>/SKILL.md`. Tool-exclusive → that tool's
-`skills/` folder. Nothing else to wire: the whole tree is copied, so a new skill needs no
-registration anywhere.
+Portable skill → `home/dot_agents/skills/<name>/SKILL.md`, plus
+`home/dot_claude/skills/symlink_<name>.tmpl` pointing to
+`{{ .chezmoi.homeDir }}/.agents/skills/<name>`.
+
+Claude-only skill → `home/dot_claude/skills/<name>/SKILL.md`.
+
+Copilot-only skill → `home/dot_copilot/skills/<name>/SKILL.md`.
+
+Codex-only standalone personal skills are not supported by the tools' discovery paths:
+Codex requires `~/.agents/skills`, and Copilot scans that path too. Use a Codex plugin for
+strict isolation, with the limitation that plugins do not load in the Codex IDE extension.
 
 Check the body for harness-specific tool names ("the Read tool", "the Edit tool") before
 putting a skill in the shared tree — those read wrong in the other assistants.
+
+Because these are source-state edits, run `chezmoi apply`; do not run `chezmoi add`.
+`chezmoi add` is only for importing a brand-new file created at its target path under the
+home directory, and it happens before committing so the source-state change can be
+reviewed and committed.
 
 ## Removing something
 

@@ -51,7 +51,20 @@ if [[ "$src_skills" -ne "$out_skills" ]]; then
     empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Filename rules that will bite you'."
 fi
 
-# 3. A shared rule must reach every consuming tool with an identical body.
+# 3. 每個共用 skill 都必須透過個別 symlink 提供給 Claude，避免新增 skill 時漏接。
+for src in home/dot_agents/skills/*; do
+  [[ -d "$src" ]] || continue
+  name="$(basename "$src")"
+  link_src="home/dot_claude/skills/symlink_$name.tmpl"
+  link_out="$render/.claude/skills/$name"
+  [[ -f "$link_src" ]] || fail "shared skill '$name' has no Claude symlink template ($link_src)."
+  [[ -L "$link_out" ]] || fail "shared skill '$name' did not render as a Claude symlink."
+  target="$(readlink "$link_out")"
+  [[ "$target" == */.agents/skills/"$name" ]] || fail \
+    "shared skill '$name' rendered with an unexpected Claude symlink target: $target"
+done
+
+# 4. 每條共用 rule 都必須以相同內容送達所有使用它的工具。
 for src in home/.chezmoitemplates/rules/*.md; do
   name="$(basename "$src" .md)"
   claude="$render/.claude/rules/$name.md"
@@ -63,7 +76,7 @@ for src in home/.chezmoitemplates/rules/*.md; do
   [[ "$a" == "$b" ]] || fail "shared rule '$name' renders different bodies for Claude and Copilot."
 done
 
-# 4. Codex reads AGENTS.md literally; YAML frontmatter would show up as visible text.
+# 5. Codex 會逐字讀取 AGENTS.md；YAML frontmatter 會成為可見文字。
 if head -1 "$render/.codex/AGENTS.md" | grep -q '^---$'; then
   fail "~/.codex/AGENTS.md starts with YAML frontmatter. Codex renders it as visible text
     and it counts against project_doc_max_bytes. Keep .chezmoitemplates/core.md frontmatter-free."

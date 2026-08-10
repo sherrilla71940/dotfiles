@@ -123,8 +123,9 @@ refuses the commit if:
 1. a template fails to render,
 2. the skill file count changes between source and render — the symptom of a filename
    colliding with a chezmoi attribute prefix,
-3. a shared rule is missing its Claude or Copilot template, or renders different bodies,
-4. `~/.codex/AGENTS.md` gains YAML frontmatter, which Codex would display as text.
+3. a shared skill is missing its Claude symlink template,
+4. a shared rule is missing its Claude or Copilot template, or renders different bodies,
+5. `~/.codex/AGENTS.md` gains YAML frontmatter, which Codex would display as text.
 
 It never touches your home directory and passes `--exclude=scripts`, so validating never
 installs software. If chezmoi is not on PATH the hook warns and lets the commit through
@@ -239,10 +240,10 @@ If a real secret is ever required, use a chezmoi secret source (`onepasswordRead
   paths in the same file. To reapply a durable change, edit
   `home/dot_codex/create_config.toml.tmpl` and merge by hand.
 - **`~/.copilot/config.json`, `ide/`, `logs/`** are Copilot runtime state.
-- **`~/.claude/skills`** is the only symlink in the setup, pointing at `~/.agents/skills`.
-  Claude Code reads personal skills from that one directory and has no setting to add
-  another (`--add-dir` works; `permissions.additionalDirectories` explicitly does not), so
-  the shared tree is linked in rather than copied twice.
+- **`~/.claude/skills/<shared-skill>`** entries are symlinks to the corresponding
+  `~/.agents/skills/<shared-skill>` directories. Linking each portable skill separately
+  lets regular Claude-only skill directories coexist in `~/.claude/skills` without
+  copying shared skill bodies.
 
 ## Verify
 

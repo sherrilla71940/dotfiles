@@ -203,6 +203,29 @@ instead, then `chezmoi apply`.
 chezmoi writes it once and never touches it again. Codex is free to write machine state
 into it.
 
+## Editing the working agreement (the common case)
+
+`~/.claude/CLAUDE.md` is assembled from two sources, so "edit my CLAUDE.md" splits in two.
+The rendered file carries a signpost at the top telling you which is which — Claude Code
+strips block-level HTML comments before loading, so that note costs no context.
+
+| Your change | Edit | Shortcut | Reaches |
+| --- | --- | --- | --- |
+| Above the `# Claude Code only` marker | `home/.chezmoitemplates/core.md` | `dotf-core` | Claude + Codex + Copilot |
+| Below the marker | `home/dot_claude/CLAUDE.md.tmpl` | `dotf-claude` | Claude only |
+
+Then `dotf-diff` and `dotf-apply`.
+
+The test for which half: **would this sentence still be correct if Codex or Copilot read
+it?** Yes → shared body. No, it names a Claude feature → below the marker.
+
+⚠️ `chezmoi edit ~/.claude/CLAUDE.md` opens the *Claude-only* template. It cannot open the
+shared body, because that text is not in that file — it is pulled in by `includeTemplate`.
+Use `dotf-core` for shared changes.
+
+The aliases are defined in `home/dot_bashrc` and `home/dot_zshrc.tmpl`:
+`dotf` (cd to source), `dotf-core`, `dotf-claude`, `dotf-diff`, `dotf-apply`.
+
 ## Adding a skill
 
 Portable skill → `home/dot_agents/skills/<name>/SKILL.md`. Tool-exclusive → that tool's

@@ -24,4 +24,12 @@ alias work='cd "$HOME/Documents/work"'
 alias personal='cd "$HOME/Documents"'
 
 # zsh 會自行處理終端尺寸變化，因此不需要 bash 的 shopt -s checkwinsize。
+
+# dotfiles 編輯捷徑。共用工作準則同時供 Claude、Codex、Copilot 讀取，
+# 所以不放在任何單一工具的檔案裡；只有 Claude 專屬規則在 CLAUDE.md.tmpl。
+alias dotf='chezmoi cd'
+alias dotf-core='"${EDITOR:-code}" "$(chezmoi source-path)/.chezmoitemplates/core.md"'
+alias dotf-claude='chezmoi edit ~/.claude/CLAUDE.md'
+alias dotf-diff='chezmoi diff'
+alias dotf-apply='chezmoi apply -v'
 {{- end }}

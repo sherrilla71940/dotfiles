@@ -69,4 +69,4 @@
 
 ## Reference documents
 
-- Store non-text project references in `~/Documents/personal/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.
+- Store non-text project references in `~/Documents/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.

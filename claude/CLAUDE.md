@@ -1,58 +1,39 @@
+@~/.claude/shared/core.md
+
 # CLAUDE.md
 
-## Core Principles
+The shared working agreement is imported above from `shared/core.md` — the same file Codex
+reads as `AGENTS.md` and Copilot imports as `core-principles.instructions.md`. Nothing from
+it is repeated below.
 
-### Scope and priority
+Path-scoped language and framework rules load separately from `~/.claude/rules/`.
 
-- Apply rules in this order when conflicts occur: language/framework-specific > file-type-specific > general.
-- Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Only compile or generate output if explicitly requested.
+Everything below depends on a Claude Code feature that Codex and Copilot don't have.
 
-### Response behavior
+## Response behavior
 
-- Always respond in English. This instruction wins over any language-specific rule in a conflict.
-- Be concise and actionable.
-- **Handling missing/ambiguous information:** if any input needed for a task — source files, specs, data, or these instructions themselves — is incomplete, unreadable, ambiguous, or missing, do not guess or silently fill the gap. Instead:
-  1. State what is unclear/missing and where (file, line number, section, field/parameter name, or whatever locator fits).
-  2. State what's needed from the user to resolve it.
-  3. Prefix the flag with `⚠️ Needs clarification:` so it's easy to spot.
-  - If other parts of the task are unaffected by the gap, implement those and clearly separate what's done from what's blocked.
-  - **Minor, low-stakes ambiguity** (e.g., a formatting preference with no real consequence) can be resolved with a stated default instead — say what was assumed and why.
-  - The bar: if a wrong guess would break something, change output correctness, or require rework, flag it. Otherwise, assume and proceed.
-- After implementation, summarize:
-  - What changed
-  - Why it changed
-  - Any assumptions or remaining risks
+- **Verify version-sensitive Claude details before acting.** Before changing Claude Code, Claude Agent SDK, or Claude API configuration—or giving exact flags, setting keys, hook events, defaults, model IDs, or command syntax—check the built-in `claude-code-guide` agent or current official documentation. Memory and skills may guide where to look, but are not authoritative when behavior can drift.
 
-### Engineering principles
+## Session workflow
 
-- Keep changes minimal, scoped, and architecture-aware.
-- Prefer root-cause fixes over surface-level patches.
-- Before changing shared modules, inspect their callers and preserve existing contracts. If dependent files must change, identify them in the plan and update them together.
-- Avoid over-engineering. Do not introduce abstractions, layers, or utilities until they are clearly justified by duplication, variation, or complexity.
-- Apply Clean Code principles pragmatically:
-  - Favor SRP, DRY, low coupling, and high cohesion.
-  - Prefer intentional duplication over premature abstraction when it keeps the code easier to read and change.
-- Reuse existing utilities, services, and shared modules before creating new ones.
-- When git hooks report issues, fix the reported issues instead of bypassing the hooks.
+- When closing out an active item in auto memory, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.
 
-### Security
+## Parallelizing independent work
 
-- Prevent common web vulnerabilities (XSS, injection, unsafe deserialization, CSRF gaps).
-- Treat client-side validation and escaping as defense-in-depth, not a trust boundary.
-- Never rely on client-side checks for authorization or critical validation.
-- Escape or sanitize user-generated content whenever bypassing framework protections (e.g., `dangerouslySetInnerHTML` or `innerHTML`).
-- Never hardcode secrets, API keys, or access tokens.
+- When a task decomposes into substantial independent units, consider parallel `Agent` calls when all of these are true: ownership boundaries are explicit, outputs can be verified independently, agents will not modify shared files or generated artifacts, and the expected speed benefit exceeds briefing and integration cost.
+  <!-- Personal Notes: -->
+  <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the main exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
+  <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
+- Subagents do not inherit the parent conversation or the project's auto memory (a fork is the exception). Ordinary custom subagents **do** load the CLAUDE.md hierarchy; the built-in `Explore` and `Plan` agents skip it. Brief each subagent with any required parent-conversation or auto-memory context, and restate CLAUDE.md rules only for agents that do not load them — proportionate to the task, not a blanket context dump.
+- Reassess mid-task if the remaining work becomes independently parallelizable. Keep work sequential when steps share architectural or git state, depend on earlier results, overlap files, or are too small to justify delegation.
+- Agent Teams require the user's approval. Do not treat this preference as standing authorization to create a team.
 
-### Readability and documentation
+## Shell tool preference
 
-- Prefer the clearest correct code over the shortest or cleverest code.
-- Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
-- Use JSDoc for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
-- Use standard comments sparingly, for implementation notes that explain *why* a non-obvious decision or workaround was used.
+Windows only — on macOS/Linux, Bash is the only shell tool and this section doesn't apply.
 
----
-
-## Company Coding Style
-
-- Use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. Use camelCase for all other identifiers.
-- All code comments should be in zh-tw.
+- Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
+  <!-- Personal Notes: -->
+  <!-- source (CLAUDE_CODE_USE_POWERSHELL_TOOL=0): code.claude.com/docs/en/setup → Windows setup — "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to opt in or 0 to opt out." Also verified empirically this session: the PowerShell tool became unavailable once =0 took effect. -->
+- Use the **PowerShell tool** only when the task is genuinely Windows-specific: COM automation, registry access, or PowerShell-only cmdlets.
+- If the Bash tool is unavailable, say so before falling back to PowerShell.

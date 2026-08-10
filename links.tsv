@@ -1,0 +1,27 @@
+# One source of truth for every managed symlink. Both installers read this file, so a
+# managed path is added or changed in exactly one place.
+#
+# Columns are TAB-separated: component, live path, repository source, platform.
+#   {HOME}         the user's home directory
+#   {VSCODE_USER}  VS Code's user directory for the default profile
+#   platform       empty for both, or "windows" / "macos" to restrict the row
+#
+claude	{HOME}/.claude/dotfiles	claude
+claude	{HOME}/.claude/CLAUDE.md	claude/CLAUDE.md
+claude	{HOME}/.claude/commands	claude/commands
+claude	{HOME}/.claude/rules	shared/rules
+claude	{HOME}/.claude/shared	shared
+claude	{HOME}/.claude/skills	skills
+claude	{HOME}/.claude/settings.json	claude/settings.json	windows
+claude	{HOME}/.claude/settings.json	claude/settings.macos.json	macos
+codex	{HOME}/.codex/AGENTS.md	shared/core.md
+codex	{HOME}/.agents/skills	skills
+copilot	{HOME}/.copilot/agents	copilot/agents
+copilot	{HOME}/.copilot/instructions	copilot/instructions
+copilot	{HOME}/.copilot/skills	copilot/skills
+vscode	{VSCODE_USER}/settings.json	vscode/settings.json
+vscode	{VSCODE_USER}/keybindings.json	vscode/keybindings.json
+vscode	{VSCODE_USER}/mcp.json	vscode/mcp.json
+vscode	{VSCODE_USER}/prompts	copilot/prompts
+shell	{HOME}/.bashrc	shell/bashrc
+shell	{HOME}/.bash_profile	shell/bash_profile

@@ -1,63 +1,34 @@
-# dotfiles
+# Dotfiles
 
-Dotfiles manager: keep tool configs in git, symlink them into place.
+Personal Repository for managing dotfiles and keeping configuration consistent
+across machines. It currently includes Claude Code, Codex, GitHub Copilot,
+VS Code, and shell configuration.
 
-The real config files live in this repo. Each tool's normal config location is replaced with a link that points back here, so editing a config in its usual place is really editing this repo — `git` sees every change, and I can restore the whole setup on another machine.
+**Claude Code is the base.** Its files are the canonical text; the other tools import them
+rather than keeping reworded copies. Nothing is generated and there is no build step.
 
-Windows for now. Currently the only built module is Claude Code; the design is modular, so other tools (VSCode, Git, …) can be added by dropping in a reference file.
+| Canonical source | Content |
+| --- | --- |
+| `shared/core.md` | The working agreement (Claude's `CLAUDE.md` prose) |
+| `shared/rules/*.md` | Path-scoped language rules (Claude's `paths:` frontmatter) |
+| `skills/` | Portable skills |
 
-## What's tracked
+How each tool reaches them:
 
-- **Claude Code** — the `~/.claude` config directory: `settings.json`, `CLAUDE.md`, `rules/`, and custom `skills/` (including the `dotfiles` manager itself).
-- **Claude Desktop** *(optional)* — `claude_desktop_config.json`.
+- **Claude Code** — `CLAUDE.md` opens with `@~/.claude/shared/core.md`; rules and skills
+  link straight at `shared/rules` and `skills`.
+- **Codex** — `~/.codex/AGENTS.md` *is* `shared/core.md`. Codex has no import mechanism, so
+  it needs one literal file.
+- **Copilot** — `copilot/instructions/*.instructions.md` are thin importers carrying
+  Copilot's own `applyTo:` and importing the Claude file.
 
-Secrets and session state (`sessions/`, `keys/`, `login/`, `history/`, `*.local.json`) are excluded by the allowlist in [`claude/.gitignore`](claude/.gitignore).
+Modular but scoped: only genuinely portable material lives in `shared/` and `skills/`.
+Anything exclusive to one assistant stays in that assistant's folder — `claude/CLAUDE.md`,
+`copilot/skills/`, `copilot/instructions/`.
 
-## How it works
+[`links.tsv`](./links.tsv) is the single table of managed symlinks; both installers read it,
+so a path is added in one place and the platforms can't drift.
 
-- A git repo at `~/dotfiles` holds the real files under `claude/` (a mirror of `~/.claude`).
-- `~/.claude` on the machine is a **symlink/junction** into `claude/`.
-- On Windows this uses Developer Mode symlinks, with a no-admin `cmd` junction/hardlink fallback.
-
-The whole procedure is automated by a Claude Code skill, so setup and restore are driven by a documented playbook rather than manual steps.
-
-## Layout
-
-```
-dotfiles/
-  claude/                         # mirror of ~/.claude
-    CLAUDE.md, settings.json
-    rules/
-    skills/
-      dotfiles/                   # the manager skill
-        SKILL.md                  # setup / restore playbook
-        references/
-          claude-code.md          # Claude Code + Desktop module
-          _template.md            # template for adding a new tool
-      ...                         # other skills
-```
-
-## Getting started
-
-**First-time setup** — snapshot your configs into the repo and link them:
-Run the `dotfiles` skill in Claude Code (`/dotfiles claude-code`). It initializes the repo if needed, copies configs in, sets up the allowlist, and links them into place. Full steps and the Windows specifics are in [`claude/skills/dotfiles/SKILL.md`](claude/skills/dotfiles/SKILL.md).
-
-**Restore on a new machine** — clone, then link:
-
-```bash
-git clone <this-repo-url> ~/dotfiles
-```
-
-Then run the `dotfiles` skill. It detects the tracked tools from the repo and links them into place (no re-snapshot needed). See the "Restore from an existing remote" mode in [`claude/skills/dotfiles/SKILL.md`](claude/skills/dotfiles/SKILL.md).
-
-**Update an existing clone:**
-
-```bash
-cd ~/dotfiles && git pull
-```
-
-Re-run the skill only if a new tool was added.
-
-## Adding another tool
-
-Copy [`claude/skills/dotfiles/references/_template.md`](claude/skills/dotfiles/references/_template.md) to `references/<tool>.md`, fill in that tool's config paths and ignore rules, then run `/dotfiles <tool>`. The template includes worked examples for VSCode, GitHub Copilot, and Git.
+See [dotfiles-setup.md](./dotfiles-setup.md) for installation and why each file lives where
+it does, and [shared/PROVENANCE.md](./shared/PROVENANCE.md) for why individual shared rules
+exist.

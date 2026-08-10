@@ -33,8 +33,6 @@
 - When dialogs or overlays lock page scrolling, preserve scrollbar space with `scrollbar-gutter: stable` or an equivalent fallback.
 - For animations and transitions, prefer compositor-friendly properties (transform, opacity) when appropriate; avoid animating layout-affecting properties (top, left, width, height) when an equivalent transform-based approach is available.
 
-what section in html-css
-
 ## Overrides and output
 
 - Avoid `!important` unless there is no safe alternative.

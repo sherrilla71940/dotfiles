@@ -65,8 +65,8 @@
 - Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
 - Use JSDoc (`/** */`) for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
 - Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
-- Code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike (code comments only; chat responses stay English).
+- In application and project repositories, code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — comments are written in English. Chat responses stay English in either case.
 
 ## Reference documents
 
-- Store non-text project references in `~/Documents/personal/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.
+- Store non-text project references in `~/Documents/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.

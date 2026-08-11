@@ -1,5 +1,10 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
-.claude/settings.local.json
+
+# Python cache from skill scripts, if they are ever run from the repo
+**/__pycache__/
+**/*.py[cod]
+
+# Backups left by the retired symlink installers
 .dotfiles-backups/

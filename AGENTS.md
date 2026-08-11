@@ -11,9 +11,10 @@ how every future agent session behaves.
 
 ## The one thing to understand
 
-`home/` is the [chezmoi](https://www.chezmoi.io) **source state**. Files there are not live
-config — `chezmoi apply` renders them into the home directory. Editing a live file does not
-change this repo, and editing this repo does not change anything until you apply.
+`home/` is the [chezmoi](https://www.chezmoi.io) **source state**: the desired configuration
+that agents edit and commit. A **target** is the live file in the home directory that an
+application reads. `chezmoi apply` makes targets match the source state. The repository-root
+`.chezmoiroot` file selects `home/`; it does not create a `~/home/` directory.
 
 ## Helping someone operate this repository
 
@@ -60,7 +61,7 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 
 ```bash
 chezmoi source-path  # MUST resolve inside this repository; otherwise stop
-chezmoi diff         # ALWAYS preview before apply; apply overwrites without prompting
+chezmoi diff         # ALWAYS preview before apply; apply can replace live configuration
 chezmoi status       # empty after apply
 ```
 

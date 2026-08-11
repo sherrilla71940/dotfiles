@@ -1,25 +1,62 @@
-# Agent customization support
+# AI client customization support
 
-This repository manages personal configuration for Claude Code, Codex, GitHub Copilot CLI,
-and VS Code with GitHub Copilot. The tools support different customization surfaces, so
-"supported" does not always mean the same file shape or installation mechanism.
+This repository manages personal configuration for several local coding-agent clients. A
+**surface** is one way to run a client, such as a terminal CLI, an IDE extension, or a
+desktop app. Each surface can share some configuration with the others while keeping other
+state separate.
 
-## Support matrix
+The **Model Context Protocol (MCP)** connects a client to external tools and data sources.
 
-| Capability | Claude Code | Codex | GitHub Copilot |
-| --- | --- | --- | --- |
-| Always-on instructions | managed `CLAUDE.md` | managed `AGENTS.md` | managed user instructions and repository `AGENTS.md` |
-| Path-scoped instructions | managed rules | not supported by Codex | managed instructions |
-| Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
-| Client-only skills | `~/.claude/skills/<name>` | no verified standalone path that stays hidden from Copilot | `~/.copilot/skills/<name>` |
-| Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/`, used for subagent delegation | custom agents under `~/.copilot/agents/`, selectable directly or invoked as subagents |
-| Prompts/commands | managed commands | standalone custom prompts are deprecated; use a skill | managed VS Code prompts |
-| Marketplace plugins | declarative `enabledPlugins` | defaults in create-once `config.toml` | declarative `enabledPlugins` with auto-install |
-| User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | managed CLI `mcp-config.json` plus VS Code `mcp.json` |
-| General settings | managed `settings.json` | create-once app-owned `config.toml` | managed CLI and VS Code settings |
+## What the support table answers
 
-Prepared directories contain no dummy customization. Add a real agent or client-only skill
-only when it has a concrete purpose.
+The table answers: **If this repository manages a customization, which local surface reads
+it?** It describes this repository's implementation, not every feature that each product
+natively supports.
+
+Paths beginning with `~/` in the table are live **targets** that applications read. Make
+durable changes in the corresponding source files under this repository's `home/` directory;
+the procedures below identify those source paths.
+
+The columns group surfaces only when they read the same personal configuration:
+
+- **Claude Code local:** Claude Code CLI, its IDE integrations, and the Code tab in Claude
+  Desktop. These surfaces share Claude Code configuration under `~/.claude/` and
+  `~/.claude.json`.
+- **Codex local:** Codex CLI, the Codex IDE extension, and Codex in the ChatGPT desktop app.
+  These surfaces share configuration under `~/.codex/`.
+- **Copilot CLI** and **VS Code with Copilot:** These surfaces share personal instructions,
+  skills, and agents under `~/.copilot/` but keep separate settings, prompts, and MCP files.
+
+| Capability | Claude Code local | Codex local | Copilot CLI | VS Code with Copilot |
+| --- | --- | --- | --- | --- |
+| Always-on personal instructions | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/instructions/core-principles.instructions.md` with `applyTo: "**"` | the same personal `*.instructions.md` file |
+| Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
+| Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
+| Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
+| Client-only skills | `~/.claude/skills/<name>` | no verified standalone path that stays hidden from Copilot | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
+| Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
+| Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
+| Marketplace plugins | declarative `enabledPlugins` | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
+| User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
+| General settings | managed `settings.json` | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
+
+Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
+directories exist only where a client requires the directory before a session starts.
+
+### Surfaces outside this table
+
+This repository does not manage complete product or account state:
+
+- Claude Desktop chat and Cowork do not consume every Claude Code file listed above. In
+  particular, MCP servers configured for the desktop chat app are separate from the Code
+  tab.
+- Claude.ai connectors, authentication, conversations, and account settings remain with the
+  signed-in account.
+- Codex cloud receives repository files such as root `AGENTS.md` when the repository is
+  available to the cloud task. It does not receive personal files from this machine's
+  `~/.codex/` directory through chezmoi.
+- Copilot cloud features can read supported files committed inside a repository. This
+  dotfiles setup does not copy personal `~/.copilot/` runtime state into GitHub.
 
 ## Add an agent definition
 
@@ -54,8 +91,8 @@ loading Claude-only instructions. Keep those exclusions when changing VS Code se
 
 ### Claude Code
 
-User-scoped MCP configuration shares `~/.claude.json` with OAuth, project state, and caches,
-so chezmoi must not overwrite that file. Add a non-secret definition to
+User-scoped MCP configuration shares `~/.claude.json` with authentication, project state,
+and caches, so chezmoi must not overwrite that file. Add a non-secret definition to
 `scripts/claude-user-mcp-servers.json`, then run the platform installer:
 
 ```bash
@@ -124,8 +161,8 @@ Review the source diff before committing. This works because Copilot's settings 
 plain managed file, not a template. For Claude's templated settings and Codex's create-once
 config, follow the client-specific steps above instead.
 
-Never copy plugin caches, installed-plugin directories, OAuth tokens, or client runtime state
-into `home/`.
+Never copy plugin caches, installed-plugin directories, authentication tokens, or client
+runtime state into `home/`.
 
 ## Verify after applying
 
@@ -140,8 +177,15 @@ into `home/`.
 
 ## Official references
 
+- [Claude Code Desktop and shared configuration](https://code.claude.com/docs/en/desktop)
+- [Claude Code IDE integrations](https://code.claude.com/docs/en/ide-integrations)
 - [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)
 - [Claude Code MCP sources](https://code.claude.com/docs/en/mcp)
 - [Claude Code with Chrome](https://code.claude.com/docs/en/chrome)
+- [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-basic)
 - [Codex custom agents and subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
+- [VS Code custom instructions](https://code.visualstudio.com/docs/agent-customization/custom-instructions)
+- [VS Code custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)
+- [VS Code agent skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)
+- [Copilot CLI configuration directory](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference)
 - [GitHub Copilot custom agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)

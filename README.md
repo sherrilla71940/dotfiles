@@ -1,25 +1,36 @@
 # Dotfiles
 
 Personal repository for keeping user-level configuration consistent across machines. It
-currently manages shell configuration, VS Code, Claude Code, Codex, GitHub Copilot, and the
-supporting bootstrap and validation tools.
+manages shell configuration, VS Code, Claude Code, Codex, GitHub Copilot, and supporting
+bootstrap and validation tools.
 
-Managed with [chezmoi](https://www.chezmoi.io). On a new machine, chezmoi clones this
-repository into its source directory; no separate `git clone` is required:
+[Chezmoi](https://www.chezmoi.io) stores the desired configuration in this repository and
+writes that configuration to the home directory. No separate `git clone` is required.
+
+## Quick start
+
+Use this one-line setup only on a new machine with no configuration to preserve:
 
 ```bash
-chezmoi init https://github.com/sherrilla71940/dotfiles.git
+sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
 
-If you use a fork, replace the URL with your fork's URL. See the full
-[new-machine setup guide](./docs/setup.md#onboarding-a-new-machine) before applying.
+On a machine with existing configuration, install chezmoi first and preview the changes
+before applying them:
 
-Git and chezmoi must exist before initialization. VS Code and the three AI clients are
-installed and authenticated separately; applying first is safe after reviewing the diff.
+```bash
+chezmoi init sherrilla71940
+chezmoi source-path
+chezmoi diff
+chezmoi apply -v
+```
 
-⚠️ On a machine that already has configuration, run `chezmoi diff` before `chezmoi apply`:
-**apply overwrites existing files without prompting.** See
-[docs/setup.md](./docs/setup.md#onboarding-a-new-machine).
+An apply can replace live configuration. Confirm that `chezmoi source-path` points inside
+this repository; that command prints the source directory that chezmoi will read. Review the
+complete diff before applying. If you use a fork, replace `sherrilla71940` with the fork's
+URL. See the
+[new-machine setup guide](./docs/setup.md#onboarding-a-new-machine) for Windows, application,
+and recovery details.
 
 ## After setup: manage it with an AI assistant
 
@@ -46,9 +57,9 @@ home-directory path and how chezmoi should handle the file. For example, `dot_ba
 to `~/.bashrc`, while a `.tmpl` file is rendered as a template. Editing this repository does
 not change live configuration until `chezmoi apply` runs.
 
-Templates and OS conditions let one source support Windows and macOS even when applications
-store the same setting in different locations. Files used by only one application stay in
-that application's source directory.
+Templates and operating-system (OS) conditions let one source support Windows and macOS even
+when applications store the same setting in different locations. Files used by only one
+application stay in that application's source directory.
 
 ### Shared AI configuration
 
@@ -90,7 +101,7 @@ home/                            chezmoi source state
   dot_zshrc.tmpl  dot_bashrc     shells
   AppData/ · Library/            VS Code, one per OS
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
-scripts/install-claude-mcp.*     safely adds declared user-scoped MCP servers to Claude
+scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/vscode-extensions.txt    extension manifest (installed on request)
 docs/decisions/                  architecture decisions and reconsideration triggers
@@ -108,6 +119,6 @@ docs/decisions/                  architecture decisions and reconsideration trig
 | Let a coding agent work in this repo | [AGENTS.md](./AGENTS.md) |
 
 `AGENTS.md` is the one file here written for a machine rather than a person: Codex and the
-Copilot CLI load it automatically, and the root `CLAUDE.md` imports it so Claude Code gets
-the same constraints. It stays deliberately short, since it costs context in every agent
-session — procedures live in the workflow guide instead.
+Copilot command-line interface (CLI) load it automatically, and the root `CLAUDE.md` imports
+it so Claude Code gets the same constraints. It stays deliberately short, since it costs
+context in every agent session — procedures live in the workflow guide instead.

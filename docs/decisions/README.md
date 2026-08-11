@@ -1,8 +1,8 @@
 # Architecture decision records
 
-This directory records durable architectural and design decisions: why the repository is
-structured a certain way, which alternatives were rejected, and what future change should
-trigger reconsideration.
+This directory contains architecture decision records (ADRs). Each record explains why the
+repository uses a particular structure, which alternatives were rejected, and which future
+change should trigger reconsideration.
 
 Operational steps belong in [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md). Current
 constraints that every coding agent must obey belong in [`AGENTS.md`](../../AGENTS.md).

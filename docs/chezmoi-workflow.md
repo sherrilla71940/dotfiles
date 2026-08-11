@@ -1,43 +1,60 @@
-# Working in this repo with chezmoi
+# Working in this repository with chezmoi
 
-Practical guide: where a file goes, how to change it, and how to remove it.
+Use this guide to add, change, or remove managed configuration.
 
-`home/` is the chezmoi **source state**. Files there are not live config — `chezmoi apply`
-renders them into your home directory. `.chezmoiroot` (containing `home`) is what points
-chezmoi at that subdirectory, so the repo root stays readable.
+## Start with one example
 
-## Source vs target — the distinction everything else rests on
+This repository contains `home/dot_bashrc`. Chezmoi interprets `dot_` as a leading dot, so
+the file represents `~/.bashrc`:
 
-| | Path | Purpose |
+```text
+repository source                     live target
+home/dot_bashrc  --chezmoi apply-->   ~/.bashrc
+```
+
+The **source state** is the desired configuration stored under `home/`. Edit and commit the
+source state. A **target** is the live file in the home directory that an application reads.
+Run `chezmoi apply` to make targets match the source state.
+
+The repository-root `.chezmoiroot` file contains `home`. This setting tells chezmoi to treat
+`home/` as the top of the source state. It does not create a `~/home/` directory; it keeps
+repository-only files such as `README.md`, `docs/`, and `scripts/` outside the managed home
+tree.
+
+| Kind | Example | Purpose |
 | --- | --- | --- |
-| **Source** | `home/.chezmoitemplates/core.md`, `home/dot_claude/…` | what you edit and commit |
-| **Target** | `~/.claude/CLAUDE.md`, `~/.bashrc` | what the tools read |
+| Source | `home/dot_bashrc` | File you edit and commit |
+| Target | `~/.bashrc` | File the shell reads |
+| Shared template | `home/.chezmoitemplates/core.md` | Reusable content included by source templates |
 
-`chezmoi apply` turns source into target. The two never swap roles, which decides every
-command you use:
+The source and target have different workflows:
 
-- **Edited a source file** (anything under `home/`) → just `chezmoi apply`. There is nothing
-  to "add"; it is already in the source state.
-- **Edited a target file** (something in your home directory) → `chezmoi re-add` to pull it
-  back, and note that this silently skips templates.
+- **Edited a source file** (anything under `home/`): Run `chezmoi diff`, then
+  `chezmoi apply`. Do not run `chezmoi add`; the file is already in the source state.
+- **Edited a target file** (something in your home directory): Identify whether its source
+  is a template. Use `chezmoi re-add` for a plain file; edit the source for a template.
 
-**`chezmoi add` always takes a target path, never a source path.** `chezmoi add ~/.bashrc`
-is correct; `chezmoi add home/.chezmoitemplates/core.md` is meaningless — it would try to
-manage a repo file as if it were one of your dotfiles.
+**`chezmoi add` always takes a target path, never a source path.** Use `chezmoi add ~/.bashrc`
+to import a live file for the first time. Do not run
+`chezmoi add home/.chezmoitemplates/core.md`; that path is already inside the source state.
 
 ## Where does my file go?
 
-Start here whenever you add something.
+This guide uses **client** for Claude Code, Codex, or GitHub Copilot. Start by asking how many
+clients need the file:
 
-```
-How many tools consume it?
-├── ONE  → a plain file in that tool's folder. Write the frontmatter yourself.
-│           home/dot_claude/    home/dot_codex/    home/dot_copilot/
-└── MANY → body in home/.chezmoitemplates/
-            + one thin .tmpl per consuming tool
-```
+- **One client:** Add a plain file under `home/dot_claude/`, `home/dot_codex/`, or
+  `home/dot_copilot/`.
+- **Multiple clients:** Store the reusable body under `home/.chezmoitemplates/`, then add one
+  thin `.tmpl` wrapper for each client that needs different metadata or a different target
+  path.
 
-Templating exists for exactly one reason: **the three tools disagree about how to scope an
+A **thin wrapper** is a short source template that adds client-specific metadata or chooses
+an operating-system-specific destination. It includes the shared body instead of copying it.
+A client's **frontmatter** is the YAML metadata block between `---` lines at the top of a
+Markdown file.
+
+Templating exists for exactly one reason: **the three clients disagree about how to scope an
 instruction**, so one shared file cannot satisfy all of them.
 
 | Tool | Scopes with | Imports other files? |
@@ -46,13 +63,13 @@ instruction**, so one shared file cannot satisfy all of them.
 | GitHub Copilot | `applyTo:` frontmatter | Markdown links only, same directory |
 | Codex | **nothing** | **no** |
 
-Which tools share what today:
+The clients currently share these bodies:
 
 | Shared body | Consumed by |
 | --- | --- |
 | `.chezmoitemplates/core.md` | **all three** — Claude inlines it in `CLAUDE.md`, Codex renders it as `AGENTS.md` with no frontmatter, Copilot as `core-principles.instructions.md` |
 | `.chezmoitemplates/rules/*.md` | Claude and Copilot — Codex is excluded because it cannot path-scope |
-| `.chezmoitemplates/vscode/*` | one body, two OS-specific VS Code profile locations |
+| `.chezmoitemplates/vscode/*` | one body, two operating-system-specific VS Code profile locations |
 
 ## Where each customization type lives
 
@@ -94,9 +111,9 @@ created part-way through. Use the same pattern for any future folder: create it 
 
 ## Adding an instruction
 
-### Case 1 — only one tool needs it (the simple case)
+### Case 1 — only one client needs it
 
-Drop a **plain file** into that tool's folder and write the frontmatter yourself. No
+Drop a **plain file** into that client's folder and write the frontmatter yourself. No
 template, no data entry, no `.tmpl` suffix — chezmoi copies it verbatim.
 
 `home/dot_claude/rules/python.md`
@@ -118,23 +135,23 @@ The Copilot equivalent is `home/dot_copilot/instructions/<name>.instructions.md`
 `applyTo:`. Claude-only rules that belong with the others can also go straight into
 `home/dot_claude/CLAUDE.md.tmpl`, below the `# Claude Code only` marker.
 
-**Use this whenever the rule names one tool's machinery** — `Agent` calls, the
+**Use this whenever the rule names one client's machinery** — `Agent` calls, the
 `claude-code-guide` agent, the Bash-vs-PowerShell *tools*. Those must not be paraphrased
 into the shared body.
 
-### Case 2 — more than one tool needs it
+### Case 2 — more than one client needs it
 
-Now the frontmatter differs per tool, so the body is shared and each tool gets a thin
+Now the frontmatter differs per client, so the body is shared and each client gets a thin
 wrapper.
 
 1. **Body** → `home/.chezmoitemplates/rules/<name>.md`. **No frontmatter.**
-2. **Glob** → `home/.chezmoidata.yaml`:
+2. **File pattern (glob)** → `home/.chezmoidata.yaml`:
    ```yaml
      <name>:
        glob: "**/*.{ts,tsx}"
        title: Your Topic
    ```
-3. **One thin template per consuming tool:**
+3. **One thin template per consuming client:**
 
    `home/dot_claude/rules/<name>.md.tmpl`
    ```
@@ -164,27 +181,55 @@ wrapper.
 be always-on against its 32 KiB `project_doc_max_bytes` budget. Codex participates in the
 shared **core** only, via `dot_codex/AGENTS.md.tmpl`.
 
-**Never write the same rule twice.** A rule that names one tool's machinery belongs in that
-tool's file only, never paraphrased into a "neutral" copy in the shared body.
+**Never write the same rule twice.** A rule that names one client's machinery belongs in
+that client's file only, never paraphrased into a "neutral" copy in the shared body.
 
-### Why the template looks like it has no frontmatter
+### How a thin wrapper works
 
-In `home/dot_claude/rules/accessibility.md.tmpl`, line 1 is a Go template comment, so `---`
-sits on line 2 — and editors only highlight YAML frontmatter when `---` is the very first
-line. The `{{-` and `-}}` trim markers strip the comment and its newline, so the rendered
-file starts with `---` on line 1. The frontmatter is real; only the glob is substituted.
+The Copilot JavaScript wrapper demonstrates every template element used by shared rules:
+
+```gotemplate
+{{- /* Generated from .chezmoitemplates/rules/javascript.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "javascript").glob }}"
+description: '{{ (index .rules "javascript").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/javascript.md" -}}
+```
+
+The elements have distinct roles:
+
+| Syntax | Role |
+| --- | --- |
+| `{{- /* ... */ -}}` | Go-template comment; removed from the target |
+| `---` and the surrounding YAML | Literal client frontmatter; written to the target |
+| `{{ (index .rules "javascript").glob }}` | Reads `rules.javascript.glob` from `home/.chezmoidata.yaml` |
+| `{{ includeTemplate "rules/javascript.md" -}}` | Renders the shared body from `home/.chezmoitemplates/rules/javascript.md` |
+| `-` beside `{{` or `}}` | Trims adjacent whitespace |
+
+After rendering, Copilot receives its `applyTo` frontmatter followed by the shared JavaScript
+body. Claude uses a separate wrapper with `paths:` frontmatter and the same body.
+
+The comment is optional. Keep it when it helps an editor find the shared source of truth.
+If you remove it, remove the complete `{{- /* ... */ -}}` line.
 
 ## Editing something already managed
 
-**You do not have to use chezmoi commands.** Editing a file directly in your home
-directory works — but chezmoi does not notice, so the source becomes older than the target
-and your next `chezmoi apply` overwrites the edit. You have to bring it back.
+In this section, the **source** is the managed file under this repository's `home/`
+directory. The **target** is the live file in your actual home directory. For example,
+`home/dot_bashrc` is the source for the `~/.bashrc` target.
+
+**You do not have to use chezmoi commands to edit a target.** However, editing `~/.bashrc`
+changes only the target; `home/dot_bashrc` remains unchanged. A later `chezmoi apply` can
+restore the source version and erase the live-only edit. Preserve the edit in the source
+before applying again.
 
 Which route is safe depends on whether the file is a template:
 
 | The file | Edit live, then… | Or edit the source |
 | --- | --- | --- |
-| **Not a template** — `dot_bashrc`, skills, a single-tool rule | `chezmoi re-add ~/.bashrc` ✅ captures it | `chezmoi edit ~/.bashrc` |
+| **Not a template** — `dot_bashrc`, skills, a single-client rule | `chezmoi re-add ~/.bashrc` ✅ captures it | `chezmoi edit ~/.bashrc` |
 | **A template** — `.tmpl` files: shared rules, `CLAUDE.md`, `settings.json` | `chezmoi re-add` **silently skips it** ⚠️ | `chezmoi edit` opens the `.tmpl` |
 
 `chezmoi re-add` is safe against templates by design — its help says *"chezmoi will not
@@ -205,8 +250,9 @@ Rules of thumb:
   to see what will change.
 - **Brand-new file** → `chezmoi add ~/.newfile`.
 
-Which files are templates? `chezmoi managed` lists everything; anything whose source name
-ends in `.tmpl` is one. In this repo that is: all shared rules, `CLAUDE.md`,
+To check whether a target comes from a template, run `chezmoi source-path <target>` and
+inspect the returned source filename. A `.tmpl` suffix identifies a template. In this
+repository, templates include all shared rules, `CLAUDE.md`,
 `settings.json`, `AGENTS.md`, `config.toml`, the Copilot instruction wrappers, the VS Code
 files and `dot_zshrc`.
 
@@ -218,7 +264,7 @@ by client, so use the matching workflow:
 | Live file | Ownership policy | Preserve a UI or CLI change |
 | --- | --- | --- |
 | VS Code `settings.json` | managed template | edit `home/.chezmoitemplates/vscode/settings.json`; `re-add` skips it |
-| Claude `~/.claude/settings.json` | managed template, including the selected model, effort, theme, and TUI | edit `home/dot_claude/settings.json.tmpl`; `/model`, `/effort`, `/theme`, and similar live changes are temporary until added there |
+| Claude `~/.claude/settings.json` | managed template, including the selected model, effort, theme, and terminal user interface (TUI) | edit `home/dot_claude/settings.json.tmpl`; `/model`, `/effort`, `/theme`, and similar live changes are temporary until added there |
 | Copilot `~/.copilot/settings.json` | plain managed file | run `chezmoi diff`, then `chezmoi re-add ~/.copilot/settings.json` and review the source diff |
 | Codex `~/.codex/config.toml` | create-once mixed state | merge only missing durable declarations manually; never replace the complete live file |
 
@@ -264,8 +310,8 @@ repository therefore treats them as portable shared skills. If a skill must be C
 verify the current Codex-supported isolation options before adding it; do not assume a plugin
 is required.
 
-Check the body for harness-specific tool names ("the Read tool", "the Edit tool") before
-putting a skill in the shared tree — those read wrong in the other assistants.
+Check the body for client-specific tool names ("the Read tool", "the Edit tool") before
+putting a skill in the shared tree; those names may be wrong in the other clients.
 
 Because these are source-state edits, run `chezmoi apply`; do not run `chezmoi add`.
 `chezmoi add` is only for importing a brand-new file created at its target path under the
@@ -296,13 +342,15 @@ If an interactive Copilot installation changed live `~/.copilot/settings.json`, 
 `chezmoi diff` and `chezmoi re-add ~/.copilot/settings.json` before the next apply, then review
 the source diff. Prefer adding the declaration to the source file first.
 
-For agents, prompts, plugins, and MCP configuration across all clients, use the complete
-[customization support matrix](./customization-support.md).
+For agents, prompts, plugins, and Model Context Protocol (MCP) configuration across all
+clients, use the complete [customization support matrix](./customization-support.md).
 
 ## Removing something
 
-This is the part that is easy to get wrong, because deleting the source file is usually
-**not** enough — the rendered file stays on disk.
+The **source** is the entry under the repository's `home/` directory. The **target** is the
+live file that chezmoi rendered into your home directory. Deleting only the source stops
+managing the target but usually leaves the target on disk, so choose the removal behavior
+explicitly.
 
 | Goal | Command |
 | --- | --- |
@@ -310,7 +358,51 @@ This is the part that is easy to get wrong, because deleting the source file is 
 | Remove it from the source **and** your machine | `chezmoi destroy ~/.some-config` |
 | Remove it on **every** machine on next apply | add the target path to `home/.chezmoiremove` |
 
-Practical sequence for retiring a shared rule:
+### Example: remove a VS Code Copilot prompt
+
+A managed VS Code prompt appears in three source files because one body renders to two
+operating-system-specific locations. For a prompt named `git-commit`, the files are:
+
+| Source file | Purpose |
+| --- | --- |
+| `home/.chezmoitemplates/vscode/git-commit.prompt.md` | Shared prompt body |
+| `home/AppData/Roaming/Code/User/prompts/git-commit.prompt.md.tmpl` | Windows wrapper |
+| `home/Library/Application Support/Code/User/prompts/git-commit.prompt.md.tmpl` | macOS wrapper |
+
+Only one live target exists on a given machine. Windows uses
+`~/AppData/Roaming/Code/User/prompts/git-commit.prompt.md`; macOS uses
+`~/Library/Application Support/Code/User/prompts/git-commit.prompt.md`.
+
+To remove the prompt from this repository and every managed machine:
+
+1. Delete the shared body and both wrappers listed above. Deleting only one wrapper leaves
+   the other operating system configured, while deleting only the body breaks both wrappers.
+2. Create `home/.chezmoiremove` if it does not exist. Add this operating-system-specific
+   cleanup block:
+
+   ```gotemplate
+   {{ if eq .chezmoi.os "windows" -}}
+   AppData/Roaming/Code/User/prompts/git-commit.prompt.md
+   {{ else if eq .chezmoi.os "darwin" -}}
+   Library/Application Support/Code/User/prompts/git-commit.prompt.md
+   {{ end -}}
+   ```
+
+3. Run `chezmoi diff`. Confirm that the diff removes the live prompt and does not affect
+   unrelated VS Code files.
+4. Run `chezmoi apply -v`, then confirm that `chezmoi status` is empty and the live prompt
+   is gone.
+5. Commit and push the three deletions together with `.chezmoiremove`. Keep the cleanup block
+   until every managed machine has pulled and applied the change.
+6. Remove the cleanup block in a later commit after every machine has applied it. Delete
+   `.chezmoiremove` if the file is then empty.
+
+Replace `git-commit` with the actual prompt name. `.chezmoiremove` is itself a template, so
+the conditional removes only the target for the current operating system.
+
+### Example: retire a shared instruction rule
+
+Use this sequence to retire a shared rule:
 
 1. Delete `home/.chezmoitemplates/rules/<name>.md` and both thin templates.
 2. Delete its entry from `home/.chezmoidata.yaml`.
@@ -363,11 +455,11 @@ chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
 Use `--exclude=scripts` for any test render. The flag excludes chezmoi script entry types,
 not the repository's top-level `scripts/` directory.
 
-## OS differences
+## Operating-system differences
 
 1. `{{ if eq .chezmoi.os "windows" }}` inside a template — see
    `dot_claude/settings.json.tmpl`.
-2. `home/.chezmoiignore` — excludes the VS Code tree for the other OS.
+2. `home/.chezmoiignore` — excludes the VS Code tree for the other operating system.
 3. A template that renders empty is not written at all — that is how `dot_zshrc.tmpl`
    produces no `.zshrc` on Windows.
 

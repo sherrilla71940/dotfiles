@@ -6,13 +6,17 @@ removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
 The repository manages durable shell, VS Code, Claude Code, Codex, and GitHub Copilot
 configuration. Credentials, sessions, caches, logs, memory, and workspace state stay local.
 
+Chezmoi calls the desired files in its repository clone the **source state**. It renders
+those files into live **targets** under your home directory when you run `chezmoi apply`.
+For example, the source `home/dot_bashrc` renders to the target `~/.bashrc`.
+
 ## Onboarding a new machine
 
-> **`chezmoi apply` overwrites existing configuration without prompting.** Do not start with
-> `chezmoi init --apply` on a machine that already has settings. Initialize, verify the source
-> directory, and review `chezmoi diff` first.
+> **`chezmoi apply` can replace existing configuration.** Do not start with
+> `chezmoi init --apply` on a machine that has settings to preserve. Initialize, verify the
+> source directory, and review `chezmoi diff` first.
 
-### Prerequisite chain
+### Setup sequence
 
 | Order | Requirement | Why it comes first |
 | --- | --- | --- |
@@ -20,7 +24,7 @@ configuration. Credentials, sessions, caches, logs, memory, and workspace state 
 | 2 | This repository | Created by `chezmoi init`; a separate clone is unnecessary |
 | 3 | Source-path verification and diff | Prevents applying a stale clone or overwriting existing settings |
 | 4 | `chezmoi apply` | Writes the reviewed source state into the home directory |
-| 5 | Applications and authentication | Can happen before or after apply; credentials remain local |
+| 5 | Applications and authentication | Lets each application load the managed files; credentials remain local |
 
 ### Step 1 — install Git and chezmoi
 
@@ -113,16 +117,17 @@ chezmoi init --apply https://github.com/sherrilla71940/dotfiles.git
 Chezmoi can write configuration before an application exists. Each application discovers its
 files when it is installed and started later.
 
-| Application | Installed separately? | Local follow-up |
+| Product surface | Installed separately? | Local follow-up |
 | --- | --- | --- |
-| VS Code | Yes | Sign in if desired, then install extensions from the repository manifest |
-| Claude Code | Yes | Log in, authenticate connectors with `/mcp`, and install Claude in Chrome if desired |
-| Codex | Yes | Log in and authenticate enabled connectors or plugins |
-| GitHub Copilot CLI | Yes | Log in to GitHub; VS Code uses its own signed-in session |
-| NVM/Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
+| VS Code with GitHub Copilot | Yes | Enable Copilot, sign in to GitHub, then install other desired extensions from the repository manifest |
+| Claude Code CLI or IDE integration | Yes | Log in, authenticate connectors with `/mcp`, and install Claude in Chrome if desired |
+| Claude Desktop | Optional | Its Code tab shares Claude Code configuration; desktop chat, Cowork, and chat-app MCP configuration remain separate |
+| Codex CLI, IDE extension, or ChatGPT desktop app | Yes; install the surfaces you use | Log in and authenticate enabled connectors or plugins; local surfaces share `~/.codex/` configuration |
+| GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
+| Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
-The post-clone bootstrap helper installs `jq` for the Claude MCP installer and checks whether
-the VS Code CLI is available:
+The post-clone bootstrap helper installs `jq` for the Claude Model Context Protocol (MCP)
+installer and checks whether the VS Code CLI is available:
 
 ```bash
 bash scripts/bootstrap-macos.sh
@@ -233,8 +238,8 @@ definition, not a stored value. If a template eventually needs a real secret, us
 secret source or an environment variable rather than committing it.
 
 Chezmoi deliberately does not own complete application data directories, plugin caches,
-sessions, OAuth tokens, logs, VS Code workspace storage, Copilot runtime state, or Codex's
-existing mixed-state `config.toml`. See
+sessions, authentication tokens, logs, VS Code workspace storage, Copilot runtime state, or
+Codex's existing mixed-state `config.toml`. See
 [ownership and app-written settings](./chezmoi-workflow.md#apps-that-write-their-own-config)
 before importing a live application file.
 

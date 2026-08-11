@@ -64,7 +64,7 @@ broken one.
 | --- | --- | --- | --- | --- |
 | `dot_claude/` | `rules/` | `skills/` | `agents/` | `commands/` |
 | `dot_copilot/` | `instructions/` | `skills/` | `agents/` | *VS Code profile* |
-| `dot_codex/` | `AGENTS.md.tmpl` | *shared tree* | — | *none* |
+| `dot_codex/` | `AGENTS.md.tmpl` | *shared tree* | `agents/` | *none* |
 | shared | `.chezmoitemplates/` | `dot_agents/skills/` | — | — |
 
 ### Why a folder is missing
@@ -74,10 +74,9 @@ broken one.
   shared and Claude-only skills can coexist without copying skill bodies.
 - **`dot_codex/skills/` would be wrong.** `~/.codex/skills` holds Codex's own bundled
   `.system` skills and is not a documented personal-skill location. Codex user skills
-  belong in `~/.agents/skills`, which Copilot also scans. Therefore a standalone personal
-  skill cannot be both Codex-only and hidden from Copilot. Use a Codex plugin when true
-  Codex-only distribution is required; plugins are not available in the Codex IDE
-  extension.
+  normally belong in `~/.agents/skills`, which Copilot also scans. This repository therefore
+  treats them as portable shared skills. If a skill must be Codex-only, verify the current
+  Codex-supported isolation options before adding it; do not assume a plugin is required.
 - **`dot_codex/prompts/` is deliberately unused.** Custom prompts (`~/.codex/prompts`) are
   deprecated by OpenAI in favour of skills. Write a skill instead.
 - **`dot_copilot/prompts/` would do nothing.** VS Code reads `*.prompt.md` from the
@@ -255,9 +254,10 @@ Claude-only skill → `home/dot_claude/skills/<name>/SKILL.md`.
 
 Copilot-only skill → `home/dot_copilot/skills/<name>/SKILL.md`.
 
-Codex-only standalone personal skills are not supported by the tools' discovery paths:
-Codex requires `~/.agents/skills`, and Copilot scans that path too. Use a Codex plugin for
-strict isolation, with the limitation that plugins do not load in the Codex IDE extension.
+Codex personal skills normally live in `~/.agents/skills`, which Copilot also scans. This
+repository therefore treats them as portable shared skills. If a skill must be Codex-only,
+verify the current Codex-supported isolation options before adding it; do not assume a plugin
+is required.
 
 Check the body for harness-specific tool names ("the Read tool", "the Edit tool") before
 putting a skill in the shared tree — those read wrong in the other assistants.
@@ -266,6 +266,33 @@ Because these are source-state edits, run `chezmoi apply`; do not run `chezmoi a
 `chezmoi add` is only for importing a brand-new file created at its target path under the
 home directory, and it happens before committing so the source-state change can be
 reviewed and committed.
+
+## Installing a third-party plugin
+
+Installing a marketplace plugin and reproducing that installation on another machine are
+different operations. Port the desired marketplace and plugin declarations; do not port the
+downloaded plugin files:
+
+| Client | What follows machines today | When installing another plugin |
+| --- | --- | --- |
+| Claude Code | known marketplaces and enabled plugin IDs in `home/dot_claude/settings.json.tmpl` | add the plugin to `enabledPlugins`; applying the managed settings lets Claude resolve it from the declared marketplace |
+| Codex | marketplace and enabled-plugin defaults in `home/dot_codex/create_config.toml.tmpl`, but only when the live config does not exist yet | update the template for new machines; for an existing app-owned config, compare first and merge only missing declarations |
+| GitHub Copilot | plugin support, default marketplaces, and declarative plugin IDs in `home/dot_copilot/settings.json` | add the plugin specification to `enabledPlugins`; Copilot CLI auto-installs it and VS Code discovers the installation |
+
+"Declarative" here means that the source state records the desired plugin ID and enablement;
+the client still downloads and owns the plugin cache.
+
+`chezmoi apply` does not remove locally installed plugins for any client. Do not copy plugin
+caches or installed-plugin directories into `home/`; those are runtime state. Add marketplace
+declarations, desired plugin identifiers, or an explicit bootstrap step instead when an
+installation needs to be reproducible.
+
+If an interactive Copilot installation changed live `~/.copilot/settings.json`, run
+`chezmoi diff` and `chezmoi re-add ~/.copilot/settings.json` before the next apply, then review
+the source diff. Prefer adding the declaration to the source file first.
+
+For agents, prompts, plugins, and MCP configuration across all clients, use the complete
+[customization support matrix](./customization-support.md).
 
 ## Removing something
 

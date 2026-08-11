@@ -5,14 +5,33 @@ automatically, so it stays short: it lists only what you could get **wrong**, no
 things. Procedures live in [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it
 before adding, changing or removing anything.
 
-This repo configures Claude Code, Codex and Copilot themselves, so a mistake here silently
-changes how every future session behaves.
+This is a general user-level dotfiles repository. It manages editor, shell, tool, and AI
+configuration; the AI files are especially sensitive because a mistake can silently change
+how every future agent session behaves.
 
 ## The one thing to understand
 
 `home/` is the [chezmoi](https://www.chezmoi.io) **source state**. Files there are not live
 config — `chezmoi apply` renders them into the home directory. Editing a live file does not
 change this repo, and editing this repo does not change anything until you apply.
+
+## Helping someone operate this repository
+
+Assume the user may know the outcome they want without knowing chezmoi terminology or source
+filenames. Translate requests such as "change my VS Code setting" or "make this shell config
+follow my machines" into the correct source-state edit and explain unfamiliar terms briefly.
+
+- For questions, inspect the repository and answer without changing files unless a change was
+  also requested.
+- For changes, locate and edit the source of truth, identify the rendered home-directory
+  target, and perform proportionate validation. Do not make the user map `dot_`, `.tmpl`, or
+  other chezmoi attributes themselves.
+- Before an operation could overwrite, remove, or stop managing live configuration, explain
+  the effect in plain language and preview it when possible.
+- At handoff, state separately what changed in the repository, whether it was applied to the
+  home directory, whether it was committed, and the exact safe next command when one remains.
+- Keep guidance task-focused. Link to the relevant guide for background instead of requiring
+  the user to read the entire chezmoi manual before proceeding.
 
 ## Constraints
 

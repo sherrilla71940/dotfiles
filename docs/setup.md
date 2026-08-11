@@ -37,11 +37,11 @@ winget install twpayne.chezmoi                # Windows, then restart the shell
 ### Step 2 — clone, without applying
 
 ```bash
-chezmoi init <repo-url>
+chezmoi init https://github.com/sherrilla71940/dotfiles.git
 ```
 
 This clones the repository and writes nothing to your home directory yet. `chezmoi cd`
-opens a shell in the clone.
+opens a shell in the clone. If you use a fork, replace the URL with your fork's URL.
 
 ### Step 3 — see exactly what would change
 
@@ -73,7 +73,7 @@ Restart each application afterwards — editors and CLIs read these files at sta
 If nothing is configured yet, steps 2–4 collapse into one command:
 
 ```bash
-chezmoi init --apply <repo-url>
+chezmoi init --apply https://github.com/sherrilla71940/dotfiles.git
 ```
 
 Use this **only** when you are certain there is nothing to lose.
@@ -108,6 +108,46 @@ grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-e
 Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
 ```
+
+### Agent plugins
+
+The managed configuration carries Claude Code's marketplace and enabled-plugin declarations.
+It also provides Codex marketplace and plugin defaults when a new machine has no Codex config
+yet. For an existing app-owned Codex config, compare first and merge only declarations that
+are missing; never replace the complete live file.
+
+Copilot plugin support and declarative plugin settings are managed. Add plugin specifications
+to `home/dot_copilot/settings.json`; Copilot CLI auto-installs them and VS Code discovers the
+installation. Downloaded plugin files and per-plugin runtime data remain local.
+
+If a plugin was installed interactively first and Copilot changed live
+`~/.copilot/settings.json`, preserve that plain-file change with `chezmoi re-add` before the
+next apply. Review the resulting source diff before committing.
+
+Plugin caches remain local for all three clients and `chezmoi apply` does not remove them. See
+[Installing a third-party plugin](./chezmoi-workflow.md#installing-a-third-party-plugin) before
+adding a plugin that should follow every machine.
+
+### Claude user MCP servers
+
+Claude stores user MCP definitions inside app-owned `~/.claude.json`, alongside OAuth and
+runtime state. After Claude Code is installed, add the safe definitions from this repository
+without overwriting that file:
+
+```bash
+bash scripts/install-claude-mcp.sh
+```
+
+```powershell
+powershell -File scripts/install-claude-mcp.ps1
+```
+
+Existing server names are left unchanged for manual review. Authentication stays local.
+The manifest covers only directly configured user MCP servers. Plugin MCP servers come from
+the managed Claude plugin declarations, Claude.ai connectors follow the signed-in account, and
+Claude in Chrome comes from its browser extension. Use `claude mcp list` or `/mcp` to see the
+combined set. On a new machine, install the Claude in Chrome extension and use `/chrome` to
+enable it; do not copy its app-owned onboarding state into chezmoi.
 
 ## Enable the pre-commit check
 
@@ -235,6 +275,12 @@ If a real secret is ever required, use a chezmoi secret source (`onepasswordRead
 
 ## What chezmoi deliberately does not own
 
+- **The complete VS Code user-data directory.** Only durable, portable files such as
+  `settings.json`, `keybindings.json`, MCP configuration, and prompts are managed. VS Code's
+  history, workspace storage, caches, logs, machine identifiers, and extension runtime data
+  stay local. A repository-root `.vscode/` would configure only this dotfiles workspace, not
+  the user's global VS Code profile. Add another portable user file selectively rather than
+  importing the entire directory; extensions remain in `scripts/vscode-extensions.txt`.
 - **`~/.codex/config.toml`** uses the `create_` prefix: written only if absent, never
   overwritten, because Codex stores project trust, marketplace data and runtime executable
   paths in the same file. To reapply a durable change, edit
@@ -259,8 +305,9 @@ Then per tool:
   file and re-check. `/skills` lists 17.
 - **Codex** — `~/.codex/AGENTS.md` starts with `# Core Principles` and contains **no** YAML
   frontmatter. `/skills` lists the shared set.
-- **Copilot** — _Chat: Open Customizations_ lists 9 instruction files. _Chat → Diagnostics_
-  shows `javascript` and `typescript` applying for a `.ts` file and not for a `.css` file.
+- **Copilot** — _Chat: Open Customizations_ lists the user instruction files and the
+  repository's root `AGENTS.md`. _Chat → Diagnostics_ shows `javascript` and `typescript`
+  applying for a `.ts` file and not for a `.css` file.
 - **Bodies match across tools:**
 
   ```bash

@@ -19,4 +19,4 @@ if ! command -v code >/dev/null 2>&1; then
   printf 'VS Code CLI not on PATH. Install VS Code, then run "Shell Command: Install '"'"'code'"'"' command in PATH".\n' >&2
 fi
 
-printf 'Done. Next: chezmoi init --apply <your-repo-url>\n'
+printf 'Done. Next: run "chezmoi diff", review the changes, then run "chezmoi apply -v".\n'

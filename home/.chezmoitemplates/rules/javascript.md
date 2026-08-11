@@ -7,7 +7,7 @@ for markup and styling conventions.
 
 ## Declarations and naming
 
-- Use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. Use `camelCase` for all other identifiers.
+- In application and project repositories, use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — do not apply the company convention; follow the surrounding format and use normal JavaScript naming defaults. Use `camelCase` for all other identifiers.
 - Use `UPPER_SNAKE_CASE` only for true constants whose value is fixed, shared, and configuration-like — e.g., module-level limits, event names, storage keys, breakpoints, environment-derived constants.
 
 ## General JavaScript

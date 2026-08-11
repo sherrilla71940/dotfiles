@@ -18,4 +18,4 @@ foreach ($id in @("Git.Git", "jqlang.jq", "twpayne.chezmoi")) {
     }
 }
 
-Write-Host "Done. Restart your shell, then: chezmoi init --apply <your-repo-url>"
+Write-Host 'Done. Restart your shell, run "chezmoi diff", review the changes, then run "chezmoi apply -v".'

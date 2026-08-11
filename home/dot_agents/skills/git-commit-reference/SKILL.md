@@ -83,7 +83,7 @@ chore(sync): archive unused copilot assets
 refactor(config): reorganize rule files and dedupe conventions
 
 - move the JS/TS naming rule into the path-scoped javascript rule
-- keep the zh-tw comment rule global so it covers all languages
+- keep project comments in zh-tw and user-level configuration comments in English
 - regroup the html-css guidelines under topic headings
 ```
 

@@ -14,6 +14,9 @@ writes that configuration to the home directory. No separate `git clone` is requ
 Use this one-line setup only when no existing shell, editor, or AI-client configuration
 needs to be preserved:
 
+On Windows, first enable Developer Mode or provide symbolic-link privileges as described in
+[the setup prerequisites](./docs/setup.md#enable-windows-symlink-creation).
+
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```

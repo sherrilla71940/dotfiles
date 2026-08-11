@@ -58,12 +58,14 @@ fi
 
 # 2. Every skill file must survive chezmoi's filename transformations. Source dotfiles are
 #    ignored by design, so exclude them from the count rather than treating them as loss.
-src_skills=$(find "$staged/home/dot_agents/skills" -type f ! -name '.*' 2>/dev/null | wc -l)
+skills_dir="$staged/home/dot_agents/skills"
+[[ -d "$skills_dir" ]] || fail "staged source is missing home/dot_agents/skills."
+src_skills=$(find "$skills_dir" -type f ! -name '.*' | wc -l)
 out_skills=$(find "$render/.agents/skills" -type f 2>/dev/null | wc -l)
 if [[ "$src_skills" -ne "$out_skills" ]]; then
   fail "skill file count changed on render: $src_skills in source, $out_skills rendered.
     A filename probably collided with a chezmoi attribute prefix (create_, run_, symlink_,
-    empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Filename rules that will bite you'."
+    empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Source filename rules'."
 fi
 
 # 3. Every shared skill must render as an individual Claude symlink.

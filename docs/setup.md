@@ -1,104 +1,140 @@
 # Dotfiles setup
 
-This repository tracks durable configuration for Claude Code, Codex, GitHub Copilot,
-VS Code and shells across Windows and macOS, managed with [chezmoi](https://www.chezmoi.io).
-Credentials, sessions, caches, logs, memory and workspace state stay local.
+This guide covers first-time installation on Windows or macOS. Recurring edits, additions,
+removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
 
-`home/` is the chezmoi source state; `.chezmoiroot` points chezmoi at it so the repo root
-stays readable.
+The repository manages durable shell, VS Code, Claude Code, Codex, and GitHub Copilot
+configuration. Credentials, sessions, caches, logs, memory, and workspace state stay local.
 
 ## Onboarding a new machine
 
-> **`chezmoi apply` overwrites existing configuration without asking.** It does not merge
-> and it does not prompt by default. If this machine already has a `~/.claude/CLAUDE.md`,
-> `~/.bashrc`, VS Code settings or similar, they will be replaced by this repo's versions.
-> Follow the safe path below rather than `chezmoi init --apply`.
+> **`chezmoi apply` overwrites existing configuration without prompting.** Do not start with
+> `chezmoi init --apply` on a machine that already has settings. Initialize, verify the source
+> directory, and review `chezmoi diff` first.
 
-You do **not** clone this repo by hand — `chezmoi init` clones it for you into chezmoi's
-source directory. Only chezmoi and git need to exist first.
+### Prerequisite chain
 
-### Step 1 — install chezmoi
+| Order | Requirement | Why it comes first |
+| --- | --- | --- |
+| 1 | Git and chezmoi | Required to initialize and version the source repository |
+| 2 | This repository | Created by `chezmoi init`; a separate clone is unnecessary |
+| 3 | Source-path verification and diff | Prevents applying a stale clone or overwriting existing settings |
+| 4 | `chezmoi apply` | Writes the reviewed source state into the home directory |
+| 5 | Applications and authentication | Can happen before or after apply; credentials remain local |
+
+### Step 1 — install Git and chezmoi
+
+macOS with Homebrew:
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)"          # macOS/Linux
+brew install git chezmoi
 ```
+
+Chezmoi's standalone installer is also available when Homebrew is not desired:
+
+```bash
+sh -c "$(curl -fsLS https://get.chezmoi.io)"
+```
+
+Windows PowerShell:
 
 ```powershell
-winget install twpayne.chezmoi                # Windows, then restart the shell
+winget install --id Git.Git --exact
+winget install --id twpayne.chezmoi --exact
 ```
 
-> **Note for Git Bash users:** Winget installs executables into WinGet's `Links` directory. If Git Bash reports `bash: chezmoi: command not found`, add the path to your `~/.bashrc`:
->
-> ```bash
-> echo 'export PATH="$PATH:$HOME/AppData/Local/Microsoft/WinGet/Links"' >> ~/.bashrc
-> source ~/.bashrc
-> ```
+Restart the shell after Winget installation. The managed `.bashrc` adds Winget's command
+shim directory to Git Bash after the first apply; use PowerShell for initial setup if Git
+Bash cannot find `chezmoi` yet.
 
-### Step 2 — clone, without applying
+### Step 2 — enable Windows symlink creation
+
+Skip this step on macOS. Portable skills render as symbolic links under `~/.claude/skills`.
+On Windows, enable **Developer Mode** before the first apply, or run the apply from an account
+with `SeCreateSymbolicLinkPrivilege`. Without one of those, chezmoi cannot create the skill
+links. See [chezmoi's Windows guidance](https://www.chezmoi.io/user-guide/machines/windows/#create-symlinks).
+
+### Step 3 — initialize without applying
 
 ```bash
 chezmoi init https://github.com/sherrilla71940/dotfiles.git
 ```
 
-This clones the repository and writes nothing to your home directory yet. `chezmoi cd`
-opens a shell in the clone. If you use a fork, replace the URL with your fork's URL.
+If you use a fork, replace the URL. Chezmoi places the clone in its default source directory.
 
-### Step 3 — see exactly what would change
+Immediately confirm that chezmoi is reading the expected clone:
+
+```bash
+chezmoi source-path
+```
+
+The result must end inside this repository, normally
+`~/.local/share/chezmoi/home`. If it points at a different clone, stop and reconcile the
+source directories before continuing.
+
+### Step 4 — preview
 
 ```bash
 chezmoi diff
 ```
 
-Read this properly on a machine that is already in use. Every line removed is configuration
-you are about to lose. Back up anything you want to keep, or fold it into the source first.
+Every removed line is live configuration that apply would replace. Back up anything you need
+or incorporate it into the source first.
 
-### Step 4 — apply
+Useful safer variants:
+
+| Command or flag | Behavior |
+| --- | --- |
+| `chezmoi apply --dry-run --verbose` | Show operations without writing |
+| `chezmoi apply --interactive` | Prompt for every operation |
+| `chezmoi apply --less-interactive` | Prompt for changed or pre-existing targets |
+
+### Step 5 — apply
 
 ```bash
 chezmoi apply -v
+chezmoi status
 ```
 
-Safer variants when the machine already has config:
+Empty status output means the managed targets match the source. Restart applications so they
+reload their configuration.
 
-| Flag                  | Behaviour                                       |
-| --------------------- | ----------------------------------------------- |
-| `--dry-run --verbose` | show what would happen, change nothing          |
-| `--interactive`       | prompt for every change                         |
-| `--less-interactive`  | prompt only for changed or pre-existing targets |
+### Genuinely empty machines only
 
-Restart each application afterwards — editors and CLIs read these files at startup.
-
-### On a genuinely fresh machine
-
-If nothing is configured yet, steps 2–4 collapse into one command:
+When there is certainly no existing configuration to preserve, initialization and apply can
+be combined:
 
 ```bash
 chezmoi init --apply https://github.com/sherrilla71940/dotfiles.git
 ```
 
-Use this **only** when you are certain there is nothing to lose.
+## Application installation and login
 
-### What if an app isn't installed?
+Chezmoi can write configuration before an application exists. Each application discovers its
+files when it is installed and started later.
 
-**Nothing breaks.** chezmoi writes plain files and directories; it never checks whether an
-application exists. With no Codex installed, `~/.codex/AGENTS.md` is still created and Codex
-picks it up the first time it runs. The same holds for Claude Code, Copilot and VS Code.
+| Application | Installed separately? | Local follow-up |
+| --- | --- | --- |
+| VS Code | Yes | Sign in if desired, then install extensions from the repository manifest |
+| Claude Code | Yes | Log in, authenticate connectors with `/mcp`, and install Claude in Chrome if desired |
+| Codex | Yes | Log in and authenticate enabled connectors or plugins |
+| GitHub Copilot CLI | Yes | Log in to GitHub; VS Code uses its own signed-in session |
+| NVM/Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
-So both orders work: apply first and install apps later (each finds its configuration
-already in place), or install first and apply after (lets you verify immediately, but that
-is exactly the case where the overwrite warning above applies).
-
-### Optional extras
-
-The bootstrap scripts install baseline tools (git, jq, chezmoi). They live _inside_ the
-repo, so they can only run after step 2:
+The post-clone bootstrap helper installs `jq` for the Claude MCP installer and checks whether
+the VS Code CLI is available:
 
 ```bash
-bash scripts/bootstrap-macos.sh                    # from the clone; chezmoi cd gets you there
+bash scripts/bootstrap-macos.sh
+```
+
+```powershell
 powershell -File scripts/bootstrap-windows.ps1
 ```
 
-VS Code extensions are kept out of the bootstrap because the manifest holds 114 of them:
+### VS Code extensions
+
+The extension manifest is intentionally separate from routine apply:
 
 ```bash
 grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
@@ -109,30 +145,10 @@ Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.Start
   ForEach-Object { code --install-extension $_ --force }
 ```
 
-### Agent plugins
-
-The managed configuration carries Claude Code's marketplace and enabled-plugin declarations.
-It also provides Codex marketplace and plugin defaults when a new machine has no Codex config
-yet. For an existing app-owned Codex config, compare first and merge only declarations that
-are missing; never replace the complete live file.
-
-Copilot plugin support and declarative plugin settings are managed. Add plugin specifications
-to `home/dot_copilot/settings.json`; Copilot CLI auto-installs them and VS Code discovers the
-installation. Downloaded plugin files and per-plugin runtime data remain local.
-
-If a plugin was installed interactively first and Copilot changed live
-`~/.copilot/settings.json`, preserve that plain-file change with `chezmoi re-add` before the
-next apply. Review the resulting source diff before committing.
-
-Plugin caches remain local for all three clients and `chezmoi apply` does not remove them. See
-[Installing a third-party plugin](./chezmoi-workflow.md#installing-a-third-party-plugin) before
-adding a plugin that should follow every machine.
-
 ### Claude user MCP servers
 
-Claude stores user MCP definitions inside app-owned `~/.claude.json`, alongside OAuth and
-runtime state. After Claude Code is installed, add the safe definitions from this repository
-without overwriting that file:
+Claude stores user MCP definitions inside app-owned `~/.claude.json`, so chezmoi must not
+replace that file. After Claude Code is installed, add missing direct user servers with:
 
 ```bash
 bash scripts/install-claude-mcp.sh
@@ -142,235 +158,91 @@ bash scripts/install-claude-mcp.sh
 powershell -File scripts/install-claude-mcp.ps1
 ```
 
-Existing server names are left unchanged for manual review. Authentication stays local.
-The manifest covers only directly configured user MCP servers. Plugin MCP servers come from
-the managed Claude plugin declarations, Claude.ai connectors follow the signed-in account, and
-Claude in Chrome comes from its browser extension. Use `claude mcp list` or `/mcp` to see the
-combined set. On a new machine, install the Claude in Chrome extension and use `/chrome` to
-enable it; do not copy its app-owned onboarding state into chezmoi.
+The shell installer requires `jq`; the PowerShell installer does not. Existing server names
+are left unchanged. Plugin MCP servers, Claude.ai connectors, and Claude in Chrome remain
+owned by their respective plugin, account, or browser integration. See the
+[customization support guide](./customization-support.md#add-an-mcp-server).
 
-## Enable the pre-commit check
+### Plugins
 
-One command per clone:
+The repository carries portable plugin declarations, not downloaded caches or authentication.
+Claude and Copilot settings are managed directly. Codex uses create-once defaults and requires
+only missing declarations to be merged into an existing config. See
+[the plugin workflow](./chezmoi-workflow.md#installing-a-third-party-plugin).
+
+## Enable repository validation
+
+Run once in each clone:
 
 ```bash
 git config core.hooksPath scripts/git-hooks
 ```
 
-`scripts/git-hooks/pre-commit` renders the source state into a temporary directory and
-refuses the commit if:
+The pre-commit hook:
 
-1. a template fails to render,
-2. the skill file count changes between source and render — the symptom of a filename
-   colliding with a chezmoi attribute prefix,
-3. a shared skill is missing its Claude symlink template,
-4. a shared rule is missing its Claude or Copilot template, or renders different bodies,
-5. `~/.codex/AGENTS.md` gains YAML frontmatter, which Codex would display as text.
+1. confirms the default chezmoi source resolves inside this repository,
+2. materializes and renders the staged Git snapshot,
+3. checks skill file-count parity and individual Claude skill links,
+4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
+5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
 
-It never touches your home directory and passes `--exclude=scripts`, so validating never
-installs software. If chezmoi is not on PATH the hook warns and lets the commit through
-rather than blocking work.
+The hook renders only into a temporary directory. Its `--exclude=scripts` flag excludes
+chezmoi-managed script entry types; it does not mean the top-level `scripts/` directory.
 
-Each check exists because that failure has actually occurred here: four skills were
-silently dropped in one refactor, and the office skills' empty `__init__.py` package
-markers were omitted in another. Neither was visible in `git diff`.
+## Using a manually cloned `~/dotfiles`
 
-## Daily workflow
+Normal `chezmoi init` already creates the default source directory, so no link is required.
+If you deliberately cloned the repository as `~/dotfiles`, make the default chezmoi source
+point to it. Do this only when `~/.local/share/chezmoi` does not contain changes you need.
 
-| Task                                             | Command                            |
-| ------------------------------------------------ | ---------------------------------- |
-| Preview pending changes                          | `chezmoi diff`                     |
-| Apply                                            | `chezmoi apply -v`                 |
-| Edit a managed file                              | `chezmoi edit ~/.claude/CLAUDE.md` |
-| Capture an edit you made directly to a live file | `chezmoi re-add ~/.bashrc`         |
-| Pull another machine's changes                   | `chezmoi update -v`                |
-| Open the source repo                             | `chezmoi cd`                       |
-
-You can edit live files directly instead of using `chezmoi edit` — but chezmoi will not
-notice, and the next `apply` overwrites your change unless you `chezmoi re-add` it. That
-works for plain files; for **templates** `re-add` silently skips the file and your edit is
-lost. See
-[Editing something already managed](./chezmoi-workflow.md#editing-something-already-managed)
-for which files are templates and which route is safe.
-
-### Working from a custom directory (~/dotfiles)
-
-If you prefer your repository to live in `~/dotfiles` rather than chezmoi's default location (`~/.local/share/chezmoi`), create a symbolic link so chezmoi discovers `.chezmoiroot` automatically without needing machine-specific `sourceDir` configuration:
+macOS or Git Bash with symlink permission:
 
 ```bash
 mkdir -p ~/.local/share
 ln -s ~/dotfiles ~/.local/share/chezmoi
 ```
 
-## Adding a file
+Windows PowerShell can use a directory junction without elevated symlink permission:
 
-1. `chezmoi add ~/.some-config` — chezmoi copies it into `home/` with the right name.
-2. `chezmoi cd`, then `git add` and `git commit`.
+```powershell
+New-Item -ItemType Directory -Force "$HOME\.local\share" | Out-Null
+New-Item -ItemType Junction -Path "$HOME\.local\share\chezmoi" -Target "$HOME\dotfiles"
+```
 
-Naming rules that bite, all handled by chezmoi's source-state attributes:
-
-| Situation                                                       | Source name           |
-| --------------------------------------------------------------- | --------------------- |
-| Target starts with `.`                                          | `dot_name`            |
-| Target name really starts with `create_`, `run_`, `symlink_`, … | `literal_create_name` |
-| Target must exist but be empty (e.g. `__init__.py`)             | `empty___init__.py`   |
-| Write once, never overwrite (the app owns the file)             | `create_name`         |
-| Needs templating                                                | `name.tmpl`           |
-
-Two of these are load-bearing here. `literal_create_validation_image.py` in the pdf skill
-would otherwise lose its `create_` prefix, and the empty `__init__.py` package markers in
-the office skills would otherwise not be created at all, breaking their imports. Both were
-caught by comparing file counts between the source tree and a rendered copy — worth
-repeating after any bulk move.
-
-## Adding, changing and removing files
-
-See [docs/chezmoi-workflow.md](./chezmoi-workflow.md) — it covers where a file belongs,
-why the per-tool folders look uneven, and how to remove something properly (deleting the
-source is not enough; the rendered file survives until `chezmoi destroy` or
-`.chezmoiremove`).
-
-The short version for a shared instruction: body in
-`home/.chezmoitemplates/rules/<name>.md` with no frontmatter, glob in
-`home/.chezmoidata.yaml`, then one thin `.tmpl` per consuming tool.
-
-Codex is deliberately absent from that list: it has no path-scoping, so per-language rules
-would be always-on against its 32 KiB `project_doc_max_bytes` budget. Codex receives only
-the always-on core, as `~/.codex/AGENTS.md`.
-
-Do not put a rule in both a shared body and a tool's own file. Anything that names one
-tool's machinery belongs only in that tool's file — `CLAUDE.md.tmpl` keeps the
-`claude-code-guide` rule, the `Agent`/subagent rules and the Bash-vs-PowerShell tool
-preference, and none of them appear in the shared core.
-
-## OS differences
-
-Handled three ways, in order of preference:
-
-1. **`{{ if eq .chezmoi.os "windows" }}`** inside a template — used by
-   `dot_claude/settings.json.tmpl` for the PowerShell-vs-bash hook commands and the
-   Windows-only env vars, replacing two hand-synced settings files.
-2. **`.chezmoiignore`** — VS Code stores user files under `AppData/Roaming/Code/User` on
-   Windows and `Library/Application Support/Code/User` on macOS. Both trees exist in the
-   source state and the wrong one is ignored per OS. The bodies live once in
-   `.chezmoitemplates/vscode/`, so nothing is duplicated.
-3. **Whole-file gating** — `dot_zshrc.tmpl` renders empty on Windows, and chezmoi does not
-   create empty files, so no `.zshrc` appears there.
-
-Paths derive from `{{ .chezmoi.homeDir }}` rather than being hardcoded, so nothing carries
-a machine-specific path. `CLAUDE_CODE_GIT_BASH_PATH` used to hardcode a user directory and
-is now templated.
-
-## Secrets
-
-Nothing in this repo contains a secret, and it should stay that way.
-
-`mcp.json` references `${input:figma-api-key}` — a VS Code **prompt definition**, not a
-value. VS Code renders the prompt and caches the token itself. That is why `mcp.json` stays
-in the VS Code profile directory rather than `~/.copilot/mcp-config.json`, which is
-documented for servers needing no interactive input.
-
-If a real secret is ever required, use a chezmoi secret source (`onepasswordRead`,
-`bitwarden`, or an environment variable read in a template) rather than committing a value.
-
-## What chezmoi deliberately does not own
-
-- **The complete VS Code user-data directory.** Only durable, portable files such as
-  `settings.json`, `keybindings.json`, MCP configuration, and prompts are managed. VS Code's
-  history, workspace storage, caches, logs, machine identifiers, and extension runtime data
-  stay local. A repository-root `.vscode/` would configure only this dotfiles workspace, not
-  the user's global VS Code profile. Add another portable user file selectively rather than
-  importing the entire directory; extensions remain in `scripts/vscode-extensions.txt`.
-- **`~/.codex/config.toml`** uses the `create_` prefix: written only if absent, never
-  overwritten, because Codex stores project trust, marketplace data and runtime executable
-  paths in the same file. To reapply a durable change, edit
-  `home/dot_codex/create_config.toml.tmpl` and merge by hand.
-- **`~/.copilot/config.json`, `ide/`, `logs/`** are Copilot runtime state.
-- **`~/.claude/skills/<shared-skill>`** entries are symlinks to the corresponding
-  `~/.agents/skills/<shared-skill>` directories. Linking each portable skill separately
-  lets regular Claude-only skill directories coexist in `~/.claude/skills` without
-  copying shared skill bodies.
-
-## Verify
+Then verify:
 
 ```bash
-chezmoi status     # empty output means everything is applied
-chezmoi doctor     # environment sanity
+chezmoi source-path
 ```
 
-Then per tool:
+## Verification
 
-- **Claude Code** — `/context` shows `CLAUDE.md` with the core text inlined. The five
-  language rules are path-scoped and will **not** appear on a fresh session; open a `.ts`
-  file and re-check. `/skills` lists 17.
-- **Codex** — `~/.codex/AGENTS.md` starts with `# Core Principles` and contains **no** YAML
-  frontmatter. `/skills` lists the shared set.
-- **Copilot** — _Chat: Open Customizations_ lists the user instruction files and the
-  repository's root `AGENTS.md`. _Chat → Diagnostics_ shows `javascript` and `typescript`
-  applying for a `.ts` file and not for a `.css` file.
-- **Bodies match across tools:**
-
-  ```bash
-  diff <(sed '1,/^---$/d;1,/^---$/d' ~/.claude/rules/javascript.md)        <(sed '1,/^---$/d;1,/^---$/d' ~/.copilot/instructions/javascript.instructions.md)
-  ```
-
-## Copilot reads more folders than you think
-
-VS Code discovers user-level instructions from several harness-agnostic folders at once,
-including `~/.copilot/instructions` **and** `~/.claude/rules`. Because this repo renders the
-same rules into both, Copilot listed every shared rule twice — once with a description from
-its own `.instructions.md`, once bare from Claude's `.md`.
-
-Worse, `chat.useClaudeMdFile` made Copilot ingest `~/.claude/CLAUDE.md`, whose lower half is
-Claude Code-only: `Agent` calls, the `claude-code-guide` agent, and the Bash-vs-PowerShell
-_tools_. Those instructions are wrong for Copilot.
-
-Both are switched off in `vscode/settings.json`:
-
-```jsonc
-"chat.instructionsFilesLocations": {
-  ".github/instructions": true,
-  ".claude/rules": true,
-  "~/.copilot/instructions": true,
-  "~/.claude/rules": false
-},
-"chat.useClaudeMdFile": false
+```bash
+chezmoi source-path  # inside this repository
+chezmoi status       # empty after apply
+chezmoi doctor       # environment sanity
 ```
 
-Copilot gets the shared rules from its own `~/.copilot/instructions` copies, which carry
-`applyTo:` and a description. **This affects VS Code only** — Claude Code still reads
-`~/.claude/rules` itself, and the Copilot CLI reads `~/.copilot/instructions`, so neither
-loses anything.
+Then restart each AI client and inspect the customization relevant to the change. Detailed
+client paths and verification steps live in [customization-support.md](./customization-support.md).
 
-Confirm with **Chat: Open Customizations**: each rule should appear once, with its
-description, and no `CLAUDE.md` under Agent Instructions.
+## Secrets and ownership boundaries
 
-## Version-sensitive details
+Never commit credentials. `${input:figma-api-key}` in VS Code's `mcp.json` is a prompt
+definition, not a stored value. If a template eventually needs a real secret, use a chezmoi
+secret source or an environment variable rather than committing it.
 
-Confirm these against current documentation rather than assuming; they have changed before:
+Chezmoi deliberately does not own complete application data directories, plugin caches,
+sessions, OAuth tokens, logs, VS Code workspace storage, Copilot runtime state, or Codex's
+existing mixed-state `config.toml`. See
+[ownership and app-written settings](./chezmoi-workflow.md#apps-that-write-their-own-config)
+before importing a live application file.
 
-- Claude Code: `~/.claude/rules` and `~/.claude/skills` discovery, and whether unknown
-  frontmatter keys are ignored.
-- Copilot: `~/.copilot/instructions` versus the VS Code profile directory own different
-  customization types, and `*.instructions.md` does **not** support `@` includes.
-- Codex: custom prompts (`~/.codex/prompts`) are **deprecated** in favour of skills.
-- `disable-model-invocation: true` stops `git-commit-action` auto-running; Codex has no
-  documented equivalent, so verify before relying on that guard there.
+## Version-sensitive references
 
-## Not yet managed
-
-PowerShell profile, Windows Terminal, `.gitconfig`, broader package manifests, secrets
-integration, and a work-versus-personal split. The structure supports each without rework.
-
-## References
-
-- [chezmoi quick start](https://www.chezmoi.io/quick-start/) ·
-  [source state attributes](https://www.chezmoi.io/reference/source-state-attributes/) ·
-  [special files](https://www.chezmoi.io/reference/special-files/)
-- [Claude Code memory and rules](https://code.claude.com/docs/en/memory) ·
-  [skills](https://code.claude.com/docs/en/skills)
-- [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) ·
-  [config reference](https://learn.chatgpt.com/docs/config-file/config-reference)
-- [VS Code custom instructions](https://code.visualstudio.com/docs/agent-customization/custom-instructions) ·
-  [agent skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)
-- [Copilot CLI custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
+| Item | Why it can drift | Verify |
+| --- | --- | --- |
+| Chezmoi source attributes and special files | Filename transformations affect rendered names | [Source attributes](https://www.chezmoi.io/reference/source-state-attributes/) and [special files](https://www.chezmoi.io/reference/special-files/) |
+| Claude rules, skills, agents, and settings | Discovery paths and accepted fields evolve | [Claude Code documentation](https://code.claude.com/docs/en/overview) |
+| Codex prompts, agents, config, and skills | Customization surfaces and deprecations evolve | [Codex customization](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
+| VS Code and Copilot customization | User folders and instruction discovery evolve | [VS Code agent customization](https://code.visualstudio.com/docs/agent-customization/overview) and [Copilot customization](https://docs.github.com/en/copilot/customizing-copilot) |

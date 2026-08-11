@@ -7,15 +7,19 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."
 }
 
-foreach ($id in @("Git.Git", "jqlang.jq", "twpayne.chezmoi")) {
-    # winget list exits non-zero when nothing matches, so check the output instead.
-    $installed = winget list --id $id --exact 2>$null | Select-String -SimpleMatch $id
-    if (-not $installed) {
-        winget install --id $id --exact --source winget `
-            --accept-package-agreements --accept-source-agreements --disable-interactivity
-    } else {
-        Write-Host "$id already installed"
-    }
+$packageId = "jqlang.jq"
+# The documented setup installs Git and chezmoi before cloning. This post-clone helper adds
+# jq for the Claude MCP installer and verifies whether the VS Code CLI is already available.
+$installed = winget list --id $packageId --exact 2>$null | Select-String -SimpleMatch $packageId
+if (-not $installed) {
+    winget install --id $packageId --exact --source winget `
+        --accept-package-agreements --accept-source-agreements --disable-interactivity
+} else {
+    Write-Host "$packageId already installed"
 }
 
-Write-Host 'Done. Restart your shell, run "chezmoi diff", review the changes, then run "chezmoi apply -v".'
+if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
+    Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
+}
+
+Write-Host 'Optional tools are ready.'

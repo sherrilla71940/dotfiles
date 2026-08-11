@@ -1,4 +1,14 @@
-# 延遲載入 NVM，避免每次啟動 shell 都付出初始化成本。
+# Add Winget command shims to Git Bash without hardcoding a user profile path.
+if [ -n "${LOCALAPPDATA:-}" ] && command -v cygpath >/dev/null 2>&1; then
+    winget_links="$(cygpath -u "$LOCALAPPDATA/Microsoft/WinGet/Links")"
+    case ":$PATH:" in
+        *":$winget_links:"*) ;;
+        *) export PATH="$PATH:$winget_links" ;;
+    esac
+    unset winget_links
+fi
+
+# Load NVM only when a Node-family command is first used.
 export NVM_DIR="$HOME/.nvm"
 
 _load_nvm() {
@@ -12,7 +22,7 @@ node() { _load_nvm; node "$@"; }
 npm() { _load_nvm; npm "$@"; }
 npx() { _load_nvm; npx "$@"; }
 
-# 從 Git for Windows、Apple Silicon Homebrew 或 Intel Homebrew 載入 Git 補全。
+# Load Git completion from Git for Windows or either common Homebrew prefix.
 for git_completion in \
     /mingw64/share/git/completion/git-completion.bash \
     /opt/homebrew/etc/bash_completion.d/git-completion.bash \
@@ -24,15 +34,14 @@ for git_completion in \
 done
 unset git_completion
 
-# 使用 HOME，讓捷徑可跨 Windows Git Bash 與 macOS。
+# Use HOME so these shortcuts work in Git Bash and macOS shells.
 alias work='cd "$HOME/Documents/work"'
 alias personal='cd "$HOME/Documents"'
 
-# 每次指令後重新計算終端尺寸，避免換行與文字顯示錯位。
+# Recalculate terminal dimensions after each command to keep wrapping correct.
 shopt -s checkwinsize
 
-# dotfiles 編輯捷徑。共用工作準則同時供 Claude、Codex、Copilot 讀取，
-# 所以不放在任何單一工具的檔案裡；只有 Claude 專屬規則在 CLAUDE.md.tmpl。
+# Dotfiles shortcuts. Shared instructions live outside any single client's source tree.
 alias dotf='chezmoi cd'
 alias dotf-core='"${EDITOR:-code}" "$(chezmoi source-path)/.chezmoitemplates/core.md"'
 alias dotf-claude='chezmoi edit ~/.claude/CLAUDE.md'

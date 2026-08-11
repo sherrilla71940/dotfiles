@@ -45,6 +45,11 @@ The clients use overlapping terminology for related concepts:
 - Do not create `home/dot_codex/prompts/`; Codex standalone custom prompts are deprecated.
   Create a skill for a reusable Codex workflow.
 
+VS Code can discover instruction files from several user folders, including Claude's. This
+repository disables `~/.claude/rules` in `chat.instructionsFilesLocations` and disables
+`chat.useClaudeMdFile`, so Copilot receives the managed Copilot wrappers once without also
+loading Claude-only instructions. Keep those exclusions when changing VS Code settings.
+
 ## Add an MCP server
 
 ### Claude Code

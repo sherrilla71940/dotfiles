@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
-# Validate the chezmoi source state before it can be committed.
+# Validate the staged chezmoi source state before it can be committed.
 #
 # This is deliberately non-destructive: it renders into a temporary directory and never
-# touches your home directory. It exists because two classes of failure have actually
-# happened in this repo and neither was visible in `git diff`:
+# touches the home directory. It catches template failures and chezmoi filename-attribute
+# collisions that are not obvious in a normal Git diff.
 #
-#   1. A broken template renders garbage config, or fails outright.
-#   2. chezmoi reads attributes off the front of filenames, so files can be silently
-#      renamed or dropped. Four skills vanished in one refactor, and the empty
-#      __init__.py package markers in the office skills were omitted in another.
-#
-# Enable it once per clone:  git config core.hooksPath scripts/git-hooks
-set -uo pipefail
+# Enable it once per clone: git config core.hooksPath scripts/git-hooks
+set -euo pipefail
 
 repo="$(git rev-parse --show-toplevel)"
 cd "$repo" || exit 1
 
-# chezmoi may not be on PATH (winget installs it under LOCALAPPDATA and needs a new shell).
+fail() { printf 'pre-commit: %s\n' "$1" >&2; exit 1; }
+
+# Chezmoi may not yet be on Git Bash's PATH after a Winget installation.
 chezmoi_bin="$(command -v chezmoi || true)"
-if [[ -z "$chezmoi_bin" ]]; then
-  for candidate in "$LOCALAPPDATA/Microsoft/WinGet/Packages/twpayne.chezmoi"*/chezmoi.exe; do
+if [[ -z "$chezmoi_bin" && -n "${LOCALAPPDATA:-}" ]]; then
+  for candidate in "${LOCALAPPDATA}/Microsoft/WinGet/Packages/twpayne.chezmoi"*/chezmoi.exe; do
     [[ -x "$candidate" ]] && { chezmoi_bin="$candidate"; break; }
   done
 fi
@@ -28,22 +25,40 @@ if [[ -z "$chezmoi_bin" ]]; then
   exit 0
 fi
 
-render="$(mktemp -d)"
-trap 'rm -rf "$render"' EXIT
+# A plain chezmoi apply uses the default source regardless of the current directory. Refuse
+# commits while it points at a different clone, because the committed changes would not apply.
+source_path="$($chezmoi_bin source-path 2>/dev/null || true)"
+[[ -d "$source_path" ]] || fail "default chezmoi source path is unavailable: $source_path"
 
-fail() { printf 'pre-commit: %s\n' "$1" >&2; exit 1; }
+repo_real="$(cd "$repo" && pwd -P)"
+source_real="$(cd "$source_path" && pwd -P)"
+case "$source_real/" in
+  "$repo_real/"*) ;;
+  *) fail "default chezmoi source is outside this repository: $source_path
+    Reconcile the source directory before committing or applying changes." ;;
+esac
 
-# 1. The source state must render. --exclude=scripts so validation never installs software.
-if ! "$chezmoi_bin" apply --source="$repo" --destination="$render" \
+work="$(mktemp -d)"
+staged="$work/source"
+render="$work/render"
+mkdir -p "$staged" "$render"
+trap 'rm -rf "$work"' EXIT
+
+# Validate exactly what the commit would contain, not unrelated unstaged working-tree changes.
+git checkout-index --all --prefix="$staged/" || fail "could not materialize the staged snapshot."
+
+# 1. The source state must render. --exclude=scripts excludes chezmoi script entry types, so
+#    validation can never execute a managed script.
+if ! "$chezmoi_bin" apply --source="$staged" --destination="$render" \
        --exclude=scripts --no-tty --force >"$render/.log" 2>&1; then
-  printf 'pre-commit: the source state failed to render.\n' >&2
+  printf 'pre-commit: the staged source state failed to render.\n' >&2
   sed 's/^/    /' "$render/.log" >&2
   exit 1
 fi
 
-# 2. Every skill file must survive the rename rules. Source dotfiles are ignored by
-#    chezmoi by design, so they are excluded from the count rather than treated as loss.
-src_skills=$(find home/dot_agents/skills -type f ! -name '.*' 2>/dev/null | wc -l)
+# 2. Every skill file must survive chezmoi's filename transformations. Source dotfiles are
+#    ignored by design, so exclude them from the count rather than treating them as loss.
+src_skills=$(find "$staged/home/dot_agents/skills" -type f ! -name '.*' 2>/dev/null | wc -l)
 out_skills=$(find "$render/.agents/skills" -type f 2>/dev/null | wc -l)
 if [[ "$src_skills" -ne "$out_skills" ]]; then
   fail "skill file count changed on render: $src_skills in source, $out_skills rendered.
@@ -51,36 +66,41 @@ if [[ "$src_skills" -ne "$out_skills" ]]; then
     empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Filename rules that will bite you'."
 fi
 
-# 3. 每個共用 skill 都必須透過個別 symlink 提供給 Claude，避免新增 skill 時漏接。
-for src in home/dot_agents/skills/*; do
+# 3. Every shared skill must render as an individual Claude symlink.
+for src in "$staged"/home/dot_agents/skills/*; do
   [[ -d "$src" ]] || continue
   name="$(basename "$src")"
-  link_src="home/dot_claude/skills/symlink_$name.tmpl"
+  link_src="$staged/home/dot_claude/skills/symlink_$name.tmpl"
   link_out="$render/.claude/skills/$name"
-  [[ -f "$link_src" ]] || fail "shared skill '$name' has no Claude symlink template ($link_src)."
+  [[ -f "$link_src" ]] || fail "shared skill '$name' has no Claude symlink template."
   [[ -L "$link_out" ]] || fail "shared skill '$name' did not render as a Claude symlink."
   target="$(readlink "$link_out")"
-  [[ "$target" == */.agents/skills/"$name" ]] || fail \
-    "shared skill '$name' rendered with an unexpected Claude symlink target: $target"
+  [[ "$target" == */.agents/skills/"$name" ]] ||
+    fail "shared skill '$name' rendered with an unexpected Claude symlink target: $target"
 done
 
-# 4. 每條共用 rule 都必須以相同內容送達所有使用它的工具。
-for src in home/.chezmoitemplates/rules/*.md; do
+# 4. Every shared rule must render with identical Claude and Copilot bodies. cmp is available
+#    in Git Bash and standard macOS, unlike md5sum.
+for src in "$staged"/home/.chezmoitemplates/rules/*.md; do
   name="$(basename "$src" .md)"
   claude="$render/.claude/rules/$name.md"
   copilot="$render/.copilot/instructions/$name.instructions.md"
-  [[ -f "$claude" ]]  || fail "shared rule '$name' has no Claude template (dot_claude/rules/$name.md.tmpl)."
-  [[ -f "$copilot" ]] || fail "shared rule '$name' has no Copilot template (dot_copilot/instructions/$name.instructions.md.tmpl)."
-  a=$(sed '1,/^---$/d;1,/^---$/d' "$claude"  | md5sum | cut -d' ' -f1)
-  b=$(sed '1,/^---$/d;1,/^---$/d' "$copilot" | md5sum | cut -d' ' -f1)
-  [[ "$a" == "$b" ]] || fail "shared rule '$name' renders different bodies for Claude and Copilot."
+  [[ -f "$claude" ]] || fail "shared rule '$name' has no Claude template."
+  [[ -f "$copilot" ]] || fail "shared rule '$name' has no Copilot template."
+
+  claude_body="$work/$name.claude.md"
+  copilot_body="$work/$name.copilot.md"
+  sed '1,/^---$/d;1,/^---$/d' "$claude" >"$claude_body"
+  sed '1,/^---$/d;1,/^---$/d' "$copilot" >"$copilot_body"
+  cmp -s "$claude_body" "$copilot_body" ||
+    fail "shared rule '$name' renders different bodies for Claude and Copilot."
 done
 
-# 5. Codex 會逐字讀取 AGENTS.md；YAML frontmatter 會成為可見文字。
+# 5. Codex must receive a literal AGENTS.md without YAML frontmatter.
 if head -1 "$render/.codex/AGENTS.md" | grep -q '^---$'; then
   fail "~/.codex/AGENTS.md starts with YAML frontmatter. Codex renders it as visible text
     and it counts against project_doc_max_bytes. Keep .chezmoitemplates/core.md frontmatter-free."
 fi
 
-printf 'pre-commit: source state OK (%s skill files, %s shared rules).\n' \
-  "$src_skills" "$(ls home/.chezmoitemplates/rules/*.md 2>/dev/null | wc -l)"
+printf 'pre-commit: staged source state OK (%s skill files, %s shared rules).\n' \
+  "$src_skills" "$(find "$staged/home/.chezmoitemplates/rules" -maxdepth 1 -type f -name '*.md' | wc -l)"

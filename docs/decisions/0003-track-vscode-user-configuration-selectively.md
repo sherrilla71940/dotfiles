@@ -52,4 +52,4 @@ that is intentional when the state is runtime-owned or machine-specific.
 - [`home/.chezmoitemplates/vscode/`](../../home/.chezmoitemplates/vscode/)
 - [`home/.chezmoiignore`](../../home/.chezmoiignore)
 - [`scripts/vscode-extensions.txt`](../../scripts/vscode-extensions.txt)
-- [`docs/setup.md`](../setup.md#what-chezmoi-deliberately-does-not-own)
+- [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md#apps-that-write-their-own-config)

@@ -212,14 +212,19 @@ files and `dot_zshrc`.
 
 ### Apps that write their own config
 
-VS Code writes `settings.json` whenever you change a setting through the UI. Because that
-file is a template here, `chezmoi re-add` will not pick your change up and the next apply
-will revert it. Change VS Code settings in `home/.chezmoitemplates/vscode/settings.json`
-instead, then `chezmoi apply`.
+Applications can update the same files that contain portable preferences. Ownership differs
+by client, so use the matching workflow:
 
-`~/.codex/config.toml` is the deliberate exception: it uses the `create_` prefix, so
-chezmoi writes it once and never touches it again. Codex is free to write machine state
-into it.
+| Live file | Ownership policy | Preserve a UI or CLI change |
+| --- | --- | --- |
+| VS Code `settings.json` | managed template | edit `home/.chezmoitemplates/vscode/settings.json`; `re-add` skips it |
+| Claude `~/.claude/settings.json` | managed template, including the selected model, effort, theme, and TUI | edit `home/dot_claude/settings.json.tmpl`; `/model`, `/effort`, `/theme`, and similar live changes are temporary until added there |
+| Copilot `~/.copilot/settings.json` | plain managed file | run `chezmoi diff`, then `chezmoi re-add ~/.copilot/settings.json` and review the source diff |
+| Codex `~/.codex/config.toml` | create-once mixed state | merge only missing durable declarations manually; never replace the complete live file |
+
+Claude's current durable model is `opus[1m]` with high effort. Changing either through the
+UI does not update the template, so a later apply restores the repository values unless the
+source is updated.
 
 ## Editing the working agreement (the common case)
 
@@ -319,6 +324,7 @@ delete it by hand — and other machines keep it indefinitely.
 ## Daily commands
 
 ```bash
+chezmoi source-path                  # must resolve inside this repository
 chezmoi edit ~/.claude/CLAUDE.md   # edit the source behind a live path
 chezmoi diff                        # preview
 chezmoi apply -v                    # write
@@ -354,7 +360,8 @@ chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
 # compare counts against home/dot_agents/skills
 ```
 
-Use `--exclude=scripts` for any test render.
+Use `--exclude=scripts` for any test render. The flag excludes chezmoi script entry types,
+not the repository's top-level `scripts/` directory.
 
 ## OS differences
 

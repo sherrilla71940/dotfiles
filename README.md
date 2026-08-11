@@ -14,6 +14,9 @@ chezmoi init https://github.com/sherrilla71940/dotfiles.git
 If you use a fork, replace the URL with your fork's URL. See the full
 [new-machine setup guide](./docs/setup.md#onboarding-a-new-machine) before applying.
 
+Git and chezmoi must exist before initialization. VS Code and the three AI clients are
+installed and authenticated separately; applying first is safe after reviewing the diff.
+
 ⚠️ On a machine that already has configuration, run `chezmoi diff` before `chezmoi apply`:
 **apply overwrites existing files without prompting.** See
 [docs/setup.md](./docs/setup.md#onboarding-a-new-machine).
@@ -64,6 +67,14 @@ home/.chezmoidata.yaml                       <-- the glob, written once
 
 Anything used by only one tool is a plain file in that tool's folder, with no templating at
 all. Nothing is ever reworded into a tool-neutral twin.
+
+### Copying only part of this repository
+
+Files under `home/.chezmoitemplates/` are reusable bodies, not standalone target files. For
+example, VS Code bodies need the OS-specific wrappers under `home/AppData/` and
+`home/Library/`, while shared rule bodies deliberately omit client frontmatter. Portable
+skills under `home/dot_agents/skills/` are written for Claude Code, Codex, and Copilot; review
+tool assumptions before copying one into a single-client setup.
 
 ## Layout
 

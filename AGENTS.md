@@ -59,9 +59,13 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 ## Before you finish
 
 ```bash
-chezmoi diff     # must not target any path inside this repo
-chezmoi status   # empty after apply
+chezmoi source-path  # MUST resolve inside this repository; otherwise stop
+chezmoi diff         # ALWAYS preview before apply; apply overwrites without prompting
+chezmoi status       # empty after apply
 ```
+
+Never run `chezmoi apply` until the source-path check and diff both succeed. A plain chezmoi
+command uses its configured source directory regardless of the current working directory.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
 filenames, so real names are transformed silently and files can vanish. This has caused
@@ -73,7 +77,8 @@ chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
 # compare file counts against the source tree
 ```
 
-Always pass `--exclude=scripts` when test-rendering.
+Always pass `--exclude=scripts` when test-rendering. This excludes chezmoi-managed script
+entry types; it does not refer to the repository's top-level `scripts/` directory.
 
 ## Verify against docs, not memory
 

@@ -86,13 +86,15 @@ according to the file's ownership policy:
 | Live file | Ownership policy | Preserve a UI or CLI change |
 | --- | --- | --- |
 | VS Code `settings.json` | Managed template | Edit `home/.chezmoitemplates/vscode/settings.json` |
-| Claude `~/.claude/settings.json` | Managed template | Edit `home/dot_claude/settings.json.tmpl` |
+| Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/dot_claude/modify_settings.json` for durable keys; use `/model` or `/effort` for app-owned choices |
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
 
-Changing Claude's model, effort, theme, or terminal interface through the application does
-not update its template. A later apply restores the repository values unless you update the
-source.
+Claude owns `model`, `effortLevel`, and unknown future keys. The repository manages the
+environment, permissions, hooks, status line, plugins, marketplaces, update channel, theme,
+verbosity, and terminal interface. A model or effort change therefore survives
+`chezmoi apply` without entering Git. See
+[ADR-0004](./decisions/0004-manage-mixed-state-claude-settings-by-key.md).
 
 ## Remove a managed file
 

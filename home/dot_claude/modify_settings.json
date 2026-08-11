@@ -1,0 +1,66 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Preserve application-owned keys while enforcing durable cross-machine settings. */ -}}
+{{- $settings := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $settings = fromJson .chezmoi.stdin -}}
+{{- end -}}
+
+{{- $env := dict
+      "API_TIMEOUT_MS" "1200000"
+      "BASH_DEFAULT_TIMEOUT_MS" "300000"
+      "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN" "1"
+-}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   $_ := set $env "CLAUDE_CODE_USE_POWERSHELL_TOOL" "0" -}}
+{{-   $homeDir := .chezmoi.homeDir | replace "/" "\\" -}}
+{{-   $_ := set $env "CLAUDE_CODE_GIT_BASH_PATH" (printf "%s\\AppData\\Local\\Programs\\Git\\bin\\bash.exe" $homeDir) -}}
+{{- end -}}
+
+{{- $notificationCommand := "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
+{{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   $notificationCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/show-claude-notification.ps1\"" -}}
+{{-   $sessionStartCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" -}}
+{{-   $statusLineCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/claude-session-statusline.ps1\"" -}}
+{{- end -}}
+
+{{- $permissions := dict "ask" (list "Bash(git push *)" "Bash(git commit *)") -}}
+{{- $hooks := dict
+      "Notification" (list (dict
+        "matcher" "permission_prompt|elicitation_dialog|idle_prompt"
+        "hooks" (list (dict
+          "type" "command"
+          "command" $notificationCommand
+          "timeout" 10))))
+      "SessionStart" (list (dict
+        "matcher" "startup|resume|fork"
+        "hooks" (list (dict
+          "type" "command"
+          "command" $sessionStartCommand
+          "timeout" 5))))
+-}}
+{{- $statusLine := dict "type" "command" "command" $statusLineCommand -}}
+{{- $enabledPlugins := dict
+      "figma@claude-plugins-official" true
+      "typescript-lsp@claude-plugins-official" true
+      "playwright@claude-plugins-official" true
+-}}
+{{- $marketplaces := dict
+      "claude-code-plugins" (dict
+        "source" (dict
+          "source" "github"
+          "repo" "anthropics/claude-code"))
+-}}
+
+{{- $settings = $settings | setValueAtPath "env" $env -}}
+{{- $settings = $settings | setValueAtPath "permissions" $permissions -}}
+{{- $settings = $settings | setValueAtPath "hooks" $hooks -}}
+{{- $settings = $settings | setValueAtPath "statusLine" $statusLine -}}
+{{- $settings = $settings | setValueAtPath "enabledPlugins" $enabledPlugins -}}
+{{- $settings = $settings | setValueAtPath "extraKnownMarketplaces" $marketplaces -}}
+{{- $settings = $settings | setValueAtPath "autoUpdatesChannel" "latest" -}}
+{{- $settings = $settings | setValueAtPath "theme" "auto" -}}
+{{- $settings = $settings | setValueAtPath "verbose" true -}}
+{{- $settings = $settings | setValueAtPath "tui" "default" -}}
+{{ $settings | toPrettyJson }}

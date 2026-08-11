@@ -38,7 +38,7 @@ The columns group surfaces only when they read the same personal configuration:
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
 | Marketplace plugins | declarative `enabledPlugins` | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
 | User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
-| General settings | managed `settings.json` | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
+| General settings | partially managed `settings.json`; model and effort remain app-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
 
 Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
 directories exist only where a client requires the directory before a session starts.
@@ -289,7 +289,7 @@ client downloads and manages the plugin files. The downloaded cache is not copie
 dotfiles repository.
 
 - Claude Code: add its marketplace if needed and its plugin ID to `enabledPlugins` in
-  `home/dot_claude/settings.json.tmpl`.
+  `home/dot_claude/modify_settings.json`.
 - Codex: add its marketplace and plugin defaults to
   `home/dot_codex/create_config.toml.tmpl`; merge only missing declarations into an existing
   app-owned config.
@@ -306,8 +306,9 @@ chezmoi re-add ~/.copilot/settings.json
 ```
 
 Review the source diff before committing. This works because Copilot's settings file is a
-plain managed file, not a template. For Claude's templated settings and Codex's create-once
-config, follow the client-specific steps above instead.
+plain managed file. Claude's modify template preserves application-owned keys while enforcing
+durable plugin declarations. For Codex's create-once config, follow the client-specific steps
+above instead.
 
 Never copy plugin caches, installed-plugin directories, authentication tokens, or client
 runtime state into `home/`.

@@ -80,6 +80,42 @@ Some apparently missing directories are intentional:
 - VS Code reads `*.prompt.md` from its user profile, not from `~/.copilot/prompts/`.
 - Codex has no personal path-scoped rules directory.
 
+## Add a new client directory
+
+Do not assume that a client reads every directory under its configuration folder. Before
+adding a directory:
+
+1. Verify the directory path and file format in the client's current official documentation.
+2. Confirm that the directory contains portable configuration rather than credentials,
+   caches, logs, history, or other runtime state.
+3. Add each file under the matching source path:
+
+   | Live directory | Source directory |
+   | --- | --- |
+   | `~/.claude/<folder>/` | `home/dot_claude/<folder>/` |
+   | `~/.codex/<folder>/` | `home/dot_codex/<folder>/` |
+   | `~/.copilot/<folder>/` | `home/dot_copilot/<folder>/` |
+
+4. Run `chezmoi diff`, apply the change, restart the client when required, and confirm that
+   the client discovers the file.
+
+If the file already exists in the live directory, import its target path:
+
+```bash
+chezmoi add ~/.claude/<folder>/<file>
+```
+
+If you create the file directly under this repository's `home/` source state, do not run
+`chezmoi add`. A directory containing managed files is created automatically. Do not add an
+empty directory unless the client explicitly requires one.
+
+For example, Claude Code does not currently document `~/.claude/workflows/` as a discovery
+directory. Represent a reusable Claude workflow as a skill instead:
+
+- Claude-only: `home/dot_claude/skills/<name>/SKILL.md`.
+- Portable across Claude, Codex, and Copilot: `home/dot_agents/skills/<name>/SKILL.md` plus
+  its Claude symlink wrapper.
+
 ## Add an instruction
 
 ### One client
@@ -289,6 +325,8 @@ runtime state into `home/`.
 
 ## Official references
 
+- [Claude Code configuration directory](https://code.claude.com/docs/en/claude-directory)
+- [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
 - [Claude Code Desktop and shared configuration](https://code.claude.com/docs/en/desktop)
 - [Claude Code IDE integrations](https://code.claude.com/docs/en/ide-integrations)
 - [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)

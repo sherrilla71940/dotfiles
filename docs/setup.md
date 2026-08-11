@@ -10,23 +10,22 @@ Chezmoi calls the desired files in its repository clone the **source state**. It
 those files into live **targets** under your home directory when you run `chezmoi apply`.
 For example, the source `home/dot_bashrc` renders to the target `~/.bashrc`.
 
-## Onboarding a new machine
+## Choose a setup path
 
-> **`chezmoi apply` can replace existing configuration.** Do not start with
-> `chezmoi init --apply` on a machine that has settings to preserve. Initialize, verify the
-> source directory, and review `chezmoi diff` first.
+Choose based on the configuration already in the home directory:
 
-### Setup sequence
+| Machine state | Setup path |
+| --- | --- |
+| No shell, editor, or AI-client settings need to be preserved | [Empty machine](#empty-machine) |
+| Any existing settings should survive, or you are unsure | [Existing configuration](#existing-configuration) |
 
-| Order | Requirement | Why it comes first |
-| --- | --- | --- |
-| 1 | Git and chezmoi | Required to initialize and version the source repository |
-| 2 | This repository | Created by `chezmoi init`; a separate clone is unnecessary |
-| 3 | Source-path verification and diff | Prevents applying a stale clone or overwriting existing settings |
-| 4 | `chezmoi apply` | Writes the reviewed source state into the home directory |
-| 5 | Applications and authentication | Lets each application load the managed files; credentials remain local |
+A new computer can already have existing configuration if you used an application before
+installing these dotfiles. When unsure, use the existing-configuration path. It initializes
+the repository without changing live files.
 
-### Step 1 — install Git and chezmoi
+## Common prerequisites
+
+### Install Git and chezmoi
 
 macOS with Homebrew:
 
@@ -51,20 +50,45 @@ Restart the shell after Winget installation. The managed `.bashrc` adds Winget's
 shim directory to Git Bash after the first apply; use PowerShell for initial setup if Git
 Bash cannot find `chezmoi` yet.
 
-### Step 2 — enable Windows symlink creation
+### Enable Windows symlink creation
 
 Skip this step on macOS. Portable skills render as symbolic links under `~/.claude/skills`.
 On Windows, enable **Developer Mode** before the first apply, or run the apply from an account
 with `SeCreateSymbolicLinkPrivilege`. Without one of those, chezmoi cannot create the skill
 links. See [chezmoi's Windows guidance](https://www.chezmoi.io/user-guide/machines/windows/#create-symlinks).
 
-### Step 3 — initialize without applying
+## Empty machine
+
+Use this path only when no existing configuration needs to be preserved. On macOS or Git
+Bash, the standalone installer can install chezmoi and apply the repository in one command:
 
 ```bash
-chezmoi init https://github.com/sherrilla71940/dotfiles.git
+sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
 
-If you use a fork, replace the URL. Chezmoi places the clone in its default source directory.
+If chezmoi is already installed, run:
+
+```bash
+chezmoi init --apply sherrilla71940
+chezmoi source-path
+chezmoi status
+```
+
+The source path should normally end in `~/.local/share/chezmoi/home`. Empty status output
+means the managed targets match the source state.
+
+## Existing configuration
+
+Use this path to inspect and preserve existing settings before chezmoi writes any targets.
+
+### 1. Initialize without applying
+
+```bash
+chezmoi init sherrilla71940
+```
+
+If you use a fork, replace `sherrilla71940` with the fork's URL or GitHub shorthand. Chezmoi
+places the clone in its default source directory.
 
 Immediately confirm that chezmoi is reading the expected clone:
 
@@ -76,24 +100,59 @@ The result must end inside this repository, normally
 `~/.local/share/chezmoi/home`. If it points at a different clone, stop and reconcile the
 source directories before continuing.
 
-### Step 4 — preview
+### 2. Preview every target change
 
 ```bash
 chezmoi diff
 ```
 
-Every removed line is live configuration that apply would replace. Back up anything you need
-or incorporate it into the source first.
+Every removed line is live configuration that apply would replace. Do not apply yet.
 
 Useful safer variants:
 
 | Command or flag | Behavior |
 | --- | --- |
 | `chezmoi apply --dry-run --verbose` | Show operations without writing |
-| `chezmoi apply --interactive` | Prompt for every operation |
-| `chezmoi apply --less-interactive` | Prompt for changed or pre-existing targets |
+| `chezmoi apply --interactive` | Prompt for every operation during the eventual apply |
+| `chezmoi apply --less-interactive` | Prompt for changed or pre-existing targets during the eventual apply |
 
-### Step 5 — apply
+### 3. Adopt the settings you want to keep
+
+Handle each changed target according to the desired result:
+
+| Desired result | Action before applying |
+| --- | --- |
+| Use the repository version | Make no source change; the preview already shows what apply will replace |
+| Preserve an entire plain file | Confirm `chezmoi source-path <target>` does not end in `.tmpl`, then run `chezmoi re-add <target>` |
+| Preserve selected values | Open the live target and its source side by side, then copy only portable values into the source |
+| Preserve values from a templated target | Edit the source template or shared body; `re-add` deliberately skips templates |
+
+For example, to preserve an entire live `.bashrc`:
+
+```bash
+chezmoi source-path ~/.bashrc
+chezmoi re-add ~/.bashrc
+chezmoi git -- diff
+```
+
+To preserve selected VS Code settings, compare the live `settings.json` with
+`home/.chezmoitemplates/vscode/settings.json` and copy only the settings that should follow
+every machine. Do not copy credentials, caches, machine paths, or application-owned state.
+
+`chezmoi merge <target>` can perform a three-way merge when a merge tool is configured.
+Manual source editing is safer for this repository's templates because one rendered target
+can combine a thin wrapper with a shared body.
+
+After adopting settings, review both kinds of change:
+
+```bash
+chezmoi git -- diff   # changes you made to the repository source
+chezmoi diff          # changes the next apply will make to live targets
+```
+
+Back up any irreplaceable live file outside its managed target path before continuing.
+
+### 4. Apply and verify
 
 ```bash
 chezmoi apply -v
@@ -103,14 +162,8 @@ chezmoi status
 Empty status output means the managed targets match the source. Restart applications so they
 reload their configuration.
 
-### Genuinely empty machines only
-
-When there is certainly no existing configuration to preserve, initialization and apply can
-be combined:
-
-```bash
-chezmoi init --apply https://github.com/sherrilla71940/dotfiles.git
-```
+If adoption changed the source, review and commit those portable changes so they follow the
+other machines. Do not commit machine-specific values or credentials.
 
 ## Application installation and login
 
@@ -152,8 +205,8 @@ Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.Start
 
 ### Claude user MCP servers
 
-Claude stores user MCP definitions inside app-owned `~/.claude.json`, so chezmoi must not
-replace that file. After Claude Code is installed, add missing direct user servers with:
+After Claude Code is installed, add the repository's direct user MCP servers with the
+platform installer:
 
 ```bash
 bash scripts/install-claude-mcp.sh
@@ -163,17 +216,16 @@ bash scripts/install-claude-mcp.sh
 powershell -File scripts/install-claude-mcp.ps1
 ```
 
-The shell installer requires `jq`; the PowerShell installer does not. Existing server names
-are left unchanged. Plugin MCP servers, Claude.ai connectors, and Claude in Chrome remain
-owned by their respective plugin, account, or browser integration. See the
-[customization support guide](./customization-support.md#add-an-mcp-server).
+The shell installer requires `jq`; the PowerShell installer does not. It leaves existing
+server names unchanged because `~/.claude.json` also contains application-owned state. The
+[MCP customization guide](./customization-support.md#add-an-mcp-server) explains what belongs
+in the manifest and what remains owned by plugins, accounts, or browser integrations.
 
 ### Plugins
 
 The repository carries portable plugin declarations, not downloaded caches or authentication.
-Claude and Copilot settings are managed directly. Codex uses create-once defaults and requires
-only missing declarations to be merged into an existing config. See
-[the plugin workflow](./chezmoi-workflow.md#installing-a-third-party-plugin).
+Follow the [plugin customization guide](./customization-support.md#add-a-marketplace-plugin)
+for the client-specific source and Codex's create-once behavior.
 
 ## Enable repository validation
 
@@ -240,7 +292,7 @@ secret source or an environment variable rather than committing it.
 Chezmoi deliberately does not own complete application data directories, plugin caches,
 sessions, authentication tokens, logs, VS Code workspace storage, Copilot runtime state, or
 Codex's existing mixed-state `config.toml`. See
-[ownership and app-written settings](./chezmoi-workflow.md#apps-that-write-their-own-config)
+[ownership and app-written settings](./chezmoi-workflow.md#applications-that-write-their-own-configuration)
 before importing a live application file.
 
 ## Version-sensitive references

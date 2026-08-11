@@ -58,6 +58,118 @@ This repository does not manage complete product or account state:
 - Copilot cloud features can read supported files committed inside a repository. This
   dotfiles setup does not copy personal `~/.copilot/` runtime state into GitHub.
 
+## Choose where a customization goes
+
+Use a client directory for client-specific content and a shared directory only when multiple
+clients can use the same body:
+
+| Client or scope | Instructions | Skills | Agents | Prompts or commands |
+| --- | --- | --- | --- | --- |
+| Claude Code | `home/dot_claude/rules/` | `home/dot_claude/skills/` | `home/dot_claude/agents/` | `home/dot_claude/commands/` |
+| Codex | `home/dot_codex/AGENTS.md.tmpl` | shared skills | `home/dot_codex/agents/` | use a skill |
+| GitHub Copilot | `home/dot_copilot/instructions/` | `home/dot_copilot/skills/` | `home/dot_copilot/agents/` | VS Code profile wrappers |
+| Shared | `home/.chezmoitemplates/` | `home/dot_agents/skills/` | not shared | not shared |
+
+Some apparently missing directories are intentional:
+
+- Codex personal skills normally use `~/.agents/skills`, which Copilot also scans. This
+  repository therefore treats those skills as portable. Verify current Codex isolation
+  options before attempting to make a personal skill Codex-only.
+- Codex standalone custom prompts are deprecated. Use a skill instead of creating
+  `home/dot_codex/prompts/`.
+- VS Code reads `*.prompt.md` from its user profile, not from `~/.copilot/prompts/`.
+- Codex has no personal path-scoped rules directory.
+
+## Add an instruction
+
+### One client
+
+Add a plain file to that client's source directory. Include the client's required
+frontmatter, but do not create a shared template. For example, a Claude-only Python rule can
+live at `home/dot_claude/rules/python.md`:
+
+```markdown
+---
+paths:
+  - "**/*.py"
+---
+
+# Python guidelines
+
+- ...
+```
+
+The Copilot equivalent is
+`home/dot_copilot/instructions/<name>.instructions.md` with `applyTo:` frontmatter. Put
+Claude-only always-on content in `home/dot_claude/CLAUDE.md.tmpl` below the
+`# Claude Code only` marker.
+
+Keep an instruction client-specific when it names that client's tools or behavior. Do not
+create a tool-neutral paraphrase solely to make it shareable.
+
+### Multiple clients
+
+When Claude and Copilot can share the same instruction body:
+
+1. Add the body without frontmatter at `home/.chezmoitemplates/rules/<name>.md`.
+2. Add its file pattern and title to `home/.chezmoidata.yaml`.
+3. Add a thin `.tmpl` wrapper under both clients' instruction directories.
+4. Run `chezmoi diff`, apply, and verify that the rendered bodies match.
+
+A **thin wrapper** adds client-specific frontmatter and includes the shared body. The Copilot
+JavaScript wrapper shows each template element:
+
+```gotemplate
+{{- /* Generated from .chezmoitemplates/rules/javascript.md -- edit the body there, not here. */ -}}
+---
+applyTo: "{{ (index .rules "javascript").glob }}"
+description: '{{ (index .rules "javascript").title }} rules, shared with Claude Code.'
+---
+
+{{ includeTemplate "rules/javascript.md" -}}
+```
+
+| Syntax | Effect |
+| --- | --- |
+| `{{- /* ... */ -}}` | Adds an optional source comment that is removed from the target |
+| YAML between `---` lines | Writes Copilot frontmatter to the target |
+| `{{ (index .rules "javascript").glob }}` | Reads the file pattern from `home/.chezmoidata.yaml` |
+| `{{ includeTemplate "rules/javascript.md" -}}` | Renders the shared instruction body |
+| `-` beside a template delimiter | Trims adjacent whitespace |
+
+Claude uses a separate wrapper with `paths:` frontmatter. Do not add a Codex wrapper for a
+language rule: Codex cannot path-scope it, so the rule would become always-on.
+
+## Edit the shared working agreement
+
+The rendered `~/.claude/CLAUDE.md` combines shared and Claude-only sources:
+
+| Change | Source | Shortcut | Clients reached |
+| --- | --- | --- | --- |
+| Shared working agreement | `home/.chezmoitemplates/core.md` | `dotf-core` | Claude, Codex, and Copilot |
+| Claude-only addition | `home/dot_claude/CLAUDE.md.tmpl` | `dotf-claude` | Claude only |
+
+Use the shared body only when the text remains correct for all three clients.
+`chezmoi edit ~/.claude/CLAUDE.md` opens the Claude wrapper, not the included shared body.
+After editing, run `dotf-diff` and `dotf-apply` or the equivalent chezmoi commands.
+
+## Add a skill
+
+Choose the source path according to who should discover the skill:
+
+| Scope | Source |
+| --- | --- |
+| Portable across all three clients | `home/dot_agents/skills/<name>/SKILL.md` plus `home/dot_claude/skills/symlink_<name>.tmpl` |
+| Claude-only | `home/dot_claude/skills/<name>/SKILL.md` |
+| Copilot-only | `home/dot_copilot/skills/<name>/SKILL.md` |
+
+The Claude symlink template points to
+`{{ .chezmoi.homeDir }}/.agents/skills/<name>`. Individual links allow shared and Claude-only
+skills to coexist in `~/.claude/skills/`.
+
+Check a portable skill for client-specific tool names before sharing it. Because these are
+source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmoi add`.
+
 ## Add an agent definition
 
 - Claude Code: add `home/dot_claude/agents/<name>.md`.

@@ -7,30 +7,31 @@ bootstrap and validation tools.
 [Chezmoi](https://www.chezmoi.io) stores the desired configuration in this repository and
 writes that configuration to the home directory. No separate `git clone` is required.
 
-## Quick start
+## Choose a setup path
 
-Use this one-line setup only on a new machine with no configuration to preserve:
+### Empty machine
+
+Use this one-line setup only when no existing shell, editor, or AI-client configuration
+needs to be preserved:
 
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
 
-On a machine with existing configuration, install chezmoi first and preview the changes
-before applying them:
+### Existing configuration
+
+If any settings should survive—or you are unsure—initialize without applying:
 
 ```bash
 chezmoi init sherrilla71940
 chezmoi source-path
 chezmoi diff
-chezmoi apply -v
 ```
 
-An apply can replace live configuration. Confirm that `chezmoi source-path` points inside
-this repository; that command prints the source directory that chezmoi will read. Review the
-complete diff before applying. If you use a fork, replace `sherrilla71940` with the fork's
-URL. See the
-[new-machine setup guide](./docs/setup.md#onboarding-a-new-machine) for Windows, application,
-and recovery details.
+Do not apply until you have adopted the existing values you want to keep. The
+[existing-configuration guide](./docs/setup.md#existing-configuration) explains how to
+preserve a complete plain file or selected settings from a template-backed file. If you use
+a fork, replace `sherrilla71940` with the fork's URL.
 
 ## After setup: manage it with an AI assistant
 
@@ -112,8 +113,8 @@ docs/decisions/                  architecture decisions and reconsideration trig
 | I want to… | Read |
 | --- | --- |
 | Set up a machine, or understand what happens if an app isn't installed | [docs/setup.md](./docs/setup.md) |
-| Add, change or **remove** an instruction, skill or config file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
-| See what each AI client supports and where it belongs | [docs/customization-support.md](./docs/customization-support.md) |
+| Add, change, or remove a general managed file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
+| Add or change AI instructions, skills, agents, prompts, MCP servers, or plugins | [docs/customization-support.md](./docs/customization-support.md) |
 | Understand why the repository is structured this way | [docs/decisions/README.md](./docs/decisions/README.md) |
 | Know why a particular rule exists before trimming it | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | Let a coding agent work in this repo | [AGENTS.md](./AGENTS.md) |
@@ -121,4 +122,4 @@ docs/decisions/                  architecture decisions and reconsideration trig
 `AGENTS.md` is the one file here written for a machine rather than a person: Codex and the
 Copilot command-line interface (CLI) load it automatically, and the root `CLAUDE.md` imports
 it so Claude Code gets the same constraints. It stays deliberately short, since it costs
-context in every agent session — procedures live in the workflow guide instead.
+context in every agent session; procedures live in the task-specific guides instead.

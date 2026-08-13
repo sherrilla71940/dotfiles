@@ -70,3 +70,16 @@
 ## Reference documents
 
 - Store non-text project references in `~/Documents/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.
+
+## Project continuity
+
+Claude Code and Codex only: if the current repository contains
+`.agent/continuity.md`, use the `project-continuity` skill before substantive
+project work.
+
+If no continuity file exists but the work is clearly likely to span multiple
+sessions and would materially benefit from cross-session handoff, ask once
+whether the user wants project continuity enabled. Do not initialize it
+without user consent.
+
+GitHub Copilot: ignore this rule and do not use `project-continuity`.

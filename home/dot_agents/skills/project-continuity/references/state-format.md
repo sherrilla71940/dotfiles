@@ -67,8 +67,6 @@ The phase another session should resume from.
 - Preserve whether privacy protection was pre-existing or added by this workflow so final cleanup can reverse only workflow-owned setup.
 - Preserve whether `.agent/` was created by this workflow or pre-existed. Never infer ownership later from whether the directory happens to be empty.
 - Ignore only `.agent/continuity.md` for this workflow; never broaden privacy protection to the entire `.agent/` directory solely for continuity.
-- Preserve whether `.agent/` was created by this workflow or pre-existed. Never infer ownership later from whether the directory happens to be empty.
-- Ignore only `.agent/continuity.md` for this workflow; never broaden privacy protection to the entire `.agent/` directory solely for continuity.
 - Prefer current state over historical narrative.
 - Replace superseded information instead of keeping both versions.
 - Remove resolved blockers and completed TODOs from active sections.

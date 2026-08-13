@@ -16,7 +16,7 @@ Treat continuity as **where the work stopped**, not as project documentation, na
 3. Keep only state that materially helps the next session continue.
 4. Reconcile and prune stale state whenever reading or writing continuity.
 5. Never claim work is complete unless repository evidence supports the claim.
-6. Keep native client memory separate. Do not read, write, disable, or curate Claude auto memory or Codex memory unless the user explicitly asks for that separate task.
+6. Keep native client memory separate from continuity. This restricts only what the continuity workflow itself does: while performing continuity operations, do not read, write, disable, or curate Claude auto memory or Codex memory as part of that work. It does not suspend or override the client's own independent memory system, which keeps following its own separate, standing rules — including writing memories proactively without being asked — regardless of whether continuity is active. Only touch native memory directly when the user separately and explicitly asks for that as its own task.
 7. Do not silently promote temporary state into durable project instructions.
 8. Once continuity is enabled for tracked work, maintain it without repeatedly asking permission to checkpoint.
 9. Treat the continuity file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier in the turn. Merge automatically when the changes are clearly non-conflicting; ask the user only when there is an actual contradiction or ambiguity that cannot be safely resolved. Never blindly overwrite a version that was not just re-read.

@@ -1,5 +1,6 @@
 *.sh text eol=lf
 *.sh.tmpl text eol=lf
+scripts/git-hooks/* text eol=lf
 dot_bashrc text eol=lf
 dot_bash_profile text eol=lf
 dot_zshrc.tmpl text eol=lf

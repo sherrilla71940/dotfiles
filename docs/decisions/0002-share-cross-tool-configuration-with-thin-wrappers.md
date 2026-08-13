@@ -57,5 +57,5 @@ remain part of cross-platform verification. Tool-specific capabilities remain ex
 - [`home/.chezmoitemplates/`](../../home/.chezmoitemplates/)
 - [`home/dot_agents/skills/`](../../home/dot_agents/skills/)
 - [`home/dot_claude/skills/`](../../home/dot_claude/skills/)
-- [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md#adding-a-skill)
+- [`docs/customization-support.md`](../customization-support.md#add-a-skill)
 - `scripts/git-hooks/pre-commit` checks shared-skill parity and renders a temporary target.

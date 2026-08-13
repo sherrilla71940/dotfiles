@@ -1,0 +1,3 @@
+interface:
+  display_name: "Project Continuity"
+  short_description: "Private session continuity for Claude Code and Codex"

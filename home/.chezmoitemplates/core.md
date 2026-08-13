@@ -75,7 +75,9 @@
 
 Claude Code and Codex only: if the current repository contains
 `.agent/continuity.md`, use the `project-continuity` skill before substantive
-project work.
+project work. If the current client cannot resolve the skill by name (for
+example, skill discovery fails or the skill does not appear available), read
+and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead.
 
 If no continuity file exists but the work is clearly likely to span multiple
 sessions and would materially benefit from cross-session handoff, ask once

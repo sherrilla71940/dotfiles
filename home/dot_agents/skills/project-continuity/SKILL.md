@@ -19,6 +19,7 @@ Treat continuity as **where the work stopped**, not as project documentation, na
 6. Keep native client memory separate. Do not read, write, disable, or curate Claude auto memory or Codex memory unless the user explicitly asks for that separate task.
 7. Do not silently promote temporary state into durable project instructions.
 8. Once continuity is enabled for tracked work, maintain it without repeatedly asking permission to checkpoint.
+9. Treat the continuity file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier in the turn. Merge automatically when the changes are clearly non-conflicting; ask the user only when there is an actual contradiction or ambiguity that cannot be safely resolved. Never blindly overwrite a version that was not just re-read.
 
 Read [references/state-format.md](references/state-format.md) when creating or substantially restructuring the continuity file. Read [references/client-routing.md](references/client-routing.md) before promoting information into private client-specific project instructions.
 
@@ -46,7 +47,7 @@ Use the repository's continuity file as the durable opt-in marker for later sess
 
 Good reasons to suggest continuity include multi-phase discovery and implementation, migrations, large refactors, multiple independent TODOs, unresolved external dependencies, cross-session investigations, or likely handoff between Claude Code and Codex.
 
-The skill itself cannot bootstrap discovery in a fresh session before it is selected. The user's always-on Claude/Codex instructions should contain a tiny rule that checks for the continuity file and invokes this skill when present. Keep that bootstrap rule outside this skill.
+The skill itself cannot bootstrap discovery in a fresh session before it is selected. The user's always-on Claude/Codex instructions should contain a tiny rule that checks for the continuity file and invokes this skill when present. Keep that bootstrap rule outside this skill. Because skill discovery can fail even when the skill is correctly installed, that bootstrap rule should invoke this skill by name and include an explicit fallback path (`~/.agents/skills/project-continuity/SKILL.md`) to read directly if name-based resolution does not work.
 
 ## Continuity location and privacy
 
@@ -116,7 +117,9 @@ If saved state conflicts with repository evidence, use repository evidence and u
 
 Do not depend on detecting the literal end of a chat session.
 
-Once continuity is enabled, before completing a response that represents a meaningful stopping point, ask internally:
+Concretely: before sending a response that leaves unresolved TODOs, blockers, an incomplete implementation phase, or a defined next step, evaluate whether continuity changed and checkpoint it if so. This anchors checkpointing to a condition already being evaluated for the response itself, rather than relying solely on a separate judgment call.
+
+For cases outside that checklist, once continuity is enabled, before completing a response that represents a meaningful stopping point, ask internally:
 
 > Would a future session need information from this work that is not already durable in the repository?
 
@@ -143,10 +146,12 @@ Do not checkpoint when:
 
 When checkpointing:
 
-1. Re-read the current continuity state if another process or agent may have changed it.
-2. Reconcile against the current repository and Git state.
-3. **Merge and normalize; do not append a diary entry.**
-4. Update only useful current state:
+1. Immediately before writing, re-read the current continuity file and compare it against the version loaded earlier in this session or turn.
+2. If it is unchanged, proceed normally.
+3. If it changed, attempt an automatic semantic merge when the changes are clearly non-conflicting (for example, additive edits in different sections, or unrelated TODO updates). Ask the user only when there is an actual contradiction (the same field updated two different ways) or genuine ambiguity that cannot be safely resolved. Never blindly overwrite a version that was not just re-read.
+4. Reconcile against the current repository and Git state.
+5. **Merge and normalize; do not append a diary entry.**
+6. Update only useful current state:
    - current objective and phase;
    - verified completed work relevant to the tracked objective;
    - work in progress;
@@ -156,9 +161,9 @@ When checkpointing:
    - exact next actions;
    - relevant files when they make resumption faster;
    - branch/commit/status metadata when useful.
-5. Remove stale, contradictory, duplicated, resolved, or no-longer-useful entries.
-6. Keep the file concise enough to scan quickly at the next resume.
-7. If the tracked work is fully complete and no continuity-worthy follow-up remains, do not fabricate a next action. Tell the user continuity no longer appears necessary and ask whether they want cleanup if they have not already requested it.
+7. Remove stale, contradictory, duplicated, resolved, or no-longer-useful entries.
+8. Keep the file under about 120 lines when practical. If it grows beyond that, compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository.
+9. If the tracked work is fully complete and no continuity-worthy follow-up remains, do not fabricate a next action. Tell the user continuity no longer appears necessary and ask whether they want cleanup if they have not already requested it.
 
 Do not preserve stale information merely because a previous agent wrote it.
 

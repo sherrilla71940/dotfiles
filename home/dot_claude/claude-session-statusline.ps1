@@ -91,6 +91,11 @@ if ($null -ne $usedPercentage) {
     $contextPercentage = [math]::Floor([double]$usedPercentage)
     $contextColor = Get-UsageColor -Percentage $contextPercentage
     $meterSegments += "$contextColor$iconContext $contextPercentage% of context$reset"
+} else {
+    # Null until the first API response of a session, and again after /compact.
+    # A placeholder keeps this row on screen so the status line does not change
+    # height once the first response lands.
+    $meterSegments += "$dim$iconContext $([char]0x2014)% of context$reset"
 }
 
 if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {

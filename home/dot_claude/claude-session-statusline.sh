@@ -77,6 +77,11 @@ fi
 meter_segments=()
 if [[ -n "$used_percentage" ]]; then
   meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% of context${reset}")
+else
+  # Null until the first API response of a session, and again after /compact.
+  # A placeholder keeps this row on screen so the status line does not change
+  # height once the first response lands.
+  meter_segments+=("${dim}🧠 —% of context${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
   meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")

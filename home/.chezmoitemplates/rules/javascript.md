@@ -31,6 +31,8 @@ for markup and styling conventions.
 - In legacy non-module scripts, wrap private runtime code in an IIFE. When external callers need access, attach a small, explicit API to one existing project global or `window`; avoid leaking unrelated globals.
 - Keep `DOMContentLoaded` handlers thin: call initialization functions from them, but keep business logic, rendering, data parsing, and event handlers in named functions outside the callback.
 - Target elements with `data-*` attributes rather than classes or IDs — see `html-css.md` for the full convention. Avoid encoding element types in attribute values (`data-action="submit"`, not `data-type="button"`).
+- Avoid interleaving layout-affecting DOM writes with geometry reads such as `getBoundingClientRect()`, `offsetWidth`, or `getComputedStyle()`, especially inside loops. Batch geometry reads before writes to avoid repeated synchronous layout.
+- For viewport-edge calculations that must exclude a classic scrollbar, use `document.documentElement.clientWidth`. Use `window.innerWidth` only when the scrollbar-inclusive layout viewport is intentional.
 
 ## Asynchronous code
 

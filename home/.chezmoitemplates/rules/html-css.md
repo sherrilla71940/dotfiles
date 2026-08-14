@@ -32,6 +32,11 @@
 - When using skeletons, size them to approximate the final content.
 - When dialogs or overlays lock page scrolling, preserve scrollbar space with `scrollbar-gutter: stable` or an equivalent fallback.
 - For animations and transitions, prefer compositor-friendly properties (transform, opacity) when appropriate; avoid animating layout-affecting properties (top, left, width, height) when an equivalent transform-based approach is available.
+- When both state changes should animate, declare `transition` on the element's base state. A transition declared only in `:hover` or `:focus` applies on entry but not on exit.
+
+## Generated assets
+
+- When browser behavior does not match edited source and the project generates CSS or JavaScript, confirm that the relevant assets were rebuilt and loaded before changing source logic. Treat timestamps, build logs, source maps, and network responses as evidence rather than relying on one signal alone.
 
 ## Overrides and output
 

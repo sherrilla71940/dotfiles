@@ -19,6 +19,7 @@ seven_day_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.used_
 dim=$'\033[90m'
 cyan=$'\033[36m'
 blue=$'\033[94m'
+magenta=$'\033[95m'
 green=$'\033[32m'
 yellow=$'\033[33m'
 red=$'\033[31m'
@@ -39,6 +40,34 @@ usage_color() {
     printf '%s' "$yellow"
   else
     printf '%s' "$green"
+  fi
+}
+
+# Only --worktree sessions receive a branch on stdin, so ask git directly. The
+# query is scoped to the session's directory because this script's own working
+# directory is not necessarily the project.
+current_branch() {
+  local directory="$1"
+  if [[ -z "$directory" ]] || ! command -v git >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! git -C "$directory" rev-parse --git-dir >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local branch
+  branch="$(git -C "$directory" branch --show-current 2>/dev/null || true)"
+  if [[ -n "$branch" ]]; then
+    printf '%s' "$branch"
+    return 0
+  fi
+
+  # Detached HEAD reports no branch, so fall back to a parenthesised short SHA
+  # the way git's own shell prompt does.
+  local revision
+  revision="$(git -C "$directory" rev-parse --short HEAD 2>/dev/null || true)"
+  if [[ -n "$revision" ]]; then
+    printf '(%s)' "$revision"
   fi
 }
 
@@ -69,8 +98,15 @@ if [[ -n "$model" ]]; then
 elif [[ -n "$effort_level" ]]; then
   identity_segments+=("${dim}🤖 ${effort_level} effort${reset}")
 fi
+# Branch joins the directory for the same reason effort joins the model: both
+# answer "where am I", so they read as one group.
 if [[ -n "$current_directory" ]]; then
-  identity_segments+=("${blue}📁 $(basename "$current_directory")${reset}")
+  directory_segment="${blue}📁 $(basename "$current_directory")${reset}"
+  git_branch="$(current_branch "$current_directory")"
+  if [[ -n "$git_branch" ]]; then
+    directory_segment+="${minor_separator}${magenta}🌿 ${git_branch}${reset}"
+  fi
+  identity_segments+=("$directory_segment")
 fi
 
 # Line two is everything that moves while you work.

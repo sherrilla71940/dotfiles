@@ -22,6 +22,7 @@ try {
 # the ANSI code page, which would corrupt literal multi-byte characters here.
 $iconModel = [char]::ConvertFromUtf32(0x1F916)      # robot
 $iconDirectory = [char]::ConvertFromUtf32(0x1F4C1)  # folder
+$iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
 $iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain
 $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
@@ -31,6 +32,7 @@ $escape = [char]27
 $dim = "$escape[90m"
 $cyan = "$escape[36m"
 $blue = "$escape[94m"
+$magenta = "$escape[95m"
 $green = "$escape[32m"
 $yellow = "$escape[33m"
 $red = "$escape[31m"
@@ -43,6 +45,38 @@ $minorSeparator = "$dim $([char]0x00B7) $reset"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
 # always carries the same meaning wherever it appears on the line.
+# Only --worktree sessions receive a branch on stdin, so ask git directly. The
+# query is scoped to the session's directory because this script's own working
+# directory is not necessarily the project.
+function Get-CurrentBranch {
+    param([string]$Directory)
+
+    if ([string]::IsNullOrWhiteSpace($Directory)) { return "" }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return "" }
+
+    # git writes to stderr for ordinary conditions such as "not a repository",
+    # and the script-wide Stop preference would turn that into a thrown error,
+    # so relax it only around these calls.
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & git -C $Directory rev-parse --git-dir 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) { return "" }
+
+        $branch = (& git -C $Directory branch --show-current 2>$null | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($branch)) { return $branch.Trim() }
+
+        # Detached HEAD reports no branch, so fall back to a parenthesised short
+        # SHA the way git's own shell prompt does.
+        $revision = (& git -C $Directory rev-parse --short HEAD 2>$null | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($revision)) { return "($($revision.Trim()))" }
+
+        return ""
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+}
+
 function Get-UsageColor {
     param([double]$Percentage)
 
@@ -78,10 +112,17 @@ if (-not [string]::IsNullOrWhiteSpace($model)) {
     $identitySegments += "$dim$iconModel $effortLevel effort$reset"
 }
 
+# Branch joins the directory for the same reason effort joins the model: both
+# answer "where am I", so they read as one group.
 if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
     $directoryName = Split-Path -Leaf $currentDirectory.TrimEnd("\", "/")
     if (-not [string]::IsNullOrWhiteSpace($directoryName)) {
-        $identitySegments += "$blue$iconDirectory $directoryName$reset"
+        $directorySegment = "$blue$iconDirectory $directoryName$reset"
+        $gitBranch = Get-CurrentBranch -Directory $currentDirectory
+        if (-not [string]::IsNullOrWhiteSpace($gitBranch)) {
+            $directorySegment += "$minorSeparator$magenta$iconBranch $gitBranch$reset"
+        }
+        $identitySegments += $directorySegment
     }
 }
 

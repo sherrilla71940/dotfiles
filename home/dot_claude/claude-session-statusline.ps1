@@ -52,6 +52,9 @@ function Get-UsageColor {
 }
 
 $model = [string]$data.model.display_name
+# Absent on models without a reasoning effort parameter; tracks /effort changes
+# made mid-session.
+$effortLevel = [string]$data.effort.level
 $currentDirectory = [string]$data.workspace.current_dir
 $usedPercentage = $data.context_window.used_percentage
 # Client-side estimate only; resets to 0 when /clear starts a new session.
@@ -63,8 +66,16 @@ $sevenDayUsage = $data.rate_limits.seven_day.used_percentage
 
 # Line one is identity: rarely changes, so it stays out of the way of the meters.
 $identitySegments = @()
+# Effort qualifies the model rather than standing alone, so the two share a
+# segment. It stays uncoloured: the threshold palette already means fill level.
 if (-not [string]::IsNullOrWhiteSpace($model)) {
-    $identitySegments += "$cyan$iconModel $model$reset"
+    $modelSegment = "$cyan$iconModel $model$reset"
+    if (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
+        $modelSegment += "$minorSeparator$dim$effortLevel$reset"
+    }
+    $identitySegments += $modelSegment
+} elseif (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
+    $identitySegments += "$dim$iconModel $effortLevel effort$reset"
 }
 
 if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {

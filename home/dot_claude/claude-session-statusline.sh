@@ -3,6 +3,9 @@ set -euo pipefail
 
 input="$(cat)"
 model="$(printf '%s' "$input" | jq -r '.model.display_name // empty')"
+# Absent on models without a reasoning effort parameter; tracks /effort changes
+# made mid-session.
+effort_level="$(printf '%s' "$input" | jq -r '.effort.level // empty')"
 current_directory="$(printf '%s' "$input" | jq -r '.workspace.current_dir // empty')"
 used_percentage="$(printf '%s' "$input" | jq -r 'if .context_window.used_percentage == null then empty else (.context_window.used_percentage | floor | tostring) end')"
 # Client-side estimate only; resets to 0 when /clear starts a new session.
@@ -55,8 +58,16 @@ join_segments() {
 
 # Line one is identity: rarely changes, so it stays out of the way of the meters.
 identity_segments=()
+# Effort qualifies the model rather than standing alone, so the two share a
+# segment. It stays uncoloured: the threshold palette already means fill level.
 if [[ -n "$model" ]]; then
-  identity_segments+=("${cyan}🤖 ${model}${reset}")
+  model_segment="${cyan}🤖 ${model}${reset}"
+  if [[ -n "$effort_level" ]]; then
+    model_segment+="${minor_separator}${dim}${effort_level}${reset}"
+  fi
+  identity_segments+=("$model_segment")
+elif [[ -n "$effort_level" ]]; then
+  identity_segments+=("${dim}🤖 ${effort_level} effort${reset}")
 fi
 if [[ -n "$current_directory" ]]; then
   identity_segments+=("${blue}📁 $(basename "$current_directory")${reset}")

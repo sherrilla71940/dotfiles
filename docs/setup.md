@@ -96,9 +96,11 @@ Immediately confirm that chezmoi is reading the expected clone:
 chezmoi source-path
 ```
 
-The result must end inside this repository, normally
-`~/.local/share/chezmoi/home`. If it points at a different clone, stop and reconcile the
-source directories before continuing.
+The result must identify this repository, either directly or through a symlink or Windows
+junction. A displayed path ending in `~/.local/share/chezmoi/home` is valid when its resolved
+target belongs to this repository. Compare filesystem or Git identity instead of displayed
+path strings alone. If it identifies a different clone, stop and reconcile the source
+directories before continuing.
 
 ### 2. Preview every target change
 
@@ -275,7 +277,7 @@ chezmoi source-path
 ## Verification
 
 ```bash
-chezmoi source-path  # inside this repository
+chezmoi source-path  # this repository, directly or through a link
 chezmoi status       # empty after apply
 chezmoi doctor       # environment sanity
 ```

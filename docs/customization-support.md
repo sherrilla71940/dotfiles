@@ -33,7 +33,7 @@ The columns group surfaces only when they read the same personal configuration:
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
-| Client-only skills | `~/.claude/skills/<name>` | no verified standalone path that stays hidden from Copilot | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
+| Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
 | Marketplace plugins | declarative `enabledPlugins` | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
@@ -66,15 +66,15 @@ clients can use the same body:
 | Client or scope | Instructions | Skills | Agents | Prompts or commands |
 | --- | --- | --- | --- | --- |
 | Claude Code | `home/dot_claude/rules/` | `home/dot_claude/skills/` | `home/dot_claude/agents/` | `home/dot_claude/commands/` |
-| Codex | `home/dot_codex/AGENTS.md.tmpl` | shared skills | `home/dot_codex/agents/` | use a skill |
+| Codex | `home/dot_codex/AGENTS.md.tmpl` | shared or host-gated skills | `home/dot_codex/agents/` | use a skill |
 | GitHub Copilot | `home/dot_copilot/instructions/` | `home/dot_copilot/skills/` | `home/dot_copilot/agents/` | VS Code profile wrappers |
 | Shared | `home/.chezmoitemplates/` | `home/dot_agents/skills/` | not shared | not shared |
 
 Some apparently missing directories are intentional:
 
-- Codex personal skills normally use `~/.agents/skills`, which Copilot also scans. This
-  repository therefore treats those skills as portable. Verify current Codex isolation
-  options before attempting to make a personal skill Codex-only.
+- Codex personal skills use `~/.agents/skills`, which Copilot also scans. A Codex-targeted
+  skill therefore needs host gates rather than relying on directory isolation. Follow the
+  procedure under [Add a skill](#add-a-skill).
 - Codex standalone custom prompts are deprecated. Use a skill instead of creating
   `home/dot_codex/prompts/`.
 - VS Code reads `*.prompt.md` from its user profile, not from `~/.copilot/prompts/`.
@@ -196,6 +196,7 @@ Choose the source path according to who should discover the skill:
 | Scope | Source |
 | --- | --- |
 | Portable across all three clients | `home/dot_agents/skills/<name>/SKILL.md` plus `home/dot_claude/skills/symlink_<name>.tmpl` |
+| Codex-targeted; not linked into Claude and blocked from automatic Copilot invocation | `home/dot_agents/skills/<name>/` with a `.codex-only` marker and no Claude symlink |
 | Claude-only | `home/dot_claude/skills/<name>/SKILL.md` |
 | Copilot-only | `home/dot_copilot/skills/<name>/SKILL.md` |
 
@@ -205,6 +206,36 @@ skills to coexist in `~/.claude/skills/`.
 
 Check a portable skill for client-specific tool names before sharing it. Because these are
 source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmoi add`.
+
+### Add a Codex-targeted skill
+
+Use this exception only when Codex needs an on-demand workflow that Claude and Copilot
+already receive through native configuration, such as path-scoped instructions. Both Codex
+and Copilot discover personal skills under `~/.agents/skills`, so the skill cannot rely on
+its directory to stay private.
+
+Create the skill with all of these gates:
+
+1. Add an empty source-only marker at
+   `home/dot_agents/skills/<name>/.codex-only`. Chezmoi ignores the dotfile, while the
+   repository hook uses it to distinguish the skill from portable skills.
+2. Do not add `home/dot_claude/skills/symlink_<name>.tmpl`; this keeps Claude from
+   discovering the skill.
+3. Set `disable-model-invocation: true` in `SKILL.md`. Copilot still discovers the skill in
+   `~/.agents/skills`, but does not invoke it automatically.
+4. Add `agents/openai.yaml` with Codex implicit invocation enabled:
+
+   ```yaml
+   policy:
+     allow_implicit_invocation: true
+   ```
+
+5. Start the skill body with a host guard that tells GitHub Copilot to stop because its
+   equivalent path-scoped instructions are already active. This also protects against an
+   explicit Copilot invocation.
+
+Keep the skill's detailed references as thin templates that include the existing shared rule
+bodies. Do not copy those bodies into the skill.
 
 ## Add an agent definition
 
@@ -334,9 +365,12 @@ runtime state into `home/`.
 - [Claude Code MCP sources](https://code.claude.com/docs/en/mcp)
 - [Claude Code with Chrome](https://code.claude.com/docs/en/chrome)
 - [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-basic)
+- [Codex skills](https://developers.openai.com/codex/skills)
 - [Codex custom agents and subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
 - [VS Code custom instructions](https://code.visualstudio.com/docs/agent-customization/custom-instructions)
 - [VS Code custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)
 - [VS Code agent skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)
 - [Copilot CLI configuration directory](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference)
+- [GitHub Copilot agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [GitHub Copilot CLI skill reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#skills-reference)
 - [GitHub Copilot custom agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)

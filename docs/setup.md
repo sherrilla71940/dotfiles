@@ -241,7 +241,7 @@ The pre-commit hook:
 
 1. confirms the default chezmoi source resolves inside this repository,
 2. materializes and renders the staged Git snapshot,
-3. checks skill file-count parity and individual Claude skill links,
+3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
 4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
 5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
 

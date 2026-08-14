@@ -45,36 +45,79 @@ $minorSeparator = "$dim $([char]0x00B7) $reset"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
 # always carries the same meaning wherever it appears on the line.
-# Only --worktree sessions receive a branch on stdin, so ask git directly. The
-# query is scoped to the session's directory because this script's own working
-# directory is not necessarily the project.
-function Get-CurrentBranch {
+# No branch is provided on stdin outside --worktree sessions, so ask git. A
+# single porcelain v2 call answers all three questions at once — whether this is
+# a repository, which branch is checked out, and what the work tree looks like —
+# because spawning git costs about as much as git's own work here. The query is
+# scoped to the session's directory since this script's working directory is not
+# necessarily the project. Untracked files are excluded: they are not reported,
+# and skipping them avoids the untracked scan.
+function Get-GitSummary {
     param([string]$Directory)
 
     if ([string]::IsNullOrWhiteSpace($Directory)) { return "" }
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return "" }
 
-    # git writes to stderr for ordinary conditions such as "not a repository",
-    # and the script-wide Stop preference would turn that into a thrown error,
-    # so relax it only around these calls.
+    # git reports ordinary conditions such as "not a repository" on stderr, and
+    # the script-wide Stop preference would turn that into a thrown error, so
+    # relax it only around the call.
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        & git -C $Directory rev-parse --git-dir 2>$null | Out-Null
+        $lines = @(& git -C $Directory status --porcelain=v2 --branch --untracked-files=no 2>$null)
         if ($LASTEXITCODE -ne 0) { return "" }
-
-        $branch = (& git -C $Directory branch --show-current 2>$null | Select-Object -First 1)
-        if (-not [string]::IsNullOrWhiteSpace($branch)) { return $branch.Trim() }
-
-        # Detached HEAD reports no branch, so fall back to a parenthesised short
-        # SHA the way git's own shell prompt does.
-        $revision = (& git -C $Directory rev-parse --short HEAD 2>$null | Select-Object -First 1)
-        if (-not [string]::IsNullOrWhiteSpace($revision)) { return "($($revision.Trim()))" }
-
-        return ""
     } finally {
         $ErrorActionPreference = $previousPreference
     }
+
+    $branch = ""
+    $objectId = ""
+    $stagedCount = 0
+    $modifiedCount = 0
+    foreach ($line in $lines) {
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+
+        if ($line.StartsWith("# branch.head ")) {
+            $branch = $line.Substring(14).Trim()
+        } elseif ($line.StartsWith("# branch.oid ")) {
+            $objectId = $line.Substring(13).Trim()
+        } elseif ($line.Length -ge 4 -and "12u".IndexOf($line[0]) -ge 0 -and $line[1] -eq ' ') {
+            # Changed, renamed and unmerged entries all carry the two state
+            # columns in the same position: index state then work-tree state.
+            if ($line[2] -ne '.') { $stagedCount++ }
+            if ($line[3] -ne '.') { $modifiedCount++ }
+        }
+    }
+
+    # Detached HEAD reports no branch name, so fall back to a parenthesised short
+    # object id the way git's own shell prompt does.
+    if ($branch -eq "(detached)") {
+        if ($objectId.Length -ge 7) { $branch = "($($objectId.Substring(0, 7)))" } else { $branch = "" }
+    }
+    if ([string]::IsNullOrWhiteSpace($branch)) { return "" }
+
+    $summary = $branch
+    if ($stagedCount -gt 0) { $summary += " +$stagedCount" }
+    if ($modifiedCount -gt 0) { $summary += " ~$modifiedCount" }
+    return $summary
+}
+
+# An absolute wall-clock time rather than a countdown: this script runs on
+# events, and those go quiet while the session is idle, so a countdown would
+# silently drift while a clock time stays correct however stale the render is.
+function Get-ResetLabel {
+    param([long]$Epoch)
+
+    $moment = [DateTimeOffset]::FromUnixTimeSeconds($Epoch).ToLocalTime()
+
+    # Beyond a day out the time of day alone is ambiguous, so name the weekday.
+    $format = "HH:mm"
+    if (($moment - [DateTimeOffset]::Now).TotalSeconds -ge 86400) {
+        $format = "ddd"
+    }
+
+    # Invariant culture keeps the weekday identical to the bash copy.
+    return $moment.ToString($format, [System.Globalization.CultureInfo]::InvariantCulture)
 }
 
 function Get-UsageColor {
@@ -83,6 +126,24 @@ function Get-UsageColor {
     if ($Percentage -ge 90) { return $red }
     if ($Percentage -ge 70) { return $yellow }
     return $green
+}
+
+# The reset time is only decision-relevant near the limit, so it appears at the
+# same 70% mark where the colour turns yellow and stays hidden below that.
+function Get-LimitValue {
+    param([string]$Label, [double]$Percentage, $ResetEpoch)
+
+    $floored = [math]::Floor($Percentage)
+    $text = "$(Get-UsageColor -Percentage $floored)$Label $floored%$reset"
+
+    if ($null -ne $ResetEpoch -and $floored -ge 70) {
+        $moment = Get-ResetLabel -Epoch ([long]$ResetEpoch)
+        if (-not [string]::IsNullOrWhiteSpace($moment)) {
+            $text += "$dim resets $moment$reset"
+        }
+    }
+
+    return $text
 }
 
 $model = [string]$data.model.display_name
@@ -97,6 +158,8 @@ $sessionCost = $data.cost.total_cost_usd
 # can be absent independently, so both are treated as optional.
 $fiveHourUsage = $data.rate_limits.five_hour.used_percentage
 $sevenDayUsage = $data.rate_limits.seven_day.used_percentage
+$fiveHourReset = $data.rate_limits.five_hour.resets_at
+$sevenDayReset = $data.rate_limits.seven_day.resets_at
 
 # Line one is identity: rarely changes, so it stays out of the way of the meters.
 $identitySegments = @()
@@ -118,9 +181,9 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
     $directoryName = Split-Path -Leaf $currentDirectory.TrimEnd("\", "/")
     if (-not [string]::IsNullOrWhiteSpace($directoryName)) {
         $directorySegment = "$blue$iconDirectory $directoryName$reset"
-        $gitBranch = Get-CurrentBranch -Directory $currentDirectory
-        if (-not [string]::IsNullOrWhiteSpace($gitBranch)) {
-            $directorySegment += "$minorSeparator$magenta$iconBranch $gitBranch$reset"
+        $gitState = Get-GitSummary -Directory $currentDirectory
+        if (-not [string]::IsNullOrWhiteSpace($gitState)) {
+            $directorySegment += "$minorSeparator$magenta$iconBranch $gitState$reset"
         }
         $identitySegments += $directorySegment
     }
@@ -147,13 +210,11 @@ if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
 # than as two unrelated percentages.
 $limitValues = @()
 if ($null -ne $fiveHourUsage) {
-    $fiveHourPercentage = [math]::Floor([double]$fiveHourUsage)
-    $limitValues += "$(Get-UsageColor -Percentage $fiveHourPercentage)5h $fiveHourPercentage%$reset"
+    $limitValues += Get-LimitValue -Label "5h" -Percentage ([double]$fiveHourUsage) -ResetEpoch $fiveHourReset
 }
 
 if ($null -ne $sevenDayUsage) {
-    $sevenDayPercentage = [math]::Floor([double]$sevenDayUsage)
-    $limitValues += "$(Get-UsageColor -Percentage $sevenDayPercentage)7d $sevenDayPercentage%$reset"
+    $limitValues += Get-LimitValue -Label "7d" -Percentage ([double]$sevenDayUsage) -ResetEpoch $sevenDayReset
 }
 
 if ($limitValues.Count -gt 0) {

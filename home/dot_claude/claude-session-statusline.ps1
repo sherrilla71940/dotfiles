@@ -128,15 +128,15 @@ function Get-UsageColor {
     return $green
 }
 
-# The reset time is only decision-relevant near the limit, so it appears at the
-# same 70% mark where the colour turns yellow and stays hidden below that.
+# The reset time always accompanies the percentage, because the percentage alone
+# cannot say whether a nearly full window clears in minutes or in hours.
 function Get-LimitValue {
     param([string]$Label, [double]$Percentage, $ResetEpoch)
 
     $floored = [math]::Floor($Percentage)
     $text = "$(Get-UsageColor -Percentage $floored)$Label $floored%$reset"
 
-    if ($null -ne $ResetEpoch -and $floored -ge 70) {
+    if ($null -ne $ResetEpoch) {
         $moment = Get-ResetLabel -Epoch ([long]$ResetEpoch)
         if (-not [string]::IsNullOrWhiteSpace($moment)) {
             $text += "$dim resets $moment$reset"

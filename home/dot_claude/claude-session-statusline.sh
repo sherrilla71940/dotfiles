@@ -122,14 +122,14 @@ reset_label() {
     true
 }
 
-# The reset time is only decision-relevant near the limit, so it appears at the
-# same 70% mark where the colour turns yellow and stays hidden below that.
+# The reset time always accompanies the percentage, because the percentage alone
+# cannot say whether a nearly full window clears in minutes or in hours.
 limit_value() {
   local label="$1" percentage="$2" reset_epoch="$3"
   local text
   text="$(usage_color "$percentage")${label} ${percentage}%${reset}"
 
-  if [[ -n "$reset_epoch" ]] && ((percentage >= 70)); then
+  if [[ -n "$reset_epoch" ]]; then
     local moment
     moment="$(reset_label "$reset_epoch")"
     if [[ -n "$moment" ]]; then

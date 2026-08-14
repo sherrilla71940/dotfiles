@@ -189,7 +189,7 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
     }
 }
 
-# Line two is everything that moves while you work.
+# Line two is session state: what this conversation has consumed so far.
 $meterSegments = @()
 if ($null -ne $usedPercentage) {
     $contextPercentage = [math]::Floor([double]$usedPercentage)
@@ -206,8 +206,9 @@ if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
     $meterSegments += '{0}{1} ${2:F2}{3}' -f $yellow, $iconCost, [double]$sessionCost, $reset
 }
 
-# Both windows share one labelled segment so the numbers read as a pair rather
-# than as two unrelated percentages.
+# Line three is account state, which outlives this session. It earns its own row
+# because both windows carrying a reset time overflows a shared line and the
+# terminal truncates the tail.
 $limitValues = @()
 if ($null -ne $fiveHourUsage) {
     $limitValues += Get-LimitValue -Label "5h" -Percentage ([double]$fiveHourUsage) -ResetEpoch $fiveHourReset
@@ -217,16 +218,15 @@ if ($null -ne $sevenDayUsage) {
     $limitValues += Get-LimitValue -Label "7d" -Percentage ([double]$sevenDayUsage) -ResetEpoch $sevenDayReset
 }
 
-if ($limitValues.Count -gt 0) {
-    $meterSegments += "$dim$iconLimits limits$reset $($limitValues -join $minorSeparator)"
-}
-
-# Each row is emitted only when it has content, so an early session shows one
-# line instead of a blank row.
+# Each row is emitted only when it has content, so no blank row is ever printed.
 if ($identitySegments.Count -gt 0) {
     Write-Output ($identitySegments -join $majorSeparator)
 }
 
 if ($meterSegments.Count -gt 0) {
     Write-Output ($meterSegments -join $majorSeparator)
+}
+
+if ($limitValues.Count -gt 0) {
+    Write-Output "$dim$iconLimits limits$reset $($limitValues -join $minorSeparator)"
 }

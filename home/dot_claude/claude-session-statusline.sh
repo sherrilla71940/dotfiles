@@ -178,7 +178,7 @@ if [[ -n "$current_directory" ]]; then
   identity_segments+=("$directory_segment")
 fi
 
-# Line two is everything that moves while you work.
+# Line two is session state: what this conversation has consumed so far.
 meter_segments=()
 if [[ -n "$used_percentage" ]]; then
   meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% of context${reset}")
@@ -192,8 +192,9 @@ if [[ -n "$session_cost" ]]; then
   meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
 fi
 
-# Both windows share one labelled segment so the numbers read as a pair rather
-# than as two unrelated percentages.
+# Line three is account state, which outlives this session. It earns its own row
+# because both windows carrying a reset time overflows a shared line and the
+# terminal truncates the tail.
 limit_values=()
 if [[ -n "$five_hour_usage" ]]; then
   limit_values+=("$(limit_value "5h" "$five_hour_usage" "$five_hour_reset")")
@@ -201,17 +202,17 @@ fi
 if [[ -n "$seven_day_usage" ]]; then
   limit_values+=("$(limit_value "7d" "$seven_day_usage" "$seven_day_reset")")
 fi
-if ((${#limit_values[@]} > 0)); then
-  meter_segments+=("${dim}⏳ limits${reset} $(join_segments "$minor_separator" "${limit_values[@]}")")
-fi
-
-# Each row is emitted only when it has content, so an early session shows one
-# line instead of a blank row.
+# Each row is emitted only when it has content, so no blank row is ever printed.
 if ((${#identity_segments[@]} > 0)); then
   join_segments "$major_separator" "${identity_segments[@]}"
   printf '\n'
 fi
 if ((${#meter_segments[@]} > 0)); then
   join_segments "$major_separator" "${meter_segments[@]}"
+  printf '\n'
+fi
+if ((${#limit_values[@]} > 0)); then
+  printf '%s ' "${dim}⏳ limits${reset}"
+  join_segments "$minor_separator" "${limit_values[@]}"
   printf '\n'
 fi

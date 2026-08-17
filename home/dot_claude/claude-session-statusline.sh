@@ -40,9 +40,31 @@ yellow=$'\033[33m'
 red=$'\033[31m'
 reset=$'\033[0m'
 
-# Two separator weights carry the hierarchy: the heavier rule divides unrelated
-# scopes, the lighter dot joins values that belong to the same group.
-major_separator="${dim}  │  ${reset}"
+# Claude Code exports the terminal size before running this script, because output is
+# captured rather than attached to the terminal and the usual width queries cannot see it.
+# The fallback matters: an unset or non-numeric value must not make every session look narrow.
+terminal_columns="${COLUMNS:-80}"
+if [[ ! "$terminal_columns" =~ ^[0-9]+$ ]]; then
+  terminal_columns=80
+fi
+
+# In a split pane the limit row is wider than the pane and its tail is cut, which loses the
+# second window's reset entirely. Prose that reads well with room to spare is what costs the
+# space, so it is what gets shortened; the values themselves are never abbreviated.
+if ((terminal_columns < 60)); then
+  major_separator="${dim} │ ${reset}"
+  context_label="ctx"
+  # An arrow stands in for "resets": still directional, a seventh of the width.
+  reset_prefix="→"
+  limits_label="⏳"
+else
+  major_separator="${dim}  │  ${reset}"
+  context_label="of context"
+  reset_prefix=" resets "
+  limits_label="⏳ limits"
+fi
+
+# The lighter dot joins values inside one group and is already narrow, so it does not change.
 minor_separator="${dim} · ${reset}"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
@@ -146,7 +168,7 @@ limit_value() {
     local moment
     moment="$(reset_label "$reset_epoch")"
     if [[ -n "$moment" ]]; then
-      text+="${muted} resets ${moment}${reset}"
+      text+="${muted}${reset_prefix}${moment}${reset}"
     fi
   fi
 
@@ -202,12 +224,12 @@ fi
 # Line two is session state: what this conversation has consumed so far.
 meter_segments=()
 if [[ -n "$used_percentage" ]]; then
-  meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% of context${reset}")
+  meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% ${context_label}${reset}")
 else
   # Null until the first API response of a session, and again after /compact.
   # A placeholder keeps this row on screen so the status line does not change
   # height once the first response lands.
-  meter_segments+=("${muted}🧠 context —${reset}")
+  meter_segments+=("${muted}🧠 ${context_label} —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
   # LC_ALL is pinned so a comma-decimal locale cannot render this as $25,04 and
@@ -242,7 +264,7 @@ if ((${#meter_segments[@]} > 0)); then
   printf '\n'
 fi
 if ((${#limit_values[@]} > 0)); then
-  printf '%s ' "${muted}⏳ limits${reset}"
+  printf '%s ' "${muted}${limits_label}${reset}"
   join_segments "$minor_separator" "${limit_values[@]}"
   printf '\n'
 fi

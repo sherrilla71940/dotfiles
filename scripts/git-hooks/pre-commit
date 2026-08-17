@@ -169,23 +169,31 @@ if [[ "$statusline_changed" == true ]]; then
       '{"model":{"display_name":"Opus 5"}}'
     )
 
-    for fixture in "${fixtures[@]}"; do
-      sh_output="$(printf '%s' "$fixture" | bash "$statusline_sh" 2>/dev/null || true)"
-      # PowerShell writes CRLF where bash writes LF; the host trims either, so compare
-      # the text rather than the exact bytes.
-      ps_output="$(printf '%s' "$fixture" |
-        "$powershell_bin" -NoProfile -ExecutionPolicy Bypass -File "$statusline_ps1" 2>/dev/null |
-        tr -d '\r' || true)"
+    # Both widths are exercised, because the layout is width-dependent: a change applied to
+    # only one copy's compact branch is invisible at the default width.
+    widths=(80 40)
+    comparisons=0
 
-      if [[ "$sh_output" != "$ps_output" ]]; then
-        printf 'pre-commit: the status line copies disagree.\n' >&2
-        printf '    bash: %s\n' "$sh_output" >&2
-        printf '    ps1 : %s\n' "$ps_output" >&2
-        fail "keep home/dot_claude/claude-session-statusline.sh and .ps1 in step."
-      fi
+    for width in "${widths[@]}"; do
+      for fixture in "${fixtures[@]}"; do
+        sh_output="$(printf '%s' "$fixture" | COLUMNS="$width" bash "$statusline_sh" 2>/dev/null || true)"
+        # PowerShell writes CRLF where bash writes LF; the host trims either, so compare
+        # the text rather than the exact bytes.
+        ps_output="$(printf '%s' "$fixture" |
+          COLUMNS="$width" "$powershell_bin" -NoProfile -ExecutionPolicy Bypass -File "$statusline_ps1" 2>/dev/null |
+          tr -d '\r' || true)"
+        comparisons=$((comparisons + 1))
+
+        if [[ "$sh_output" != "$ps_output" ]]; then
+          printf 'pre-commit: the status line copies disagree at COLUMNS=%s.\n' "$width" >&2
+          printf '    bash: %s\n' "$sh_output" >&2
+          printf '    ps1 : %s\n' "$ps_output" >&2
+          fail "keep home/dot_claude/claude-session-statusline.sh and .ps1 in step."
+        fi
+      done
     done
 
-    printf 'pre-commit: status line copies agree (%s fixtures).\n' "${#fixtures[@]}"
+    printf 'pre-commit: status line copies agree (%s comparisons).\n' "$comparisons"
   fi
 fi
 

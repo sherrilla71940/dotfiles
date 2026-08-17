@@ -51,9 +51,32 @@ $yellow = "$escape[33m"
 $red = "$escape[31m"
 $reset = "$escape[0m"
 
-# Two separator weights carry the hierarchy: the heavier rule divides unrelated
-# scopes, the lighter dot joins values that belong to the same group.
-$majorSeparator = "$dim  $([char]0x2502)  $reset"
+# Claude Code exports the terminal size before running this script, because output is
+# captured rather than attached to the terminal and the usual width queries cannot see it.
+# The fallback matters: an unset or non-numeric value must not make every session look narrow.
+$terminalColumns = 80
+$reportedColumns = 0
+if ([int]::TryParse([string]$env:COLUMNS, [ref]$reportedColumns) -and $reportedColumns -gt 0) {
+    $terminalColumns = $reportedColumns
+}
+
+# In a split pane the limit row is wider than the pane and its tail is cut, which loses the
+# second window's reset entirely. Prose that reads well with room to spare is what costs the
+# space, so it is what gets shortened; the values themselves are never abbreviated.
+if ($terminalColumns -lt 60) {
+    $majorSeparator = "$dim $([char]0x2502) $reset"
+    $contextLabel = "ctx"
+    # An arrow stands in for "resets": still directional, a seventh of the width.
+    $resetPrefix = [char]0x2192
+    $limitsLabel = $iconLimits
+} else {
+    $majorSeparator = "$dim  $([char]0x2502)  $reset"
+    $contextLabel = "of context"
+    $resetPrefix = " resets "
+    $limitsLabel = "$iconLimits limits"
+}
+
+# The lighter dot joins values inside one group and is already narrow, so it does not change.
 $minorSeparator = "$dim $([char]0x00B7) $reset"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
@@ -152,7 +175,7 @@ function Get-LimitValue {
     if ($null -ne $ResetEpoch) {
         $moment = Get-ResetLabel -Epoch ([long]$ResetEpoch)
         if (-not [string]::IsNullOrWhiteSpace($moment)) {
-            $text += "$muted resets $moment$reset"
+            $text += "$muted$resetPrefix$moment$reset"
         }
     }
 
@@ -219,12 +242,12 @@ $meterSegments = @()
 if ($null -ne $usedPercentage) {
     $contextPercentage = [math]::Floor([double]$usedPercentage)
     $contextColor = Get-UsageColor -Percentage $contextPercentage
-    $meterSegments += "$contextColor$iconContext $contextPercentage% of context$reset"
+    $meterSegments += "$contextColor$iconContext $contextPercentage% $contextLabel$reset"
 } else {
     # Null until the first API response of a session, and again after /compact.
     # A placeholder keeps this row on screen so the status line does not change
     # height once the first response lands.
-    $meterSegments += "$muted$iconContext context $([char]0x2014)$reset"
+    $meterSegments += "$muted$iconContext $contextLabel $([char]0x2014)$reset"
 }
 
 if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
@@ -263,5 +286,5 @@ if ($meterSegments.Count -gt 0) {
 }
 
 if ($limitValues.Count -gt 0) {
-    Write-Output "$muted$iconLimits limits$reset $($limitValues -join $minorSeparator)"
+    Write-Output "$muted$limitsLabel$reset $($limitValues -join $minorSeparator)"
 }

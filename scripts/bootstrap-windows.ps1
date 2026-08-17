@@ -114,7 +114,7 @@ namespace ClaudeCodeBootstrap
         private const ushort VariantTypeWideString = 31;
 
         public static void Write(string shortcutPath, string targetPath, string arguments,
-            string workingDirectory, string description, string appUserModelId)
+            string workingDirectory, string description, string appUserModelId, string iconPath)
         {
             object shellLink = new ShellLink();
             try
@@ -124,6 +124,14 @@ namespace ClaudeCodeBootstrap
                 link.SetArguments(arguments);
                 link.SetWorkingDirectory(workingDirectory);
                 link.SetDescription(description);
+
+                // Windows takes the logo on a toast from the shortcut that registers the
+                // AUMID. Without one the banner shows a generic placeholder. An empty path
+                // leaves the shortcut iconless rather than pointing at something missing.
+                if (!string.IsNullOrEmpty(iconPath))
+                {
+                    link.SetIconLocation(iconPath, 0);
+                }
 
                 PropertyKey key = new PropertyKey();
                 key.FormatId = AppUserModelIdFormat;
@@ -160,13 +168,25 @@ namespace ClaudeCodeBootstrap
 # under a Node version directory that moves on every Node upgrade.
 $startMenuPrograms = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
 New-Item -ItemType Directory -Force -Path $startMenuPrograms | Out-Null
+
+# Borrow the icon from an installed Claude desktop application rather than committing an
+# image to this repository. The path deliberately omits the version directory beside it, so
+# an application update does not leave the shortcut pointing at a removed file. Absent that
+# installation the shortcut simply has no icon, which is how it behaved before.
+$claudeIconPath = Join-Path $env:LOCALAPPDATA "AnthropicClaude\app.ico"
+if (-not (Test-Path -LiteralPath $claudeIconPath)) {
+    $claudeIconPath = ""
+    Write-Host "Claude application icon not found; notifications will use the default icon."
+}
+
 [ClaudeCodeBootstrap.ShortcutWriter]::Write(
     (Join-Path $startMenuPrograms "$claudeCodeDisplayName.lnk"),
     (Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"),
     "-NoExit -Command claude",
     $env:USERPROFILE,
     $claudeCodeDisplayName,
-    $claudeCodeAumid)
+    $claudeCodeAumid,
+    $claudeIconPath)
 
 # The name Windows shows on the banner and in Settings > Notifications comes from this key.
 # Six auto-generated identities on this machine had an empty one, which is the symptom that

@@ -156,12 +156,20 @@ switch ($notificationType) {
 function New-ToastXml([string]$Aumid) {
     $attribution = Get-AttributionText -Payload $payload -NeedsProductName ($Aumid -eq $fallbackAumid)
 
-    # The reminder scenario is what keeps a toast on screen until it is dismissed. Windows
-    # expects a scenario toast to offer a way out, so it carries an explicit Dismiss action;
-    # activationType="system" uses the shell's own handler, which needs no registered COM
-    # server of our own. Everything else asks only for the longer of the two normal durations.
+    # The urgent scenario is the one that survives Do Not Disturb. The first such toast makes
+    # Windows ask whether important notifications from Claude Code are allowed, and the answer
+    # is kept per application as AllowUrgentNotifications, revocable in notification settings.
+    #
+    # The reminder scenario was used here first because it keeps a toast on screen until it is
+    # dismissed, but Do Not Disturb suppresses it outright, and a banner that never appears is
+    # worth nothing. This one appears and then fades, which loses persistence and keeps the
+    # alert; Action Center retains it either way, so nothing is actually lost.
+    #
+    # Windows expects a scenario toast to offer a way out, so it carries an explicit Dismiss
+    # action; activationType="system" uses the shell's own handler, which needs no registered
+    # COM server of our own. Everything else asks only for the longer normal duration.
     if ($blocksProgress) {
-        $toastAttributes = ' scenario="reminder"'
+        $toastAttributes = ' scenario="urgent"'
         $toastActions = @'
   <actions>
     <action content="Dismiss" arguments="dismiss" activationType="system"/>

@@ -23,9 +23,12 @@ try {
 $iconModel = [char]::ConvertFromUtf32(0x1F916)      # robot
 $iconDirectory = [char]::ConvertFromUtf32(0x1F4C1)  # folder
 $iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
-$iconSession = [char]::ConvertFromUtf32(0x1F3F7)    # label
-$iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain
-$iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
+# Emoji carry their own colour, which no escape code can override, so they are
+# chosen for contrast against each other: a label and a money bag are the same
+# yellow as the folder and the hourglass, which made four segments look alike.
+$iconSession = [char]::ConvertFromUtf32(0x1F516)    # bookmark, red
+$iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain, pink
+$iconCost = [char]::ConvertFromUtf32(0x1F4B5)       # banknote, green
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
 
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.

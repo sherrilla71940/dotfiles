@@ -20,6 +20,9 @@ seven_day_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.used_
 five_hour_reset="$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tostring')"
 seven_day_reset="$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tostring')"
 
+# Emoji carry their own colour, which no escape code can override, so they are
+# chosen for contrast against each other: a label and a money bag are the same
+# yellow as the folder and the hourglass, which made four segments look alike.
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
 # Bright black is the separator colour and nothing else: on a dark theme it sits
 # close to the background, which suits structure but loses any text put in it.
@@ -196,7 +199,7 @@ fi
 # The session name distinguishes concurrent terminals, which the project name
 # cannot when several sessions sit in the same repository.
 if [[ -n "$session_name" ]]; then
-  identity_segments+=("${muted}🏷 ${session_name}${reset}")
+  identity_segments+=("${muted}🔖 ${session_name}${reset}")
 fi
 
 # Line two is session state: what this conversation has consumed so far.
@@ -210,7 +213,7 @@ else
   meter_segments+=("${muted}🧠 context —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
-  meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+  meter_segments+=("$(printf '%s💵 $%.2f%s' "$yellow" "$session_cost" "$reset")")
 fi
 
 # Line three is account state, which outlives this session. It earns its own row

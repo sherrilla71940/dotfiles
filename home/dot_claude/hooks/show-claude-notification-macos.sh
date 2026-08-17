@@ -36,14 +36,6 @@ case "$notification_type" in
     title="Claude needs you to open a link"
     message="$(printf '%s' "$input" | jq -r '.message // "Claude is waiting for you to open a URL."')"
     ;;
-  elicitation_complete)
-    title="Claude input received"
-    message="$(printf '%s' "$input" | jq -r '.message // "The input request is complete."')"
-    ;;
-  elicitation_response)
-    title="Claude input received"
-    message="$(printf '%s' "$input" | jq -r '.message // "Your response reached Claude."')"
-    ;;
   idle_prompt)
     title="Claude finished"
     message="Claude finished and is waiting for your next prompt."

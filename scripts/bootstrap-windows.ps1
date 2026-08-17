@@ -22,4 +22,162 @@ if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
 }
 
+# Windows attributes every toast to an Application User Model ID (AUMID). Given none, it
+# invents a per-process identity whose display name is empty, so a Claude Code notification
+# arrives anonymous. ~/.claude/hooks/show-claude-notification.ps1 asks for the AUMID below and
+# falls back to the built-in Windows PowerShell identity until this registration exists.
+$claudeCodeAumid = "Anthropic.ClaudeCode"
+$claudeCodeDisplayName = "Claude Code"
+
+# An AUMID becomes real when a Start Menu shortcut carries it in the shell property store.
+# WScript.Shell cannot write that property, so the shortcut is built through the COM
+# interfaces that can.
+if (-not ("ClaudeCodeBootstrap.ShortcutWriter" -as [type])) {
+    Add-Type -Language CSharp -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+namespace ClaudeCodeBootstrap
+{
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct PropertyKey
+    {
+        public Guid FormatId;
+        public int PropertyId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PropVariant
+    {
+        public ushort ValueType;
+        public ushort Reserved1;
+        public ushort Reserved2;
+        public ushort Reserved3;
+        public IntPtr Value;
+        public IntPtr Padding;
+    }
+
+    [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+    public class ShellLink { }
+
+    // Only the setters below are ever called, but every method must be declared so the
+    // interface vtable lines up with the real one.
+    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
+    public interface IShellLinkW
+    {
+        void GetPath(IntPtr file, int maxLength, IntPtr findData, uint flags);
+        void GetIDList(out IntPtr idList);
+        void SetIDList(IntPtr idList);
+        void GetDescription(IntPtr name, int maxLength);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string name);
+        void GetWorkingDirectory(IntPtr directory, int maxLength);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
+        void GetArguments(IntPtr arguments, int maxLength);
+        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+        void GetHotkey(out short hotkey);
+        void SetHotkey(short hotkey);
+        void GetShowCmd(out int showCommand);
+        void SetShowCmd(int showCommand);
+        void GetIconLocation(IntPtr iconPath, int maxLength, out int iconIndex);
+        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int iconIndex);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string relativePath, uint reserved);
+        void Resolve(IntPtr window, uint flags);
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string file);
+    }
+
+    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99")]
+    public interface IPropertyStore
+    {
+        void GetCount(out uint count);
+        void GetAt(uint index, out PropertyKey key);
+        void GetValue(ref PropertyKey key, out PropVariant value);
+        void SetValue(ref PropertyKey key, ref PropVariant value);
+        void Commit();
+    }
+
+    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("0000010b-0000-0000-C000-000000000046")]
+    public interface IPersistFile
+    {
+        void GetClassID(out Guid classId);
+        [PreserveSig] int IsDirty();
+        void Load([MarshalAs(UnmanagedType.LPWStr)] string fileName, uint mode);
+        void Save([MarshalAs(UnmanagedType.LPWStr)] string fileName, [MarshalAs(UnmanagedType.Bool)] bool remember);
+        void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string fileName);
+        void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string fileName);
+    }
+
+    public static class ShortcutWriter
+    {
+        // PKEY_AppUserModel_ID, the property that binds a shortcut to an AUMID.
+        private static readonly Guid AppUserModelIdFormat = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
+        private const int AppUserModelIdProperty = 5;
+        private const ushort VariantTypeWideString = 31;
+
+        public static void Write(string shortcutPath, string targetPath, string arguments,
+            string workingDirectory, string description, string appUserModelId)
+        {
+            object shellLink = new ShellLink();
+            try
+            {
+                IShellLinkW link = (IShellLinkW)shellLink;
+                link.SetPath(targetPath);
+                link.SetArguments(arguments);
+                link.SetWorkingDirectory(workingDirectory);
+                link.SetDescription(description);
+
+                PropertyKey key = new PropertyKey();
+                key.FormatId = AppUserModelIdFormat;
+                key.PropertyId = AppUserModelIdProperty;
+
+                PropVariant value = new PropVariant();
+                value.ValueType = VariantTypeWideString;
+                value.Value = Marshal.StringToCoTaskMemUni(appUserModelId);
+                try
+                {
+                    IPropertyStore store = (IPropertyStore)shellLink;
+                    store.SetValue(ref key, ref value);
+                    store.Commit();
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(value.Value);
+                }
+
+                ((IPersistFile)shellLink).Save(shortcutPath, true);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(shellLink);
+            }
+        }
+    }
+}
+'@
+}
+
+# Writing the shortcut every run keeps this idempotent and repairs a stale or deleted one.
+# The target is powershell.exe rather than the claude executable because the latter lives
+# under a Node version directory that moves on every Node upgrade.
+$startMenuPrograms = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
+New-Item -ItemType Directory -Force -Path $startMenuPrograms | Out-Null
+[ClaudeCodeBootstrap.ShortcutWriter]::Write(
+    (Join-Path $startMenuPrograms "$claudeCodeDisplayName.lnk"),
+    (Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"),
+    "-NoExit -Command claude",
+    $env:USERPROFILE,
+    $claudeCodeDisplayName,
+    $claudeCodeAumid)
+
+# The name Windows shows on the banner and in Settings > Notifications comes from this key.
+# Six auto-generated identities on this machine had an empty one, which is the symptom that
+# made Claude Code notifications unattributable.
+$identityKey = "HKCU:\SOFTWARE\Classes\AppUserModelId\$claudeCodeAumid"
+if (-not (Test-Path -LiteralPath $identityKey)) {
+    New-Item -Path $identityKey -Force | Out-Null
+}
+New-ItemProperty -Path $identityKey -Name "DisplayName" -Value $claudeCodeDisplayName `
+    -PropertyType String -Force | Out-Null
+
+Write-Host "Claude Code notification identity registered as $claudeCodeAumid"
+
 Write-Host 'Optional tools are ready.'

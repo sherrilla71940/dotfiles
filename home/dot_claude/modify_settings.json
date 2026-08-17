@@ -25,14 +25,18 @@
 {{-   $statusLineCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/claude-session-statusline.ps1\"" -}}
 {{- end -}}
 
+{{- /* Posting a toast costs under a second; the rest of the notification hook's runtime is
+       PowerShell start-up, which has been measured above ten seconds on a loaded machine. */ -}}
+{{- $notificationTimeout := 20 -}}
+
 {{- $permissions := dict "ask" (list "Bash(git push *)" "Bash(git commit *)") -}}
 {{- $hooks := dict
       "Notification" (list (dict
-        "matcher" "permission_prompt|elicitation_dialog|idle_prompt|agent_needs_input|agent_completed"
+        "matcher" "permission_prompt|elicitation_dialog|elicitation_url_dialog|elicitation_complete|elicitation_response|idle_prompt|auth_success|agent_needs_input|agent_completed"
         "hooks" (list (dict
           "type" "command"
           "command" $notificationCommand
-          "timeout" 10))))
+          "timeout" $notificationTimeout))))
       "SessionStart" (list (dict
         "matcher" "startup|resume|fork"
         "hooks" (list (dict

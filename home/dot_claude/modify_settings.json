@@ -44,7 +44,11 @@
           "command" $sessionStartCommand
           "timeout" 5))))
 -}}
-{{- $statusLine := dict "type" "command" "command" $statusLineCommand -}}
+{{- /* Rate limits are account-wide, so another session can consume them while this one
+       sits idle and no event fires here. Without a timer the figures would still show
+       what was true when this session last did something, which is exactly the reading
+       you would act on after leaving a session alone. */ -}}
+{{- $statusLine := dict "type" "command" "command" $statusLineCommand "refreshInterval" 60 -}}
 {{- $enabledPlugins := dict
       "figma@claude-plugins-official" true
       "typescript-lsp@claude-plugins-official" true

@@ -48,22 +48,42 @@ function Get-AttributionText($Payload, [bool]$NeedsProductName) {
         }
     }
 
-    $sessionId = [string]$Payload.session_id
-    if (-not [string]::IsNullOrWhiteSpace($sessionId)) {
-        # The full UUID overflows the attribution line; its leading block is already unique
-        # enough to match a banner against a terminal.
-        $shortId = if ($sessionId.Length -gt 7) { $sessionId.Substring(0, 7) } else { $sessionId }
+    # The full UUID overflows the attribution line; its leading block is already unique
+    # enough to match a banner against a terminal.
+    $shortId = Get-ShortSessionId -Payload $Payload
+    if (-not [string]::IsNullOrWhiteSpace($shortId)) {
         $parts += "session $shortId"
     }
 
     return ($parts -join $separator)
 }
 
-function Show-Toast([string]$Aumid, [string]$Xml) {
+function Show-Toast([string]$Aumid, [string]$Xml, [string]$Tag) {
     $document = New-Object Windows.Data.Xml.Dom.XmlDocument
     $document.LoadXml($Xml)
     $toast = New-Object Windows.UI.Notifications.ToastNotification $document
+
+    # Tagging by session makes a new toast replace that session's previous one instead of
+    # stacking beneath it. Without this a session that asks twice leaves two banners to
+    # dismiss by hand, and since the blocking ones never expire the pile only grows. One
+    # live banner per session still distinguishes which window wants attention, and the
+    # session itself lists every request once you get there. The tag has a length limit,
+    # so the shortened session id is used rather than the full identifier.
+    if (-not [string]::IsNullOrWhiteSpace($Tag)) {
+        $toast.Tag = $Tag
+        $toast.Group = "claude-code"
+    }
+
     [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($Aumid).Show($toast)
+}
+
+# Shared by the attribution line and the toast tag, so the banner the user sees and the
+# identity used to replace it cannot drift apart.
+function Get-ShortSessionId($Payload) {
+    $sessionId = [string]$Payload.session_id
+    if ([string]::IsNullOrWhiteSpace($sessionId)) { return "" }
+    if ($sessionId.Length -gt 7) { return $sessionId.Substring(0, 7) }
+    return $sessionId
 }
 
 $inputJson = [Console]::In.ReadToEnd()
@@ -178,7 +198,7 @@ try {
 $aumid = if (Test-Path -LiteralPath $claudeCodeShortcut) { $claudeCodeAumid } else { $fallbackAumid }
 
 try {
-    Show-Toast -Aumid $aumid -Xml (New-ToastXml -Aumid $aumid)
+    Show-Toast -Aumid $aumid -Xml (New-ToastXml -Aumid $aumid) -Tag (Get-ShortSessionId -Payload $payload)
     Write-HookLog "Notification sent: $notificationType - $title (aumid: $aumid)"
     exit 0
 } catch {
@@ -187,7 +207,7 @@ try {
     if ($aumid -ne $fallbackAumid) {
         Write-HookLog "Notification retrying under fallback identity: $notificationType - $($_.Exception.Message)"
         try {
-            Show-Toast -Aumid $fallbackAumid -Xml (New-ToastXml -Aumid $fallbackAumid)
+            Show-Toast -Aumid $fallbackAumid -Xml (New-ToastXml -Aumid $fallbackAumid) -Tag (Get-ShortSessionId -Payload $payload)
             Write-HookLog "Notification sent: $notificationType - $title (aumid: $fallbackAumid)"
             exit 0
         } catch {

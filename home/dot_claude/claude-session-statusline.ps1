@@ -29,8 +29,13 @@ $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
 
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
+# Bright black is the separator colour and nothing else: on a dark theme it sits
+# close to the background, which suits structure but loses any text put in it.
+# Secondary text keeps the default foreground instead, the one colour guaranteed
+# to stay legible whether the theme is light or dark.
 $escape = [char]27
 $dim = "$escape[90m"
+$muted = "$escape[39m"
 $cyan = "$escape[36m"
 $blue = "$escape[94m"
 $magenta = "$escape[95m"
@@ -140,7 +145,7 @@ function Get-LimitValue {
     if ($null -ne $ResetEpoch) {
         $moment = Get-ResetLabel -Epoch ([long]$ResetEpoch)
         if (-not [string]::IsNullOrWhiteSpace($moment)) {
-            $text += "$dim resets $moment$reset"
+            $text += "$muted resets $moment$reset"
         }
     }
 
@@ -172,17 +177,25 @@ $identitySegments = @()
 if (-not [string]::IsNullOrWhiteSpace($model)) {
     $modelSegment = "$cyan$iconModel $model$reset"
     if (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
-        $modelSegment += "$minorSeparator$dim$effortLevel$reset"
+        $modelSegment += "$minorSeparator$muted$effortLevel$reset"
     }
     $identitySegments += $modelSegment
 } elseif (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
-    $identitySegments += "$dim$iconModel $effortLevel effort$reset"
+    $identitySegments += "$muted$iconModel $effortLevel effort$reset"
 }
 
 # Branch joins the directory for the same reason effort joins the model: both
 # answer "where am I", so they read as one group.
 if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
-    $directoryName = Split-Path -Leaf $currentDirectory.TrimEnd("\", "/")
+    # In the home directory the leaf is the account name, which reads as a
+    # project that does not exist; the shell's own shorthand is clearer.
+    $trimmedDirectory = $currentDirectory.TrimEnd("\", "/")
+    $homeDirectory = [Environment]::GetFolderPath("UserProfile").TrimEnd("\", "/")
+    if ($trimmedDirectory.Replace("/", "\") -ieq $homeDirectory.Replace("/", "\")) {
+        $directoryName = "~"
+    } else {
+        $directoryName = Split-Path -Leaf $trimmedDirectory
+    }
     if (-not [string]::IsNullOrWhiteSpace($directoryName)) {
         $directorySegment = "$blue$iconDirectory $directoryName$reset"
         $gitState = Get-GitSummary -Directory $currentDirectory
@@ -196,7 +209,7 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
 # The session name distinguishes concurrent terminals, which the project name
 # cannot when several sessions sit in the same repository.
 if (-not [string]::IsNullOrWhiteSpace($sessionName)) {
-    $identitySegments += "$dim$iconSession $sessionName$reset"
+    $identitySegments += "$muted$iconSession $sessionName$reset"
 }
 
 # Line two is session state: what this conversation has consumed so far.
@@ -209,7 +222,7 @@ if ($null -ne $usedPercentage) {
     # Null until the first API response of a session, and again after /compact.
     # A placeholder keeps this row on screen so the status line does not change
     # height once the first response lands.
-    $meterSegments += "$dim$iconContext $([char]0x2014)% of context$reset"
+    $meterSegments += "$muted$iconContext context $([char]0x2014)$reset"
 }
 
 if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
@@ -238,5 +251,5 @@ if ($meterSegments.Count -gt 0) {
 }
 
 if ($limitValues.Count -gt 0) {
-    Write-Output "$dim$iconLimits limits$reset $($limitValues -join $minorSeparator)"
+    Write-Output "$muted$iconLimits limits$reset $($limitValues -join $minorSeparator)"
 }

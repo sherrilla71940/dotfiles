@@ -21,7 +21,12 @@ five_hour_reset="$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_a
 seven_day_reset="$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tostring')"
 
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
+# Bright black is the separator colour and nothing else: on a dark theme it sits
+# close to the background, which suits structure but loses any text put in it.
+# Secondary text keeps the default foreground instead, the one colour guaranteed
+# to stay legible whether the theme is light or dark.
 dim=$'\033[90m'
+muted=$'\033[39m'
 cyan=$'\033[36m'
 blue=$'\033[94m'
 magenta=$'\033[95m'
@@ -136,7 +141,7 @@ limit_value() {
     local moment
     moment="$(reset_label "$reset_epoch")"
     if [[ -n "$moment" ]]; then
-      text+="${dim} resets ${moment}${reset}"
+      text+="${muted} resets ${moment}${reset}"
     fi
   fi
 
@@ -164,16 +169,23 @@ identity_segments=()
 if [[ -n "$model" ]]; then
   model_segment="${cyan}🤖 ${model}${reset}"
   if [[ -n "$effort_level" ]]; then
-    model_segment+="${minor_separator}${dim}${effort_level}${reset}"
+    model_segment+="${minor_separator}${muted}${effort_level}${reset}"
   fi
   identity_segments+=("$model_segment")
 elif [[ -n "$effort_level" ]]; then
-  identity_segments+=("${dim}🤖 ${effort_level} effort${reset}")
+  identity_segments+=("${muted}🤖 ${effort_level} effort${reset}")
 fi
 # Branch joins the directory for the same reason effort joins the model: both
 # answer "where am I", so they read as one group.
 if [[ -n "$current_directory" ]]; then
-  directory_segment="${blue}📁 $(basename "$current_directory")${reset}"
+  # In the home directory the basename is the account name, which reads as a
+  # project that does not exist; the shell's own shorthand is clearer.
+  if [[ "${current_directory%/}" == "${HOME%/}" ]]; then
+    directory_label="~"
+  else
+    directory_label="$(basename "$current_directory")"
+  fi
+  directory_segment="${blue}📁 ${directory_label}${reset}"
   git_state="$(git_summary "$current_directory")"
   if [[ -n "$git_state" ]]; then
     directory_segment+="${minor_separator}${magenta}🌿 ${git_state}${reset}"
@@ -184,7 +196,7 @@ fi
 # The session name distinguishes concurrent terminals, which the project name
 # cannot when several sessions sit in the same repository.
 if [[ -n "$session_name" ]]; then
-  identity_segments+=("${dim}🏷 ${session_name}${reset}")
+  identity_segments+=("${muted}🏷 ${session_name}${reset}")
 fi
 
 # Line two is session state: what this conversation has consumed so far.
@@ -195,7 +207,7 @@ else
   # Null until the first API response of a session, and again after /compact.
   # A placeholder keeps this row on screen so the status line does not change
   # height once the first response lands.
-  meter_segments+=("${dim}🧠 —% of context${reset}")
+  meter_segments+=("${muted}🧠 context —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
   meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
@@ -221,7 +233,7 @@ if ((${#meter_segments[@]} > 0)); then
   printf '\n'
 fi
 if ((${#limit_values[@]} > 0)); then
-  printf '%s ' "${dim}⏳ limits${reset}"
+  printf '%s ' "${muted}⏳ limits${reset}"
   join_segments "$minor_separator" "${limit_values[@]}"
   printf '\n'
 fi

@@ -44,10 +44,14 @@
           "command" $sessionStartCommand
           "timeout" 5))))
 -}}
-{{- /* Rate limits are account-wide, so another session can consume them while this one
-       sits idle and no event fires here. Without a timer the figures would still show
-       what was true when this session last did something, which is exactly the reading
-       you would act on after leaving a session alone. */ -}}
+{{- /* Refreshes what the script works out for itself while no event fires here: the branch
+       and the count of modified files, which a background agent or another window changes
+       under an idle session.
+
+       It cannot refresh the rate limits. Those arrive with an API response, so a timed
+       re-run re-renders the same figures, and they only move when this session next talks
+       to the API. Coming back to a window left alone, the limits show what was true when
+       it last did something until you send something. */ -}}
 {{- $statusLine := dict "type" "command" "command" $statusLineCommand "refreshInterval" 60 -}}
 {{- $enabledPlugins := dict
       "figma@claude-plugins-official" true

@@ -17,6 +17,13 @@ $fallbackAumid = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\
 # so its presence is the registration test.
 $claudeCodeShortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Claude Code.lnk"
 
+# Written by scripts/bootstrap-windows.ps1 from the icon of an installed Claude desktop
+# application. Windows paints the small header icon as a monochrome mask in the system accent
+# colour, and no property overrides that for an identity registered this way, so the logo goes
+# inside the banner where it is drawn in full colour instead. Absent the file the banner simply
+# carries no logo.
+$notificationLogo = Join-Path $env:USERPROFILE ".claude\claude-notification-icon.png"
+
 function Write-HookLog([string]$Text) {
     $logDirectory = Join-Path $env:USERPROFILE ".claude\logs"
     New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
@@ -161,11 +168,18 @@ function New-ToastXml([string]$Aumid) {
     #
     # There is no middle duration to ask for. Windows accepts only short, about seven seconds,
     # and long, so long is as much dwell time as a well-behaved toast can have.
+    # A file URI is required here, and the path separators have to be forward slashes.
+    $logoElement = ""
+    if (Test-Path -LiteralPath $notificationLogo) {
+        $logoUri = "file:///" + ($notificationLogo -replace "\\", "/")
+        $logoElement = "      <image placement=`"appLogoOverride`" src=`"$([System.Security.SecurityElement]::Escape($logoUri))`"/>`n"
+    }
+
     return @"
 <toast duration="long">
   <visual>
     <binding template="ToastGeneric">
-      <text>$([System.Security.SecurityElement]::Escape($title))</text>
+$logoElement      <text>$([System.Security.SecurityElement]::Escape($title))</text>
       <text>$([System.Security.SecurityElement]::Escape($message))</text>
       <text placement="attribution">$([System.Security.SecurityElement]::Escape($attribution))</text>
     </binding>

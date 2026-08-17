@@ -188,6 +188,41 @@ if (-not (Test-Path -LiteralPath $claudeIconPath)) {
     $claudeCodeAumid,
     $claudeIconPath)
 
+# Toast markup can only point at a bitmap, so the largest frame of the icon is written out as
+# one. The notification hook uses it when it exists and omits the image when it does not, so a
+# machine without a Claude desktop installation simply gets a banner with no logo.
+#
+# Windows paints the small header icon as a monochrome mask in the system accent colour, which
+# no property overrides for an identity registered this way. The logo inside the banner is drawn
+# in full colour, which is why the hook places it there rather than relying on the header alone.
+if ($claudeIconPath) {
+    Add-Type -AssemblyName System.Drawing
+    $notificationIconPath = Join-Path $env:USERPROFILE ".claude\claude-notification-icon.png"
+    try {
+        $icon = $null
+        foreach ($size in 256, 128, 64, 48, 32) {
+            try {
+                $candidate = New-Object System.Drawing.Icon($claudeIconPath, $size, $size)
+                if ($candidate.Width -ge $size) { $icon = $candidate; break }
+                $candidate.Dispose()
+            } catch {}
+        }
+        if ($null -eq $icon) { $icon = New-Object System.Drawing.Icon($claudeIconPath) }
+
+        $bitmap = $icon.ToBitmap()
+        try {
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $notificationIconPath) | Out-Null
+            $bitmap.Save($notificationIconPath, [System.Drawing.Imaging.ImageFormat]::Png)
+            Write-Host "Notification logo written from the Claude application icon ($($bitmap.Width)x$($bitmap.Height))."
+        } finally {
+            $bitmap.Dispose()
+            $icon.Dispose()
+        }
+    } catch {
+        Write-Host "Could not write the notification logo: $($_.Exception.Message)"
+    }
+}
+
 # The name Windows shows on the banner and in Settings > Notifications comes from this key.
 # Six auto-generated identities on this machine had an empty one, which is the symptom that
 # made Claude Code notifications unattributable.
@@ -197,6 +232,14 @@ if (-not (Test-Path -LiteralPath $identityKey)) {
 }
 New-ItemProperty -Path $identityKey -Name "DisplayName" -Value $claudeCodeDisplayName `
     -PropertyType String -Force | Out-Null
+
+# The header icon. Windows draws it as a monochrome mask in the system accent colour rather than
+# in the icon's own colours, so it gives the banner Claude's shape but not its palette, which is
+# still better than the generic placeholder shown without it.
+if ($notificationIconPath -and (Test-Path -LiteralPath $notificationIconPath)) {
+    New-ItemProperty -Path $identityKey -Name "IconUri" -Value $notificationIconPath `
+        -PropertyType String -Force | Out-Null
+}
 
 Write-Host "Claude Code notification identity registered as $claudeCodeAumid"
 

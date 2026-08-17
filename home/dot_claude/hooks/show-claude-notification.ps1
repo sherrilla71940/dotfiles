@@ -101,52 +101,41 @@ try {
 # Every notification_type listed in the Notification hook matcher needs a branch here. A type
 # that reaches the default branch matches the hook and then announces nothing.
 #
-# $demandsAttention marks the types worth interrupting for: the ones where nothing proceeds
-# until the user acts, plus a finished background agent, because work is usually delegated to an
-# agent precisely so the user can leave, and being told it landed is the point of delegating.
-# Those toasts cross Do Not Disturb and stay on screen until dismissed.
-#
-# The rest concern the session in front of the user, who is by definition there to see it: the
-# main session going idle, and a sign-in succeeding. They behave normally and wait in Action
-# Center, so Do Not Disturb still means quiet for everything nobody is waiting on.
+# Every type is announced the same way. Ranking them by urgency was tried and the mechanisms
+# Windows offers for it all cost more than they return: see New-ToastXml. Being away from the
+# desk is the case this cannot serve at all, whatever the banner does, and that belongs to a
+# notification that reaches a phone rather than to a longer toast.
 $notificationType = [string]$payload.notification_type
 switch ($notificationType) {
     "permission_prompt" {
         $title = "Claude needs permission"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for tool approval." }
-        $demandsAttention = $true
     }
     "elicitation_dialog" {
         $title = "Claude needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for your response." }
-        $demandsAttention = $true
     }
     "elicitation_url_dialog" {
         $title = "Claude needs you to open a link"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for you to open a URL." }
-        $demandsAttention = $true
     }
     "idle_prompt" {
         $title = "Claude finished"
         $message = "Claude finished and is waiting for your next prompt."
-        $demandsAttention = $false
     }
     "auth_success" {
         $title = "Claude signed in"
         $message = if ($payload.message) { [string]$payload.message } else { "Authentication succeeded." }
-        $demandsAttention = $false
     }
     # Background agents report separately from the main session: without these a
     # subagent can finish, or stall waiting on an answer, entirely unannounced.
     "agent_needs_input" {
         $title = "Agent needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent is waiting for your response." }
-        $demandsAttention = $true
     }
     "agent_completed" {
         $title = "Agent finished"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
-        $demandsAttention = $true
     }
     default {
         exit 0
@@ -159,39 +148,21 @@ switch ($notificationType) {
 function New-ToastXml([string]$Aumid) {
     $attribution = Get-AttributionText -Payload $payload -NeedsProductName ($Aumid -eq $fallbackAumid)
 
-    # Windows states the rule in Action Center itself: with Do Not Disturb on "you'll only see
-    # banners for alarms". The alarm scenario is therefore the only one that both crosses Do Not
-    # Disturb and shows what it is about, and it also stays put until dismissed.
+    # Every notification behaves the same way: the longer of the two durations Windows offers,
+    # roughly twenty-five seconds, and nothing that overrides Do Not Disturb.
     #
-    # Two scenarios were tried before it. Reminder keeps a banner on screen but Do Not Disturb
-    # suppresses it outright. Urgent is announced as an important notification and asks for
-    # consent, but under Do Not Disturb it collapses to a contentless "new important
-    # notification" and leaves nothing in Action Center afterwards, so it reported that
-    # something had happened without saying what, and then lost it.
+    # Three scenarios were tried and all three are worse here. Reminder and alarm hold a banner
+    # on screen until it is dismissed, which turns a run of notifications into a queue to clear
+    # by hand and, on a shared or projected screen, parks the project and session name in front
+    # of an audience. Alarm additionally ignores Do Not Disturb, and urgent ignores it while
+    # collapsing to a contentless "new important notification" that leaves nothing behind in
+    # Action Center. Do Not Disturb is a deliberate instruction and gets to win; a notification
+    # missed while it is on is still waiting in Action Center afterwards.
     #
-    # The alarm scenario would otherwise sound like an alarm, which is wrong for this and would
-    # be unpleasant in an office, so the ordinary notification sound is named explicitly and
-    # looping is turned off.
-    #
-    # Windows expects a scenario toast to offer a way out, so it carries an explicit Dismiss
-    # action; activationType="system" uses the shell's own handler, which needs no registered
-    # COM server of our own. Everything else asks only for the longer normal duration, and Do
-    # Not Disturb is welcome to hold those back: nothing is waiting on them.
-    if ($demandsAttention) {
-        $toastAttributes = ' scenario="alarm"'
-        $toastActions = @'
-  <audio src="ms-winsoundevent:Notification.Default" loop="false"/>
-  <actions>
-    <action content="Dismiss" arguments="dismiss" activationType="system"/>
-  </actions>
-'@
-    } else {
-        $toastAttributes = ' duration="long"'
-        $toastActions = ""
-    }
-
+    # There is no middle duration to ask for. Windows accepts only short, about seven seconds,
+    # and long, so long is as much dwell time as a well-behaved toast can have.
     return @"
-<toast$toastAttributes>
+<toast duration="long">
   <visual>
     <binding template="ToastGeneric">
       <text>$([System.Security.SecurityElement]::Escape($title))</text>
@@ -199,7 +170,7 @@ function New-ToastXml([string]$Aumid) {
       <text placement="attribution">$([System.Security.SecurityElement]::Escape($attribution))</text>
     </binding>
   </visual>
-$toastActions</toast>
+</toast>
 "@
 }
 

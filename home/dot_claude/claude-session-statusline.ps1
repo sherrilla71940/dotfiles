@@ -23,6 +23,7 @@ try {
 $iconModel = [char]::ConvertFromUtf32(0x1F916)      # robot
 $iconDirectory = [char]::ConvertFromUtf32(0x1F4C1)  # folder
 $iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
+$iconSession = [char]::ConvertFromUtf32(0x1F3F7)    # label
 $iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain
 $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
@@ -151,6 +152,9 @@ $model = [string]$data.model.display_name
 # made mid-session.
 $effortLevel = [string]$data.effort.level
 $currentDirectory = [string]$data.workspace.current_dir
+# Only set by --name, /rename or an AI-generated title; the default my-app-3f
+# style display name does not populate it, so most sessions have none.
+$sessionName = [string]$data.session_name
 $usedPercentage = $data.context_window.used_percentage
 # Client-side estimate only; resets to 0 when /clear starts a new session.
 $sessionCost = $data.cost.total_cost_usd
@@ -187,6 +191,12 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
         }
         $identitySegments += $directorySegment
     }
+}
+
+# The session name distinguishes concurrent terminals, which the project name
+# cannot when several sessions sit in the same repository.
+if (-not [string]::IsNullOrWhiteSpace($sessionName)) {
+    $identitySegments += "$dim$iconSession $sessionName$reset"
 }
 
 # Line two is session state: what this conversation has consumed so far.

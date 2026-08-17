@@ -7,6 +7,9 @@ model="$(printf '%s' "$input" | jq -r '.model.display_name // empty')"
 # made mid-session.
 effort_level="$(printf '%s' "$input" | jq -r '.effort.level // empty')"
 current_directory="$(printf '%s' "$input" | jq -r '.workspace.current_dir // empty')"
+# Only set by --name, /rename or an AI-generated title; the default my-app-3f
+# style display name does not populate it, so most sessions have none.
+session_name="$(printf '%s' "$input" | jq -r '.session_name // empty')"
 used_percentage="$(printf '%s' "$input" | jq -r 'if .context_window.used_percentage == null then empty else (.context_window.used_percentage | floor | tostring) end')"
 # Client-side estimate only; resets to 0 when /clear starts a new session.
 session_cost="$(printf '%s' "$input" | jq -r 'if (.cost.total_cost_usd // 0) > 0 then (.cost.total_cost_usd | tostring) else empty end')"
@@ -176,6 +179,12 @@ if [[ -n "$current_directory" ]]; then
     directory_segment+="${minor_separator}${magenta}🌿 ${git_state}${reset}"
   fi
   identity_segments+=("$directory_segment")
+fi
+
+# The session name distinguishes concurrent terminals, which the project name
+# cannot when several sessions sit in the same repository.
+if [[ -n "$session_name" ]]; then
+  identity_segments+=("${dim}🏷 ${session_name}${reset}")
 fi
 
 # Line two is session state: what this conversation has consumed so far.

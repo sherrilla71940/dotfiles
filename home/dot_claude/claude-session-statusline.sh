@@ -21,8 +21,9 @@ five_hour_reset="$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_a
 seven_day_reset="$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tostring')"
 
 # Emoji carry their own colour, which no escape code can override, so they are
-# chosen for contrast against each other: a label and a money bag are the same
-# yellow as the folder and the hourglass, which made four segments look alike.
+# chosen for contrast against their neighbours. The label was the problem: it sat
+# beside the folder on the identity row and the two yellows ran together. The
+# money bag is also yellow but sits a row below, far from the folder.
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
 # Bright black is the separator colour and nothing else: on a dark theme it sits
 # close to the background, which suits structure but loses any text put in it.
@@ -213,7 +214,7 @@ else
   meter_segments+=("${muted}🧠 context —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
-  meter_segments+=("$(printf '%s💵 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+  meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
 fi
 
 # Line three is account state, which outlives this session. It earns its own row

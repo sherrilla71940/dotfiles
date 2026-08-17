@@ -156,21 +156,28 @@ switch ($notificationType) {
 function New-ToastXml([string]$Aumid) {
     $attribution = Get-AttributionText -Payload $payload -NeedsProductName ($Aumid -eq $fallbackAumid)
 
-    # The urgent scenario is the one that survives Do Not Disturb. The first such toast makes
-    # Windows ask whether important notifications from Claude Code are allowed, and the answer
-    # is kept per application as AllowUrgentNotifications, revocable in notification settings.
+    # Windows states the rule in Action Center itself: with Do Not Disturb on "you'll only see
+    # banners for alarms". The alarm scenario is therefore the only one that both crosses Do Not
+    # Disturb and shows what it is about, and it also stays put until dismissed.
     #
-    # The reminder scenario was used here first because it keeps a toast on screen until it is
-    # dismissed, but Do Not Disturb suppresses it outright, and a banner that never appears is
-    # worth nothing. This one appears and then fades, which loses persistence and keeps the
-    # alert; Action Center retains it either way, so nothing is actually lost.
+    # Two scenarios were tried before it. Reminder keeps a banner on screen but Do Not Disturb
+    # suppresses it outright. Urgent is announced as an important notification and asks for
+    # consent, but under Do Not Disturb it collapses to a contentless "new important
+    # notification" and leaves nothing in Action Center afterwards, so it reported that
+    # something had happened without saying what, and then lost it.
+    #
+    # The alarm scenario would otherwise sound like an alarm, which is wrong for this and would
+    # be unpleasant in an office, so the ordinary notification sound is named explicitly and
+    # looping is turned off.
     #
     # Windows expects a scenario toast to offer a way out, so it carries an explicit Dismiss
     # action; activationType="system" uses the shell's own handler, which needs no registered
-    # COM server of our own. Everything else asks only for the longer normal duration.
+    # COM server of our own. Everything else asks only for the longer normal duration, and Do
+    # Not Disturb is welcome to hold those back: nothing is waiting on them.
     if ($blocksProgress) {
-        $toastAttributes = ' scenario="urgent"'
+        $toastAttributes = ' scenario="alarm"'
         $toastActions = @'
+  <audio src="ms-winsoundevent:Notification.Default" loop="false"/>
   <actions>
     <action content="Dismiss" arguments="dismiss" activationType="system"/>
   </actions>

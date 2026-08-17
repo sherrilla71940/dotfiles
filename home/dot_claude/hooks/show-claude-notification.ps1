@@ -39,6 +39,18 @@ switch ($notificationType) {
         $message = "Claude finished and is waiting for your next prompt."
         $icon = [System.Windows.Forms.ToolTipIcon]::Info
     }
+    # Background agents report separately from the main session: without these a
+    # subagent can finish, or stall waiting on an answer, entirely unannounced.
+    "agent_needs_input" {
+        $title = "Agent needs input"
+        $message = if ($payload.message) { [string]$payload.message } else { "A background agent is waiting for your response." }
+        $icon = [System.Windows.Forms.ToolTipIcon]::Warning
+    }
+    "agent_completed" {
+        $title = "Agent finished"
+        $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
+        $icon = [System.Windows.Forms.ToolTipIcon]::Info
+    }
     default {
         exit 0
     }

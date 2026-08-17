@@ -17,8 +17,10 @@ session_cost="$(printf '%s' "$input" | jq -r 'if (.cost.total_cost_usd // 0) > 0
 # can be absent independently, so both are treated as optional.
 five_hour_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.five_hour.used_percentage == null then empty else (.rate_limits.five_hour.used_percentage | floor | tostring) end')"
 seven_day_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.used_percentage == null then empty else (.rate_limits.seven_day.used_percentage | floor | tostring) end')"
-five_hour_reset="$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tostring')"
-seven_day_reset="$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tostring')"
+# Floored like the percentages above: a fractional epoch would reach bash
+# arithmetic as 1786943229.5 and raise a syntax error on every render.
+five_hour_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.five_hour.resets_at == null then empty else (.rate_limits.five_hour.resets_at | floor | tostring) end')"
+seven_day_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.resets_at == null then empty else (.rate_limits.seven_day.resets_at | floor | tostring) end')"
 
 # Emoji carry their own colour, which no escape code can override, so they are
 # chosen for contrast against their neighbours. The label was the problem: it sat
@@ -197,11 +199,6 @@ if [[ -n "$current_directory" ]]; then
   identity_segments+=("$directory_segment")
 fi
 
-# The session name distinguishes concurrent terminals, which the project name
-# cannot when several sessions sit in the same repository.
-if [[ -n "$session_name" ]]; then
-  identity_segments+=("${muted}🔖 ${session_name}${reset}")
-fi
 
 # Line two is session state: what this conversation has consumed so far.
 meter_segments=()
@@ -214,7 +211,18 @@ else
   meter_segments+=("${muted}🧠 context —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
-  meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+  # LC_ALL is pinned so a comma-decimal locale cannot render this as $25,04 and
+  # diverge from the PowerShell copy.
+  meter_segments+=("$(LC_ALL=C printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+fi
+
+# The session name belongs to this conversation rather than to identity, and it
+# goes last because it is the one unbounded field: all length variance then lands
+# at the end of the row, leaving every meter at a fixed column. A text glyph is
+# used instead of an emoji so the mark takes the same colour as the label, which
+# no emoji can do.
+if [[ -n "$session_name" ]]; then
+  meter_segments+=("${muted}◆ ${session_name}${reset}")
 fi
 
 # Line three is account state, which outlives this session. It earns its own row

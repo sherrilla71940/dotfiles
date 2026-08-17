@@ -24,10 +24,11 @@ $iconModel = [char]::ConvertFromUtf32(0x1F916)      # robot
 $iconDirectory = [char]::ConvertFromUtf32(0x1F4C1)  # folder
 $iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
 # Emoji carry their own colour, which no escape code can override, so they are
-# chosen for contrast against their neighbours. The label was the problem: it sat
-# beside the folder on the identity row and the two yellows ran together. The
-# money bag is also yellow but sits a row below, far from the folder.
-$iconSession = [char]::ConvertFromUtf32(0x1F516)    # bookmark, red
+# chosen for contrast against their neighbours. The money bag is the same yellow
+# as the folder but sits a row below it, far enough not to clash.
+# The session mark is deliberately not an emoji: a text glyph takes the same
+# colour as the label beside it, which is the one thing an emoji can never do.
+$iconSession = [char]0x25C6                         # black diamond, takes ANSI colour
 $iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain, pink
 $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
@@ -210,11 +211,6 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
     }
 }
 
-# The session name distinguishes concurrent terminals, which the project name
-# cannot when several sessions sit in the same repository.
-if (-not [string]::IsNullOrWhiteSpace($sessionName)) {
-    $identitySegments += "$muted$iconSession $sessionName$reset"
-}
 
 # Line two is session state: what this conversation has consumed so far.
 $meterSegments = @()
@@ -230,7 +226,17 @@ if ($null -ne $usedPercentage) {
 }
 
 if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
-    $meterSegments += '{0}{1} ${2:F2}{3}' -f $yellow, $iconCost, [double]$sessionCost, $reset
+    # The culture is pinned so a comma-decimal machine cannot render this as
+    # $25,04 and diverge from the bash copy.
+    $costText = ([double]$sessionCost).ToString("F2", [System.Globalization.CultureInfo]::InvariantCulture)
+    $meterSegments += "$yellow$iconCost `$$costText$reset"
+}
+
+# The session name belongs to this conversation rather than to identity, and it
+# goes last because it is the one unbounded field: all length variance then lands
+# at the end of the row, leaving every meter at a fixed column.
+if (-not [string]::IsNullOrWhiteSpace($sessionName)) {
+    $meterSegments += "$muted$iconSession $sessionName$reset"
 }
 
 # Line three is account state, which outlives this session. It earns its own row

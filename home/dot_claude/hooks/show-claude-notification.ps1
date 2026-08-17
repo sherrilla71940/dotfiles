@@ -101,49 +101,52 @@ try {
 # Every notification_type listed in the Notification hook matcher needs a branch here. A type
 # that reaches the default branch matches the hook and then announces nothing.
 #
-# $blocksProgress marks the types where nothing more happens until the user acts. Those toasts
-# stay on screen until dismissed, because work is stalled for as long as they go unseen. The
-# rest report something already finished, so they behave normally and wait in Action Center:
-# making every notification permanent would leave a queue to clear by hand, and across several
-# sessions that trains you to dismiss without reading.
+# $demandsAttention marks the types worth interrupting for: the ones where nothing proceeds
+# until the user acts, plus a finished background agent, because work is usually delegated to an
+# agent precisely so the user can leave, and being told it landed is the point of delegating.
+# Those toasts cross Do Not Disturb and stay on screen until dismissed.
+#
+# The rest concern the session in front of the user, who is by definition there to see it: the
+# main session going idle, and a sign-in succeeding. They behave normally and wait in Action
+# Center, so Do Not Disturb still means quiet for everything nobody is waiting on.
 $notificationType = [string]$payload.notification_type
 switch ($notificationType) {
     "permission_prompt" {
         $title = "Claude needs permission"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for tool approval." }
-        $blocksProgress = $true
+        $demandsAttention = $true
     }
     "elicitation_dialog" {
         $title = "Claude needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for your response." }
-        $blocksProgress = $true
+        $demandsAttention = $true
     }
     "elicitation_url_dialog" {
         $title = "Claude needs you to open a link"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for you to open a URL." }
-        $blocksProgress = $true
+        $demandsAttention = $true
     }
     "idle_prompt" {
         $title = "Claude finished"
         $message = "Claude finished and is waiting for your next prompt."
-        $blocksProgress = $false
+        $demandsAttention = $false
     }
     "auth_success" {
         $title = "Claude signed in"
         $message = if ($payload.message) { [string]$payload.message } else { "Authentication succeeded." }
-        $blocksProgress = $false
+        $demandsAttention = $false
     }
     # Background agents report separately from the main session: without these a
     # subagent can finish, or stall waiting on an answer, entirely unannounced.
     "agent_needs_input" {
         $title = "Agent needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent is waiting for your response." }
-        $blocksProgress = $true
+        $demandsAttention = $true
     }
     "agent_completed" {
         $title = "Agent finished"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
-        $blocksProgress = $false
+        $demandsAttention = $true
     }
     default {
         exit 0
@@ -174,7 +177,7 @@ function New-ToastXml([string]$Aumid) {
     # action; activationType="system" uses the shell's own handler, which needs no registered
     # COM server of our own. Everything else asks only for the longer normal duration, and Do
     # Not Disturb is welcome to hold those back: nothing is waiting on them.
-    if ($blocksProgress) {
+    if ($demandsAttention) {
         $toastAttributes = ' scenario="alarm"'
         $toastActions = @'
   <audio src="ms-winsoundevent:Notification.Default" loop="false"/>

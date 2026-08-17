@@ -21,6 +21,12 @@ fi
 
 notification_type="$(printf '%s' "$input" | jq -r '.notification_type // empty')"
 
+# The Windows copy keeps a toast on screen until dismissed when a notification means work is
+# blocked. There is no equivalent here: how long a banner lingers is chosen by the user per
+# application in System Settings > Notifications, as Banner or Alert, and no argument to
+# osascript or terminal-notifier overrides it. Set the posting application to Alert there to
+# get the same behaviour.
+
 # Every notification_type listed in the Notification hook matcher needs a branch here. A type
 # that reaches the default branch matches the hook and then announces nothing.
 case "$notification_type" in

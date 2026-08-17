@@ -80,37 +80,50 @@ try {
 
 # Every notification_type listed in the Notification hook matcher needs a branch here. A type
 # that reaches the default branch matches the hook and then announces nothing.
+#
+# $blocksProgress marks the types where nothing more happens until the user acts. Those toasts
+# stay on screen until dismissed, because work is stalled for as long as they go unseen. The
+# rest report something already finished, so they behave normally and wait in Action Center:
+# making every notification permanent would leave a queue to clear by hand, and across several
+# sessions that trains you to dismiss without reading.
 $notificationType = [string]$payload.notification_type
 switch ($notificationType) {
     "permission_prompt" {
         $title = "Claude needs permission"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for tool approval." }
+        $blocksProgress = $true
     }
     "elicitation_dialog" {
         $title = "Claude needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for your response." }
+        $blocksProgress = $true
     }
     "elicitation_url_dialog" {
         $title = "Claude needs you to open a link"
         $message = if ($payload.message) { [string]$payload.message } else { "Claude is waiting for you to open a URL." }
+        $blocksProgress = $true
     }
     "idle_prompt" {
         $title = "Claude finished"
         $message = "Claude finished and is waiting for your next prompt."
+        $blocksProgress = $false
     }
     "auth_success" {
         $title = "Claude signed in"
         $message = if ($payload.message) { [string]$payload.message } else { "Authentication succeeded." }
+        $blocksProgress = $false
     }
     # Background agents report separately from the main session: without these a
     # subagent can finish, or stall waiting on an answer, entirely unannounced.
     "agent_needs_input" {
         $title = "Agent needs input"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent is waiting for your response." }
+        $blocksProgress = $true
     }
     "agent_completed" {
         $title = "Agent finished"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
+        $blocksProgress = $false
     }
     default {
         exit 0
@@ -122,8 +135,25 @@ switch ($notificationType) {
 # identity posts the toast, so the markup is built per identity rather than once.
 function New-ToastXml([string]$Aumid) {
     $attribution = Get-AttributionText -Payload $payload -NeedsProductName ($Aumid -eq $fallbackAumid)
+
+    # The reminder scenario is what keeps a toast on screen until it is dismissed. Windows
+    # expects a scenario toast to offer a way out, so it carries an explicit Dismiss action;
+    # activationType="system" uses the shell's own handler, which needs no registered COM
+    # server of our own. Everything else asks only for the longer of the two normal durations.
+    if ($blocksProgress) {
+        $toastAttributes = ' scenario="reminder"'
+        $toastActions = @'
+  <actions>
+    <action content="Dismiss" arguments="dismiss" activationType="system"/>
+  </actions>
+'@
+    } else {
+        $toastAttributes = ' duration="long"'
+        $toastActions = ""
+    }
+
     return @"
-<toast>
+<toast$toastAttributes>
   <visual>
     <binding template="ToastGeneric">
       <text>$([System.Security.SecurityElement]::Escape($title))</text>
@@ -131,7 +161,7 @@ function New-ToastXml([string]$Aumid) {
       <text placement="attribution">$([System.Security.SecurityElement]::Escape($attribution))</text>
     </binding>
   </visual>
-</toast>
+$toastActions</toast>
 "@
 }
 

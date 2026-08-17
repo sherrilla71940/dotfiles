@@ -42,7 +42,9 @@ Do not use it for transient work progress; that belongs in continuity.
 
 Claude Code auto memory and Codex memory are separate client-owned persistence mechanisms. They may retain useful learnings, preferences, corrections, or context, but they are not the source of truth for cross-client work-session continuity.
 
-Do not:
+These boundaries apply to the continuity workflow's own actions only. They do not pause, restrict, or override the client's independent memory system, which continues writing and using memory under its own standing rules whether or not continuity is active.
+
+While performing continuity operations, do not:
 
 - copy native memory wholesale into continuity;
 - depend on native memory as the only record of unfinished work;

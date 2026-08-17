@@ -48,6 +48,11 @@ failure this structure exists to prevent.
 file with no YAML frontmatter — Codex renders frontmatter as visible text and it counts
 against `project_doc_max_bytes` (32 KiB). Never add a per-language rule for Codex.
 
+**Host-gate Codex-targeted skills.** Codex and Copilot both discover `~/.agents/skills`.
+Mark a Codex-targeted source skill with `.codex-only`, omit its Claude symlink, disable
+Copilot model invocation in `SKILL.md`, keep Codex implicit invocation enabled in
+`agents/openai.yaml`, and make the skill stop if GitHub Copilot invokes it explicitly.
+
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
 because Codex writes machine state into it. Keep it that way.
 
@@ -60,13 +65,15 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 ## Before you finish
 
 ```bash
-chezmoi source-path  # MUST resolve inside this repository; otherwise stop
+chezmoi source-path  # MUST identify this repository; otherwise stop
 chezmoi diff         # ALWAYS preview before apply; apply can replace live configuration
 chezmoi status       # empty after apply
 ```
 
 Never run `chezmoi apply` until the source-path check and diff both succeed. A plain chezmoi
-command uses its configured source directory regardless of the current working directory.
+command uses its configured source directory regardless of the current working directory. A
+symlink or Windows junction is valid when its resolved target is this repository; verify the
+filesystem or Git identity instead of comparing displayed path strings alone.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
 filenames, so real names are transformed silently and files can vanish. This has caused

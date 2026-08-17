@@ -13,10 +13,27 @@ cd "$repo" || exit 1
 
 fail() { printf 'pre-commit: %s\n' "$1" >&2; exit 1; }
 
+frontmatter_has() {
+  local file="$1"
+  local pattern="$2"
+
+  awk '
+    NR == 1 && $0 == "---" { in_frontmatter = 1; next }
+    in_frontmatter && $0 == "---" { exit }
+    in_frontmatter { print }
+  ' "$file" | grep -Eq "$pattern"
+}
+
 # Chezmoi may not yet be on Git Bash's PATH after a Winget installation.
 chezmoi_bin="$(command -v chezmoi || true)"
 if [[ -z "$chezmoi_bin" && -n "${LOCALAPPDATA:-}" ]]; then
-  for candidate in "${LOCALAPPDATA}/Microsoft/WinGet/Packages/twpayne.chezmoi"*/chezmoi.exe; do
+  local_app_data="$LOCALAPPDATA"
+  if command -v cygpath >/dev/null 2>&1; then
+    local_app_data="$(cygpath -u "$local_app_data")"
+  elif [[ "$local_app_data" =~ ^([A-Za-z]):\\(.*)$ ]]; then
+    local_app_data="/${BASH_REMATCH[1],,}/${BASH_REMATCH[2]//\\//}"
+  fi
+  for candidate in "${local_app_data}/Microsoft/WinGet/Packages/twpayne.chezmoi"*/chezmoi.exe; do
     [[ -x "$candidate" ]] && { chezmoi_bin="$candidate"; break; }
   done
 fi
@@ -68,12 +85,31 @@ if [[ "$src_skills" -ne "$out_skills" ]]; then
     empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Source filename rules'."
 fi
 
-# 3. Every shared skill must render as an individual Claude symlink.
+# 3. Every portable skill must render as an individual Claude symlink. A source-only
+#    .codex-only marker instead requires host gates that keep Claude and Copilot from
+#    automatically loading a Codex-targeted skill.
 for src in "$staged"/home/dot_agents/skills/*; do
   [[ -d "$src" ]] || continue
   name="$(basename "$src")"
   link_src="$staged/home/dot_claude/skills/symlink_$name.tmpl"
   link_out="$render/.claude/skills/$name"
+
+  if [[ -f "$src/.codex-only" ]]; then
+    [[ ! -e "$link_src" ]] ||
+      fail "Codex-targeted skill '$name' must not have a Claude symlink template."
+    [[ -f "$src/SKILL.md" ]] || fail "Codex-targeted skill '$name' is missing SKILL.md."
+    frontmatter_has "$src/SKILL.md" \
+      '^disable-model-invocation:[[:space:]]*true[[:space:]]*$' ||
+      fail "Codex-targeted skill '$name' must disable Copilot model invocation in SKILL.md."
+    openai_metadata="$src/agents/openai.yaml"
+    [[ -f "$openai_metadata" ]] ||
+      fail "Codex-targeted skill '$name' is missing agents/openai.yaml."
+    grep -Eq '^[[:space:]]*allow_implicit_invocation:[[:space:]]*true[[:space:]]*$' \
+      "$openai_metadata" ||
+      fail "Codex-targeted skill '$name' must enable Codex implicit invocation."
+    continue
+  fi
+
   [[ -f "$link_src" ]] || fail "shared skill '$name' has no Claude symlink template."
   [[ -L "$link_out" ]] || fail "shared skill '$name' did not render as a Claude symlink."
   target="$(readlink "$link_out")"

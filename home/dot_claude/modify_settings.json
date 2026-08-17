@@ -28,7 +28,7 @@
 {{- $permissions := dict "ask" (list "Bash(git push *)" "Bash(git commit *)") -}}
 {{- $hooks := dict
       "Notification" (list (dict
-        "matcher" "permission_prompt|elicitation_dialog|idle_prompt"
+        "matcher" "permission_prompt|elicitation_dialog|idle_prompt|agent_needs_input|agent_completed"
         "hooks" (list (dict
           "type" "command"
           "command" $notificationCommand

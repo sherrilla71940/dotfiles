@@ -96,9 +96,11 @@ Immediately confirm that chezmoi is reading the expected clone:
 chezmoi source-path
 ```
 
-The result must end inside this repository, normally
-`~/.local/share/chezmoi/home`. If it points at a different clone, stop and reconcile the
-source directories before continuing.
+The result must identify this repository, either directly or through a symlink or Windows
+junction. A displayed path ending in `~/.local/share/chezmoi/home` is valid when its resolved
+target belongs to this repository. Compare filesystem or Git identity instead of displayed
+path strings alone. If it identifies a different clone, stop and reconcile the source
+directories before continuing.
 
 ### 2. Preview every target change
 
@@ -239,7 +241,7 @@ The pre-commit hook:
 
 1. confirms the default chezmoi source resolves inside this repository,
 2. materializes and renders the staged Git snapshot,
-3. checks skill file-count parity and individual Claude skill links,
+3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
 4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
 5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
 
@@ -275,7 +277,7 @@ chezmoi source-path
 ## Verification
 
 ```bash
-chezmoi source-path  # inside this repository
+chezmoi source-path  # this repository, directly or through a link
 chezmoi status       # empty after apply
 chezmoi doctor       # environment sanity
 ```

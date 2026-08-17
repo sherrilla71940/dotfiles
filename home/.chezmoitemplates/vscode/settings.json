@@ -234,8 +234,6 @@
     "https://ecare.bli.gov.tw": true,
     "https://*.bli.gov.tw": true,
   },
-  "gitlens.ai.model": "vscode",
-  "gitlens.ai.vscode.model": "copilot:gpt-4.1",
   "chat.checkpoints.showFileChanges": true,
   "github.copilot.chat.copilotMemory.enabled": true,
   "settingsSync.ignoredSettings": [],

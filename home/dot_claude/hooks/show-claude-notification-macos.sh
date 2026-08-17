@@ -17,6 +17,16 @@ case "$notification_type" in
     title="Claude finished"
     message="Claude finished and is waiting for your next prompt."
     ;;
+  # Background agents report separately from the main session: without these a
+  # subagent can finish, or stall waiting on an answer, entirely unannounced.
+  agent_needs_input)
+    title="Agent needs input"
+    message="$(printf '%s' "$input" | jq -r '.message // "A background agent is waiting for your response."')"
+    ;;
+  agent_completed)
+    title="Agent finished"
+    message="$(printf '%s' "$input" | jq -r '.message // "A background agent finished its task."')"
+    ;;
   *)
     exit 0
     ;;

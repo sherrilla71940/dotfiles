@@ -23,9 +23,8 @@ five_hour_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.five_hour.reset
 seven_day_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.resets_at == null then empty else (.rate_limits.seven_day.resets_at | floor | tostring) end')"
 
 # Emoji carry their own colour, which no escape code can override, so they are
-# chosen for contrast against their neighbours. The label was the problem: it sat
-# beside the folder on the identity row and the two yellows ran together. The
-# money bag is also yellow but sits a row below, far from the folder.
+# chosen for contrast against their neighbours. The money bag is the same yellow
+# as the folder but sits a row below it, far enough not to clash.
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
 # Bright black is the separator colour and nothing else: on a dark theme it sits
 # close to the background, which suits structure but loses any text put in it.

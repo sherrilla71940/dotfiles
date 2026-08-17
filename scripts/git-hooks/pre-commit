@@ -140,5 +140,54 @@ if head -1 "$render/.codex/AGENTS.md" | grep -q '^---$'; then
     and it counts against project_doc_max_bytes. Keep .chezmoitemplates/core.md frontmatter-free."
 fi
 
+# 6. The two status line copies must render identical text. They are separate
+#    implementations of one output, and nothing else would catch a change made to one
+#    and not the other. Only run when they change: PowerShell start-up costs a few
+#    seconds and would otherwise be charged to every commit.
+statusline_changed=false
+while IFS= read -r changed; do
+  case "$changed" in
+    home/dot_claude/claude-session-statusline.*) statusline_changed=true ;;
+  esac
+done < <(git diff --cached --name-only)
+
+if [[ "$statusline_changed" == true ]]; then
+  statusline_sh="$render/.claude/claude-session-statusline.sh"
+  statusline_ps1="$render/.claude/claude-session-statusline.ps1"
+  powershell_bin="$(command -v powershell.exe || command -v pwsh || true)"
+
+  if [[ -z "$powershell_bin" ]]; then
+    printf 'pre-commit: no PowerShell available; skipping status line parity check.\n' >&2
+  elif ! command -v jq >/dev/null 2>&1; then
+    printf 'pre-commit: jq is unavailable; skipping status line parity check.\n' >&2
+  else
+    # Reset times four days out render as a weekday rather than a clock time, so the
+    # two runs cannot disagree because a minute ticked over between them.
+    far_reset=$(( $(date +%s) + 4 * 86400 ))
+    fixtures=(
+      "$(printf '{"model":{"display_name":"Opus 5"},"effort":{"level":"high"},"session_name":"parity fixture","workspace":{"current_dir":"%s"},"context_window":{"used_percentage":29},"cost":{"total_cost_usd":25.04},"rate_limits":{"five_hour":{"used_percentage":64,"resets_at":%s},"seven_day":{"used_percentage":8,"resets_at":%s}}}' "$repo" "$far_reset" "$far_reset")"
+      '{"model":{"display_name":"Opus 5"}}'
+    )
+
+    for fixture in "${fixtures[@]}"; do
+      sh_output="$(printf '%s' "$fixture" | bash "$statusline_sh" 2>/dev/null || true)"
+      # PowerShell writes CRLF where bash writes LF; the host trims either, so compare
+      # the text rather than the exact bytes.
+      ps_output="$(printf '%s' "$fixture" |
+        "$powershell_bin" -NoProfile -ExecutionPolicy Bypass -File "$statusline_ps1" 2>/dev/null |
+        tr -d '\r' || true)"
+
+      if [[ "$sh_output" != "$ps_output" ]]; then
+        printf 'pre-commit: the status line copies disagree.\n' >&2
+        printf '    bash: %s\n' "$sh_output" >&2
+        printf '    ps1 : %s\n' "$ps_output" >&2
+        fail "keep home/dot_claude/claude-session-statusline.sh and .ps1 in step."
+      fi
+    done
+
+    printf 'pre-commit: status line copies agree (%s fixtures).\n' "${#fixtures[@]}"
+  fi
+fi
+
 printf 'pre-commit: staged source state OK (%s skill files, %s shared rules).\n' \
   "$src_skills" "$(find "$staged/home/.chezmoitemplates/rules" -maxdepth 1 -type f -name '*.md' | wc -l)"

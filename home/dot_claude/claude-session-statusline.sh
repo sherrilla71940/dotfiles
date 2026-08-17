@@ -217,11 +217,9 @@ fi
 
 # The session name belongs to this conversation rather than to identity, and it
 # goes last because it is the one unbounded field: all length variance then lands
-# at the end of the row, leaving every meter at a fixed column. A text glyph is
-# used instead of an emoji so the mark takes the same colour as the label, which
-# no emoji can do.
+# at the end of the row, leaving every meter at a fixed column.
 if [[ -n "$session_name" ]]; then
-  meter_segments+=("${muted}◆ ${session_name}${reset}")
+  meter_segments+=("${muted}🔖 ${session_name}${reset}")
 fi
 
 # Line three is account state, which outlives this session. It earns its own row

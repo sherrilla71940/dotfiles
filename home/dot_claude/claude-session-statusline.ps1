@@ -26,9 +26,11 @@ $iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
 # Emoji carry their own colour, which no escape code can override, so they are
 # chosen for contrast against their neighbours. The money bag is the same yellow
 # as the folder but sits a row below it, far enough not to clash.
-# The session mark is deliberately not an emoji: a text glyph takes the same
-# colour as the label beside it, which is the one thing an emoji can never do.
-$iconSession = [char]0x25C6                         # black diamond, takes ANSI colour
+# The bookmark only clashed while the session name sat beside the folder on the
+# identity row; on the meter row its red stands apart from the brain and the
+# money bag. Its colour cannot match the label beside it, but neither can the
+# herb's, so an emoji here keeps the row visually consistent.
+$iconSession = [char]::ConvertFromUtf32(0x1F516)    # bookmark, red
 $iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain, pink
 $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand

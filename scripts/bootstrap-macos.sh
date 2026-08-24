@@ -30,4 +30,19 @@ if ! command -v code >/dev/null 2>&1; then
   printf 'VS Code CLI not on PATH. Install VS Code, then run "Shell Command: Install '"'"'code'"'"' command in PATH".\n' >&2
 fi
 
+# Claude Code plugins are installed software, not configuration, so they belong here rather
+# than in the chezmoi-managed settings: pinning enabledPlugins would mean a plugin disabled
+# locally came back on the next apply. The official marketplace is normally registered on the
+# first interactive launch, so add it explicitly to make this script safe to run before that.
+if command -v claude >/dev/null 2>&1; then
+  claude plugin marketplace add anthropics/claude-plugins-official >/dev/null 2>&1 || true
+  for plugin in figma typescript-lsp playwright; do
+    if ! claude plugin install "$plugin@claude-plugins-official" --scope user >/dev/null 2>&1; then
+      printf 'Could not install %s. Add it from /plugin once Claude Code is running.\n' "$plugin" >&2
+    fi
+  done
+else
+  printf 'claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script.\n' >&2
+fi
+
 printf 'Optional tools are ready.\n'

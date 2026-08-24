@@ -36,9 +36,9 @@ The columns group surfaces only when they read the same personal configuration:
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
-| Marketplace plugins | declarative `enabledPlugins` | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
+| Marketplace plugins | installed by `scripts/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
 | User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
-| General settings | partially managed `settings.json`; model and effort remain app-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
+| General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
 
 Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
 directories exist only where a client requires the directory before a session starts.
@@ -291,7 +291,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
 | Direct user MCP | Chrome DevTools | the manifest and hand-run installer |
-| Enabled Claude plugin | Figma and Playwright MCP servers | `enabledPlugins` in the managed Claude settings |
+| Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
 
@@ -317,10 +317,14 @@ mechanisms differ, so share a server definition only when both clients support i
 
 Here, **declarative** means the repository records which plugin should be enabled, while the
 client downloads and manages the plugin files. The downloaded cache is not copied into the
-dotfiles repository.
+dotfiles repository. Claude Code is the exception: its plugins are installed by the bootstrap
+scripts rather than declared, so enabling and disabling them stays a local decision.
 
-- Claude Code: add its marketplace if needed and its plugin ID to `enabledPlugins` in
-  `home/.chezmoitemplates/claude/settings-durable.json`.
+- Claude Code: add the plugin to the `claude plugin install` list in both
+  `scripts/bootstrap-macos.sh` and `scripts/bootstrap-windows.ps1`, with its marketplace
+  ahead of it if that marketplace is not registered automatically. The repository installs
+  Claude plugins rather than declaring them, so enabling and disabling stays local — see
+  [ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md).
 - Codex: add its marketplace and plugin defaults to
   `home/dot_codex/create_config.toml.tmpl`; merge only missing declarations into an existing
   app-owned config.
@@ -337,9 +341,9 @@ chezmoi re-add ~/.copilot/settings.json
 ```
 
 Review the source diff before committing. This works because Copilot's settings file is a
-plain managed file. Claude's modify template preserves application-owned keys while enforcing
-durable plugin declarations. For Codex's create-once config, follow the client-specific steps
-above instead.
+plain managed file. Claude has no declaration to preserve, because its plugins are installed
+by the bootstrap scripts instead. For Codex's create-once config, follow the client-specific
+steps above instead.
 
 Never copy plugin caches, installed-plugin directories, authentication tokens, or client
 runtime state into `home/`.

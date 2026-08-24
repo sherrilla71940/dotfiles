@@ -90,16 +90,21 @@ according to the file's ownership policy:
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
 
-The repository owns `env`, `hooks`, `statusLine`, `enabledPlugins`, and
-`autoUpdatesChannel`. Claude Code and project settings own everything else, including
-`model`, `effortLevel`, `theme`, `verbose`, `tui`, `permissions`, and unknown future keys, so
-those survive `chezmoi apply` without entering Git.
+The repository owns `env`, `hooks`, `statusLine`, and `autoUpdatesChannel`. Claude Code and
+project settings own everything else, including `model`, `effortLevel`, `theme`, `verbose`,
+`tui`, `permissions`, `enabledPlugins`, and unknown future keys, so those survive
+`chezmoi apply` without entering Git.
 
 A key earns a place in the durable set by being needed on every machine, stable enough that
 you would not change it mid-session, and not written by the application. `permissions` fails
 the second test: which rules are worth having changes with the workflow. A project's own
 `.claude/settings.json` outranks the user file, so a guardrail that must hold belongs there
 instead. A fresh machine therefore starts with no `ask` rules.
+
+`enabledPlugins` fails it too, and the merge cannot express a disable, so pinning a plugin
+made turning it off locally impossible. Plugins are installed software rather than
+configuration, so `scripts/bootstrap-*` installs them the way it installs any other tool.
+Which plugins are enabled after that is yours.
 
 The durable keys live as readable JSON in
 `home/.chezmoitemplates/claude/settings-durable.json`. `home/dot_claude/modify_settings.json`
@@ -112,8 +117,8 @@ alongside it. See
 the next apply and the script it generates never reaches the repository. Edit the managed
 statusline scripts instead. That key has to stay owned: the repository ships both scripts, so
 releasing the setting would leave a fresh machine rendering scripts that nothing references.
-A user-scope `/plugin install` also writes a repository-owned key, but the merge keeps it
-beside the baseline; only disabling a plugin the repository enables fails.
+`/plugin` is now unconstrained: it writes `enabledPlugins`, which the repository no longer
+owns.
 
 ### Promote a local Claude setting into the repository
 

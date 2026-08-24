@@ -225,9 +225,11 @@ in the manifest and what remains owned by plugins, accounts, or browser integrat
 
 ### Plugins
 
-The repository carries portable plugin declarations, not downloaded caches or authentication.
-Follow the [plugin customization guide](./customization-support.md#add-a-marketplace-plugin)
-for the client-specific source and Codex's create-once behavior.
+The repository carries portable plugin declarations for Codex and Copilot, and installs
+Claude Code's plugins from `scripts/bootstrap-*` instead, so enabling and disabling them stays
+local. It never carries downloaded caches or authentication. Follow the
+[plugin customization guide](./customization-support.md#add-a-marketplace-plugin) for the
+client-specific source and Codex's create-once behavior.
 
 ## Enable repository validation
 

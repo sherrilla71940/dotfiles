@@ -36,17 +36,23 @@ preserved.
 Admit a key to the durable set only when it is needed on every machine, stable enough that
 it would not be changed mid-session, and not written by the application.
 
-Narrow repository ownership to `env`, `hooks`, `statusLine`, `enabledPlugins`, and
-`autoUpdatesChannel`. Release `theme`, `verbose`, `tui`, and `permissions` to Claude Code and
-to project settings, and drop `extraKnownMarketplaces` entirely.
+Narrow repository ownership to `env`, `hooks`, `statusLine`, and `autoUpdatesChannel`.
+Release `theme`, `verbose`, `tui`, `permissions`, and `enabledPlugins` to Claude Code and to
+project settings, and drop `extraKnownMarketplaces` entirely.
 
 `permissions` fails the stability test: which rules are worth having changes with the
 workflow, and a project's own `.claude/settings.json` outranks the user file, so a guardrail
 that must hold belongs there rather than in a machine-wide default.
 
+`enabledPlugins` fails it as well, and the merge cannot express a disable, so a pinned plugin
+could not be turned off locally at all. Plugins are installed software rather than
+configuration, so `scripts/bootstrap-macos.sh` and `scripts/bootstrap-windows.ps1` install
+them with `claude plugin install`, the way they install any other tool. Which plugins are
+enabled after that is a local decision.
+
 `extraKnownMarketplaces` declared the `claude-code-plugins` demo marketplace while every
-plugin in `enabledPlugins` comes from `claude-plugins-official`, which Claude Code registers
-on its own. The entry served no declared plugin.
+plugin installed by the bootstrap scripts comes from `claude-plugins-official`, which Claude
+Code registers on its own. The entry served no declared plugin.
 
 `statusLine` stays owned despite being writable by `/statusline`, because the repository ships
 both statusline scripts. Releasing the setting would leave a fresh machine rendering two
@@ -72,18 +78,20 @@ the reference, which is the same reason `hooks` cannot be released.
 
 ## Consequences
 
-`/config` is authoritative for theme, verbosity, and terminal interface, and permission rules
-are set per project or per workflow. A plugin installed at user scope survives an apply,
-because the merge recurses; a plugin the repository enables cannot be disabled locally,
-because the repository value wins.
+`/config` is authoritative for theme, verbosity, and terminal interface; permission rules are
+set per project or per workflow; and `/plugin` is unconstrained. Nothing the repository owns
+is reachable from an interactive command except `/statusline`.
 
 A fresh machine starts with no `ask` rules, so the `git push` and `git commit` confirmations
 this repository used to guarantee are now set per project or added back by hand. Releasing
 `permissions` is what buys the freedom to change them without a commit.
 
-Two operations still meet a repository-owned key: `/statusline` writes `statusLine` and
-additionally leaves an unmanaged script in `~/.claude/`, and `/plugin` cannot disable a
-repository-enabled plugin.
+One command still meets a repository-owned key: `/statusline` writes `statusLine` and
+additionally leaves an unmanaged script in `~/.claude/`.
+
+Installing plugins from bootstrap trades enforcement for freedom. A plugin is installed once
+on a new machine rather than re-enabled on every apply, so a plugin disabled later stays
+disabled. This is the same trade as `permissions`.
 
 The merge cannot express removal. Deleting an application-written key requires editing the
 live file, or a mechanism other than `merge`.
@@ -108,6 +116,9 @@ and malformed JSON fails the apply instead of being overwritten.
 - [`home/.chezmoitemplates/claude/settings-durable.json`](../../home/.chezmoitemplates/claude/settings-durable.json)
 - [`home/dot_claude/modify_settings.json`](../../home/dot_claude/modify_settings.json)
 - [`scripts/claude-settings-drift.sh`](../../scripts/claude-settings-drift.sh)
+- [`scripts/bootstrap-macos.sh`](../../scripts/bootstrap-macos.sh) and
+  [`scripts/bootstrap-windows.ps1`](../../scripts/bootstrap-windows.ps1), which install the
+  plugins and the typescript language server the plugins need
 - [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md#applications-that-write-their-own-configuration)
 
 Verified with `chezmoi apply --destination` against a seeded target: released keys and

@@ -18,8 +18,36 @@ if (-not $installed) {
     Write-Host "$packageId already installed"
 }
 
+# The Claude settings this repository manages enable the typescript-lsp plugin, and the
+# plugin does not install its language server. Without the binary every session reports a
+# plugin load error. Both packages are needed: the server shells out to tsserver, which
+# ships with typescript.
+if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue)) {
+    if (Get-Command npm -ErrorAction SilentlyContinue) {
+        npm install -g typescript-language-server typescript
+    } else {
+        Write-Warning "npm is not on PATH, so typescript-language-server was skipped. Install Node, then run 'npm install -g typescript-language-server typescript'."
+    }
+}
+
 if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
+}
+
+# Claude Code plugins are installed software, not configuration, so they belong here rather
+# than in the chezmoi-managed settings: pinning enabledPlugins would mean a plugin disabled
+# locally came back on the next apply. The official marketplace is normally registered on the
+# first interactive launch, so add it explicitly to make this script safe to run before that.
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    claude plugin marketplace add anthropics/claude-plugins-official 2>$null | Out-Null
+    foreach ($plugin in @("figma", "typescript-lsp", "playwright")) {
+        claude plugin install "$plugin@claude-plugins-official" --scope user 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Could not install $plugin. Add it from /plugin once Claude Code is running."
+        }
+    }
+} else {
+    Write-Warning "claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script."
 }
 
 # Windows attributes every toast to an Application User Model ID (AUMID). Given none, it

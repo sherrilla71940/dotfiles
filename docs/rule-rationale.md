@@ -21,6 +21,24 @@ enforceable rather than aspirational.
 Reconsider only if an equivalent, mechanically enforced completion check replaces both
 instructions.
 
+### User-level configuration is generated output
+
+The rule directing agents to resolve a live configuration file through `chezmoi source-path`
+before editing it exists because the failure it prevents is silent. A session outside this
+repository, asked to add a skill or a hook, writes to the tool's live directory and reports
+success; the work is then unmanaged, reverted by the next `chezmoi apply` or simply absent
+from the next machine. The concrete warning already lived in
+`home/dot_claude/CLAUDE.md.tmpl`, but inside an HTML comment that Claude Code strips before
+loading, so no agent ever read it.
+
+Resolving through chezmoi rather than listing paths keeps the rule correct on both macOS and
+Windows, and avoids a per-tool path table that would duplicate one instruction three times
+and go stale. The rule is conditional, so it costs nothing on a machine chezmoi does not
+manage.
+
+Reconsider if this machine stops being chezmoi-managed, or if these tools gain a reliable way
+to report that a configuration file is generated.
+
 ### Comment language by repository type
 
 Application and project repositories use zh-tw comments, while user-level configuration—such

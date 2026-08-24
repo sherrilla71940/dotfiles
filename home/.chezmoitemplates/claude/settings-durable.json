@@ -76,14 +76,5 @@
     "refreshInterval": 60
   },
 
-  {{/* A baseline of plugins to enable everywhere. Deep-merged, so a plugin you
-       install at user scope with /plugin is preserved; a plugin named here
-       cannot be disabled locally, because the repository value wins. */}}
-  "enabledPlugins": {
-    "figma@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true
-  },
-
-  "autoUpdatesChannel": "latest"
+"autoUpdatesChannel": "latest"
 }

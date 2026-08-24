@@ -250,11 +250,19 @@ The pre-commit hook:
 The hook renders only into a temporary directory. Its `--exclude=scripts` flag excludes
 chezmoi-managed script entry types; it does not mean the top-level `scripts/` directory.
 
-## Using a manually cloned `~/dotfiles`
+## Working tree at `~/dotfiles`
 
-Normal `chezmoi init` already creates the default source directory, so no link is required.
-If you deliberately cloned the repository as `~/dotfiles`, make the default chezmoi source
-point to it. Do this only when `~/.local/share/chezmoi` does not contain changes you need.
+This repository is developed in, not only applied: decision records, bootstrap scripts, a
+pre-commit hook and a test-render workflow are all edited and committed regularly. Its Git
+working tree therefore lives at `~/dotfiles`, and chezmoi's default source directory is a
+link to it. This is a deliberate layout, not a workaround, and it changes nothing about the
+source state — only where the checkout you edit lives. See
+[ADR-0006](./decisions/0006-keep-the-working-tree-at-dotfiles.md).
+
+`chezmoi init` clones straight into the default source directory, so a machine set up that
+way needs no link and the repository sits under `~/.local/share/chezmoi`. Both layouts work.
+To use `~/dotfiles`, clone there and point the default source directory at it. Do this only
+when `~/.local/share/chezmoi` does not already contain changes you need.
 
 macOS or Git Bash with symlink permission:
 
@@ -270,11 +278,17 @@ New-Item -ItemType Directory -Force "$HOME\.local\share" | Out-Null
 New-Item -ItemType Junction -Path "$HOME\.local\share\chezmoi" -Target "$HOME\dotfiles"
 ```
 
-Then verify:
+Then verify. Every command reports the link path rather than the working tree, so compare Git
+identity instead of the displayed string:
 
 ```bash
-chezmoi source-path
+chezmoi source-path                                        # ends in .local/share/chezmoi/home
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # must be the working tree
 ```
+
+The link is not part of the source state, so `chezmoi apply` neither creates nor repairs it.
+A machine missing the link silently uses whatever `~/.local/share/chezmoi` contains, which is
+why this check belongs immediately after cloning.
 
 ## Verification
 

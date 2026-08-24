@@ -96,7 +96,7 @@ tool assumptions before copying one into a single-client setup.
 ```
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
-  .chezmoitemplates/             SHARED bodies (core.md, rules/, vscode/)
+  .chezmoitemplates/             SHARED bodies (core.md, rules/, vscode/, claude/)
   dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
@@ -106,6 +106,7 @@ home/                            chezmoi source state
   AppData/ · Library/            VS Code, one per OS
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
 scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude
+scripts/claude-settings-drift.sh lists Claude settings changed locally but not in the repo
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/vscode-extensions.txt    extension manifest (installed on request)
 docs/decisions/                  architecture decisions and reconsideration triggers

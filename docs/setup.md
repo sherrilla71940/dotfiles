@@ -23,6 +23,10 @@ A new computer can already have existing configuration if you used an applicatio
 installing these dotfiles. When unsure, use the existing-configuration path. It initializes
 the repository without changing live files.
 
+Both paths clone into the default chezmoi source directory. Where the Git working tree lives is
+a separate choice, and it is cheapest to make now rather than after cloning: see
+[Working tree at `~/dotfiles`](#working-tree-at-dotfiles).
+
 ## Common prerequisites
 
 ### Install Git and chezmoi

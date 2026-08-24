@@ -320,7 +320,7 @@ client downloads and manages the plugin files. The downloaded cache is not copie
 dotfiles repository.
 
 - Claude Code: add its marketplace if needed and its plugin ID to `enabledPlugins` in
-  `home/dot_claude/modify_settings.json`.
+  `home/.chezmoitemplates/claude/settings-durable.json`.
 - Codex: add its marketplace and plugin defaults to
   `home/dot_codex/create_config.toml.tmpl`; merge only missing declarations into an existing
   app-owned config.

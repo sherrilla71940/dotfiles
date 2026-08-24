@@ -86,15 +86,49 @@ according to the file's ownership policy:
 | Live file | Ownership policy | Preserve a UI or CLI change |
 | --- | --- | --- |
 | VS Code `settings.json` | Managed template | Edit `home/.chezmoitemplates/vscode/settings.json` |
-| Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/dot_claude/modify_settings.json` for durable keys; use `/model` or `/effort` for app-owned choices |
+| Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/claude/settings-durable.json` for durable keys; use `/config`, `/model` or `/effort` for app-owned choices |
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
 
-Claude owns `model`, `effortLevel`, and unknown future keys. The repository manages the
-environment, permissions, hooks, status line, plugins, marketplaces, update channel, theme,
-verbosity, and terminal interface. A model or effort change therefore survives
-`chezmoi apply` without entering Git. See
+The repository owns `env`, `permissions`, `hooks`, `statusLine`, `enabledPlugins`,
+`extraKnownMarketplaces`, and `autoUpdatesChannel`. Claude owns everything else, including
+`model`, `effortLevel`, `theme`, `verbose`, `tui`, and unknown future keys, so those survive
+`chezmoi apply` without entering Git.
+
+The durable keys live as readable JSON in
+`home/.chezmoitemplates/claude/settings-durable.json`. `home/dot_claude/modify_settings.json`
+only deep-merges that file over the live one, so a value the repository does not name is
+never removed, and a key added locally under a name the repository does own is kept
+alongside it. See
 [ADR-0004](./decisions/0004-manage-mixed-state-claude-settings-by-key.md).
+
+Two commands write to a repository-owned key, so their change is reverted on the next apply:
+`/statusline` writes `statusLine` (and leaves an unmanaged script in `~/.claude/`), and
+`/plugin install` at user scope writes `enabledPlugins`. A user-scope plugin install still
+survives, because the merge recurses; disabling a plugin the repository enables does not.
+Permission approvals are safe: "Yes, and don't ask again" writes
+`.claude/settings.local.json` in the project, never the user file.
+
+### Promote a local Claude setting into the repository
+
+`chezmoi diff ~/.claude/settings.json` reports only repository-owned keys, so a setting you
+changed locally and now want on every machine does not appear there. List the candidates:
+
+```bash
+./scripts/claude-settings-drift.sh
+```
+
+Copy the value into `home/.chezmoitemplates/claude/settings-durable.json`, then apply and
+commit:
+
+```bash
+chezmoi diff ~/.claude/settings.json   # confirm only the promoted key changes
+chezmoi apply
+git add home/.chezmoitemplates/claude/settings-durable.json && git commit
+```
+
+Promotion stays manual on purpose. Capturing the live file automatically would sweep up
+machine-local state and overwrite the template expressions that render per-machine paths.
 
 ## Remove a managed file
 

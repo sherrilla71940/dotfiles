@@ -27,7 +27,8 @@ agent session.
 | [0001](./0001-separate-operational-guides-from-decision-records.md) | Accepted | Separate current procedures from durable decision history |
 | [0002](./0002-share-cross-tool-configuration-with-thin-wrappers.md) | Accepted | Share portable content while keeping tool-specific wrappers |
 | [0003](./0003-track-vscode-user-configuration-selectively.md) | Accepted | Track portable VS Code user configuration selectively |
-| [0004](./0004-manage-mixed-state-claude-settings-by-key.md) | Accepted | Manage durable Claude settings while preserving app-owned choices |
+| [0004](./0004-manage-mixed-state-claude-settings-by-key.md) | Superseded by 0005 | Manage durable Claude settings while preserving app-owned choices |
+| [0005](./0005-merge-durable-claude-settings-as-json.md) | Accepted | Merge durable Claude settings from a JSON source and narrow repository ownership |
 
 ## Template
 

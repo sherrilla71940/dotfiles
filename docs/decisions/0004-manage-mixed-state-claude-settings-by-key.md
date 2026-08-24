@@ -1,6 +1,6 @@
 # ADR-0004: Manage mixed-state Claude settings by key
 
-- Status: Accepted
+- Status: Superseded by [ADR-0005](./0005-merge-durable-claude-settings-as-json.md)
 - Date: 2026-08-11
 
 ## Context

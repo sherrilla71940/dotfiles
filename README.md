@@ -85,11 +85,16 @@ all. Nothing is ever reworded into a tool-neutral twin.
 
 ### Copying only part of this repository
 
-Files under `home/.chezmoitemplates/` are reusable bodies, not standalone target files. For
-example, VS Code bodies need the OS-specific wrappers under `home/AppData/` and
-`home/Library/`, while shared rule bodies deliberately omit client frontmatter. Portable
-skills under `home/dot_agents/skills/` are written for Claude Code, Codex, and Copilot; review
-tool assumptions before copying one into a single-client setup.
+Lifting a single file out of `home/.chezmoitemplates/` will not work, because nothing there is
+a target file — each one is a body that some wrapper renders. A VS Code body needs the
+OS-specific wrapper under `home/AppData/` or `home/Library/`; a shared rule body deliberately
+omits the frontmatter each client requires; the Claude durable-settings body does nothing
+without `home/dot_claude/modify_settings.json` to merge it. Take the wrapper as well, or read
+it to see what it supplies.
+
+Skills under `home/dot_agents/skills/` are real files rather than bodies, so they copy
+directly, but they assume Claude Code, Codex, and Copilot all read them. Check those
+assumptions before dropping one into a single-client setup.
 
 ## Layout
 

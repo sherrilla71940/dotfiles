@@ -18,6 +18,18 @@ if (-not $installed) {
     Write-Host "$packageId already installed"
 }
 
+# The Claude settings this repository manages enable the typescript-lsp plugin, and the
+# plugin does not install its language server. Without the binary every session reports a
+# plugin load error. Both packages are needed: the server shells out to tsserver, which
+# ships with typescript.
+if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue)) {
+    if (Get-Command npm -ErrorAction SilentlyContinue) {
+        npm install -g typescript-language-server typescript
+    } else {
+        Write-Warning "npm is not on PATH, so typescript-language-server was skipped. Install Node, then run 'npm install -g typescript-language-server typescript'."
+    }
+}
+
 if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
 }

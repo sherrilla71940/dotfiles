@@ -104,11 +104,30 @@ Example invocations (0–4 flags, any order):
 
 ## Safety Rules
 
-- Never update git config.
-- Never run destructive commands such as `git reset --hard`, `git clean`, or force operations unless the user explicitly asks.
-- Never use `--no-verify` unless the user explicitly asks.
-- Never force push to `main` or `master`.
-- Never commit obvious secrets. Stop and explain what needs review if a secret-like file is a candidate.
+These fall into three groups that behave differently. Know which group a rule is in before deciding whether the user can wave it through.
+
+### Never, whatever is asked
+
+- Never commit a real secret. Confirmation does not unlock this: a secret in history is effectively permanent, needing both a history rewrite and a credential rotation, so the only safe outcome is not writing it.
+- When a candidate only *looks* secret-like — a template, an example, a fixture — stop and say which file and why, rather than deciding for yourself that it is fine.
+
+### Confirm before acting
+
+These are legitimate operations with consequences the user may not have in mind. Propose, do not perform. State the exact command, what it changes, and what cannot be undone; then ask. Proceed only on approval of **that specific action in this turn** — a general instruction such as "do whatever's needed" is not approval, and approval for one of these is not approval for another.
+
+- Updating git config.
+- Destructive commands: `git reset --hard`, `git clean`, or any force operation.
+- `--no-verify`.
+- `git commit --amend`.
+- Force-pushing. For `main`, `master`, or any branch others may have pulled, name the branch in the question and say that rewritten history breaks every existing clone.
+
+### Mode contract
+
+Overriding these creates no danger; it makes the result meaningless, because the mode stops describing what happened. There is no confirmation that unlocks them.
+
 - Never stage files or create commits in `draft` mode.
 - In `batch` mode, stage and commit one group at a time; never combine files from different logical groups in a single commit.
-- If hooks fail, fix the reported issue and create a normal commit. Do not amend unless the user asks. In `batch` mode, a hook failure on one group does not roll back commits already made for earlier groups — fix the issue, then continue with the remaining groups.
+
+### When hooks fail
+
+Fix the reported issue and create a normal commit — never bypass the hook to get past it. In `batch` mode, a hook failure on one group does not roll back commits already made for earlier groups: fix the issue, then continue with the remaining groups.

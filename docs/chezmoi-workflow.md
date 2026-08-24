@@ -90,24 +90,30 @@ according to the file's ownership policy:
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
 
-The repository owns `env`, `permissions`, `hooks`, `statusLine`, `enabledPlugins`,
-`extraKnownMarketplaces`, and `autoUpdatesChannel`. Claude owns everything else, including
-`model`, `effortLevel`, `theme`, `verbose`, `tui`, and unknown future keys, so those survive
-`chezmoi apply` without entering Git.
+The repository owns `env`, `hooks`, `statusLine`, `enabledPlugins`, and
+`autoUpdatesChannel`. Claude Code and project settings own everything else, including
+`model`, `effortLevel`, `theme`, `verbose`, `tui`, `permissions`, and unknown future keys, so
+those survive `chezmoi apply` without entering Git.
+
+A key earns a place in the durable set by being needed on every machine, stable enough that
+you would not change it mid-session, and not written by the application. `permissions` fails
+the second test: which rules are worth having changes with the workflow. A project's own
+`.claude/settings.json` outranks the user file, so a guardrail that must hold belongs there
+instead. A fresh machine therefore starts with no `ask` rules.
 
 The durable keys live as readable JSON in
 `home/.chezmoitemplates/claude/settings-durable.json`. `home/dot_claude/modify_settings.json`
 only deep-merges that file over the live one, so a value the repository does not name is
 never removed, and a key added locally under a name the repository does own is kept
 alongside it. See
-[ADR-0004](./decisions/0004-manage-mixed-state-claude-settings-by-key.md).
+[ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md).
 
-Two commands write to a repository-owned key, so their change is reverted on the next apply:
-`/statusline` writes `statusLine` (and leaves an unmanaged script in `~/.claude/`), and
-`/plugin install` at user scope writes `enabledPlugins`. A user-scope plugin install still
-survives, because the merge recurses; disabling a plugin the repository enables does not.
-Permission approvals are safe: "Yes, and don't ask again" writes
-`.claude/settings.local.json` in the project, never the user file.
+`/statusline` writes `statusLine`, which the repository owns, so its change is reverted on
+the next apply and the script it generates never reaches the repository. Edit the managed
+statusline scripts instead. That key has to stay owned: the repository ships both scripts, so
+releasing the setting would leave a fresh machine rendering scripts that nothing references.
+A user-scope `/plugin install` also writes a repository-owned key, but the merge keeps it
+beside the baseline; only disabling a plugin the repository enables fails.
 
 ### Promote a local Claude setting into the repository
 

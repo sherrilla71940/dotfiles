@@ -33,9 +33,25 @@ the live file, including that partial, and combining them with `merge $durable $
 repository wins on any key it names while a locally added sibling under the same parent is
 preserved.
 
-Narrow repository ownership to `env`, `permissions`, `hooks`, `statusLine`, `enabledPlugins`,
-`extraKnownMarketplaces`, and `autoUpdatesChannel`. Release `theme`, `verbose`, and `tui` to
-Claude Code.
+Admit a key to the durable set only when it is needed on every machine, stable enough that
+it would not be changed mid-session, and not written by the application.
+
+Narrow repository ownership to `env`, `hooks`, `statusLine`, `enabledPlugins`, and
+`autoUpdatesChannel`. Release `theme`, `verbose`, `tui`, and `permissions` to Claude Code and
+to project settings, and drop `extraKnownMarketplaces` entirely.
+
+`permissions` fails the stability test: which rules are worth having changes with the
+workflow, and a project's own `.claude/settings.json` outranks the user file, so a guardrail
+that must hold belongs there rather than in a machine-wide default.
+
+`extraKnownMarketplaces` declared the `claude-code-plugins` demo marketplace while every
+plugin in `enabledPlugins` comes from `claude-plugins-official`, which Claude Code registers
+on its own. The entry served no declared plugin.
+
+`statusLine` stays owned despite being writable by `/statusline`, because the repository ships
+both statusline scripts. Releasing the setting would leave a fresh machine rendering two
+scripts that nothing references. Where the repository ships the implementation it has to ship
+the reference, which is the same reason `hooks` cannot be released.
 
 ## Alternatives considered
 
@@ -56,14 +72,18 @@ Claude Code.
 
 ## Consequences
 
-`/config` is authoritative for theme, verbosity, and terminal interface. A plugin installed
-at user scope survives an apply, because the merge recurses; a plugin the repository enables
-cannot be disabled locally, because the repository value wins.
+`/config` is authoritative for theme, verbosity, and terminal interface, and permission rules
+are set per project or per workflow. A plugin installed at user scope survives an apply,
+because the merge recurses; a plugin the repository enables cannot be disabled locally,
+because the repository value wins.
 
-Two commands still write a repository-owned key and are still reverted: `/statusline` writes
-`statusLine` and additionally leaves an unmanaged script in `~/.claude/`, and `/plugin`
-cannot disable a repository-enabled plugin. Permission approvals are unaffected, because
-Claude Code writes those to `.claude/settings.local.json` in the project.
+A fresh machine starts with no `ask` rules, so the `git push` and `git commit` confirmations
+this repository used to guarantee are now set per project or added back by hand. Releasing
+`permissions` is what buys the freedom to change them without a commit.
+
+Two operations still meet a repository-owned key: `/statusline` writes `statusLine` and
+additionally leaves an unmanaged script in `~/.claude/`, and `/plugin` cannot disable a
+repository-enabled plugin.
 
 The merge cannot express removal. Deleting an application-written key requires editing the
 live file, or a mechanism other than `merge`.

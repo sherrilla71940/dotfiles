@@ -56,6 +56,12 @@ Copilot model invocation in `SKILL.md`, keep Codex implicit invocation enabled i
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
 because Codex writes machine state into it. Keep it that way.
 
+**`/statusline` output never reaches this repository.** It writes `statusLine`, a key
+`home/.chezmoitemplates/claude/settings-durable.json` owns, so the next `chezmoi apply`
+reverts it, and it leaves an unmanaged script in `~/.claude/`. Edit the managed statusline
+scripts and the `statusLine` block instead. Disabling a plugin the repository enables fails
+the same way.
+
 **Never put package installers in `home/.chezmoiscripts/`.** Anything there runs on every
 `chezmoi apply`, so a routine apply — or a test render — installs software. That happened
 once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.

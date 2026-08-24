@@ -34,10 +34,6 @@
     {{- end }}
   },
 
-  "permissions": {
-    "ask": ["Bash(git push *)", "Bash(git commit *)"]
-  },
-
   {{/* Posting a toast costs under a second; the rest of the notification hook's
        runtime is PowerShell start-up, which has been measured above ten seconds
        on a loaded machine. */}}
@@ -60,7 +56,12 @@
     ]
   },
 
-  {{/* refreshInterval refreshes what the script works out for itself while no
+  {{/* This key has to stay here. The repository manages both statusline scripts, so
+       releasing the setting would leave a fresh machine rendering two scripts that nothing
+       references. Where the repository ships the script it must ship the reference, which
+       is why /statusline cannot be used to change this - see AGENTS.md.
+
+       refreshInterval refreshes what the script works out for itself while no
        event fires here: the branch and the count of modified files, which a
        background agent or another window changes under an idle session.
 
@@ -82,12 +83,6 @@
     "figma@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "playwright@claude-plugins-official": true
-  },
-
-  "extraKnownMarketplaces": {
-    "claude-code-plugins": {
-      "source": { "source": "github", "repo": "anthropics/claude-code" }
-    }
   },
 
   "autoUpdatesChannel": "latest"

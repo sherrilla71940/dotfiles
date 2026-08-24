@@ -1,78 +1,19 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- /* Preserve application-owned keys while enforcing durable cross-machine settings. */ -}}
-{{- $settings := dict -}}
+{{- /* Deep-merge repository-owned settings over the live file, so Claude Code's
+       own writes (model, effortLevel, /config choices, unknown future keys) all
+       survive an apply. The durable keys live in readable JSON at
+       home/.chezmoitemplates/claude/settings-durable.json — edit that, not this.
+
+       merge gives the first argument precedence, so the repository wins on any
+       key it names and the live file fills in everything else. It recurses into
+       nested objects, so a repository baseline and a local addition can coexist
+       under the same parent key.
+
+       fromJson fails on malformed input rather than replacing it, which keeps a
+       hand-broken settings.json recoverable instead of silently overwritten. */ -}}
+{{- $live := dict -}}
 {{- if ne (.chezmoi.stdin | trim) "" -}}
-{{-   $settings = fromJson .chezmoi.stdin -}}
+{{-   $live = fromJson .chezmoi.stdin -}}
 {{- end -}}
-
-{{- $env := dict
-      "API_TIMEOUT_MS" "1200000"
-      "BASH_DEFAULT_TIMEOUT_MS" "300000"
-      "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN" "1"
--}}
-{{- if eq .chezmoi.os "windows" -}}
-{{-   $_ := set $env "CLAUDE_CODE_USE_POWERSHELL_TOOL" "0" -}}
-{{-   $homeDir := .chezmoi.homeDir | replace "/" "\\" -}}
-{{-   $_ := set $env "CLAUDE_CODE_GIT_BASH_PATH" (printf "%s\\AppData\\Local\\Programs\\Git\\bin\\bash.exe" $homeDir) -}}
-{{- end -}}
-
-{{- $notificationCommand := "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
-{{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
-{{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
-{{- if eq .chezmoi.os "windows" -}}
-{{-   $notificationCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/show-claude-notification.ps1\"" -}}
-{{-   $sessionStartCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" -}}
-{{-   $statusLineCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.claude/claude-session-statusline.ps1\"" -}}
-{{- end -}}
-
-{{- /* Posting a toast costs under a second; the rest of the notification hook's runtime is
-       PowerShell start-up, which has been measured above ten seconds on a loaded machine. */ -}}
-{{- $notificationTimeout := 20 -}}
-
-{{- $permissions := dict "ask" (list "Bash(git push *)" "Bash(git commit *)") -}}
-{{- $hooks := dict
-      "Notification" (list (dict
-        "matcher" "permission_prompt|elicitation_dialog|elicitation_url_dialog|idle_prompt|auth_success|agent_needs_input|agent_completed"
-        "hooks" (list (dict
-          "type" "command"
-          "command" $notificationCommand
-          "timeout" $notificationTimeout))))
-      "SessionStart" (list (dict
-        "matcher" "startup|resume|fork"
-        "hooks" (list (dict
-          "type" "command"
-          "command" $sessionStartCommand
-          "timeout" 5))))
--}}
-{{- /* Refreshes what the script works out for itself while no event fires here: the branch
-       and the count of modified files, which a background agent or another window changes
-       under an idle session.
-
-       It cannot refresh the rate limits. Those arrive with an API response, so a timed
-       re-run re-renders the same figures, and they only move when this session next talks
-       to the API. Coming back to a window left alone, the limits show what was true when
-       it last did something until you send something. */ -}}
-{{- $statusLine := dict "type" "command" "command" $statusLineCommand "refreshInterval" 60 -}}
-{{- $enabledPlugins := dict
-      "figma@claude-plugins-official" true
-      "typescript-lsp@claude-plugins-official" true
-      "playwright@claude-plugins-official" true
--}}
-{{- $marketplaces := dict
-      "claude-code-plugins" (dict
-        "source" (dict
-          "source" "github"
-          "repo" "anthropics/claude-code"))
--}}
-
-{{- $settings = $settings | setValueAtPath "env" $env -}}
-{{- $settings = $settings | setValueAtPath "permissions" $permissions -}}
-{{- $settings = $settings | setValueAtPath "hooks" $hooks -}}
-{{- $settings = $settings | setValueAtPath "statusLine" $statusLine -}}
-{{- $settings = $settings | setValueAtPath "enabledPlugins" $enabledPlugins -}}
-{{- $settings = $settings | setValueAtPath "extraKnownMarketplaces" $marketplaces -}}
-{{- $settings = $settings | setValueAtPath "autoUpdatesChannel" "latest" -}}
-{{- $settings = $settings | setValueAtPath "theme" "auto" -}}
-{{- $settings = $settings | setValueAtPath "verbose" true -}}
-{{- $settings = $settings | setValueAtPath "tui" "default" -}}
-{{ $settings | toPrettyJson }}
+{{- $durable := includeTemplate "claude/settings-durable.json" . | fromJson -}}
+{{ merge $durable $live | toPrettyJson }}

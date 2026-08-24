@@ -23,13 +23,26 @@ try {
 $iconModel = [char]::ConvertFromUtf32(0x1F916)      # robot
 $iconDirectory = [char]::ConvertFromUtf32(0x1F4C1)  # folder
 $iconBranch = [char]::ConvertFromUtf32(0x1F33F)     # herb
-$iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain
+# Emoji carry their own colour, which no escape code can override, so they are
+# chosen for contrast against their neighbours. The money bag is the same yellow
+# as the folder but sits a row below it, far enough not to clash.
+# The bookmark only clashed while the session name sat beside the folder on the
+# identity row; on the meter row its red stands apart from the brain and the
+# money bag. Its colour cannot match the label beside it, but neither can the
+# herb's, so an emoji here keeps the row visually consistent.
+$iconSession = [char]::ConvertFromUtf32(0x1F516)    # bookmark, red
+$iconContext = [char]::ConvertFromUtf32(0x1F9E0)    # brain, pink
 $iconCost = [char]::ConvertFromUtf32(0x1F4B0)       # money bag
 $iconLimits = [char]::ConvertFromUtf32(0x23F3)      # hourglass with flowing sand
 
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
+# Bright black is the separator colour and nothing else: on a dark theme it sits
+# close to the background, which suits structure but loses any text put in it.
+# Secondary text keeps the default foreground instead, the one colour guaranteed
+# to stay legible whether the theme is light or dark.
 $escape = [char]27
 $dim = "$escape[90m"
+$muted = "$escape[39m"
 $cyan = "$escape[36m"
 $blue = "$escape[94m"
 $magenta = "$escape[95m"
@@ -38,9 +51,32 @@ $yellow = "$escape[33m"
 $red = "$escape[31m"
 $reset = "$escape[0m"
 
-# Two separator weights carry the hierarchy: the heavier rule divides unrelated
-# scopes, the lighter dot joins values that belong to the same group.
-$majorSeparator = "$dim  $([char]0x2502)  $reset"
+# Claude Code exports the terminal size before running this script, because output is
+# captured rather than attached to the terminal and the usual width queries cannot see it.
+# The fallback matters: an unset or non-numeric value must not make every session look narrow.
+$terminalColumns = 80
+$reportedColumns = 0
+if ([int]::TryParse([string]$env:COLUMNS, [ref]$reportedColumns) -and $reportedColumns -gt 0) {
+    $terminalColumns = $reportedColumns
+}
+
+# In a split pane the limit row is wider than the pane and its tail is cut, which loses the
+# second window's reset entirely. Prose that reads well with room to spare is what costs the
+# space, so it is what gets shortened; the values themselves are never abbreviated.
+if ($terminalColumns -lt 60) {
+    $majorSeparator = "$dim $([char]0x2502) $reset"
+    $contextLabel = "ctx"
+    # An arrow stands in for "resets": still directional, a seventh of the width.
+    $resetPrefix = [char]0x2192
+    $limitsLabel = $iconLimits
+} else {
+    $majorSeparator = "$dim  $([char]0x2502)  $reset"
+    $contextLabel = "of context"
+    $resetPrefix = " resets "
+    $limitsLabel = "$iconLimits limits"
+}
+
+# The lighter dot joins values inside one group and is already narrow, so it does not change.
 $minorSeparator = "$dim $([char]0x00B7) $reset"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
@@ -139,7 +175,7 @@ function Get-LimitValue {
     if ($null -ne $ResetEpoch) {
         $moment = Get-ResetLabel -Epoch ([long]$ResetEpoch)
         if (-not [string]::IsNullOrWhiteSpace($moment)) {
-            $text += "$dim resets $moment$reset"
+            $text += "$muted$resetPrefix$moment$reset"
         }
     }
 
@@ -151,6 +187,9 @@ $model = [string]$data.model.display_name
 # made mid-session.
 $effortLevel = [string]$data.effort.level
 $currentDirectory = [string]$data.workspace.current_dir
+# Only set by --name, /rename or an AI-generated title; the default my-app-3f
+# style display name does not populate it, so most sessions have none.
+$sessionName = [string]$data.session_name
 $usedPercentage = $data.context_window.used_percentage
 # Client-side estimate only; resets to 0 when /clear starts a new session.
 $sessionCost = $data.cost.total_cost_usd
@@ -168,17 +207,25 @@ $identitySegments = @()
 if (-not [string]::IsNullOrWhiteSpace($model)) {
     $modelSegment = "$cyan$iconModel $model$reset"
     if (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
-        $modelSegment += "$minorSeparator$dim$effortLevel$reset"
+        $modelSegment += "$minorSeparator$muted$effortLevel$reset"
     }
     $identitySegments += $modelSegment
 } elseif (-not [string]::IsNullOrWhiteSpace($effortLevel)) {
-    $identitySegments += "$dim$iconModel $effortLevel effort$reset"
+    $identitySegments += "$muted$iconModel $effortLevel effort$reset"
 }
 
 # Branch joins the directory for the same reason effort joins the model: both
 # answer "where am I", so they read as one group.
 if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
-    $directoryName = Split-Path -Leaf $currentDirectory.TrimEnd("\", "/")
+    # In the home directory the leaf is the account name, which reads as a
+    # project that does not exist; the shell's own shorthand is clearer.
+    $trimmedDirectory = $currentDirectory.TrimEnd("\", "/")
+    $homeDirectory = [Environment]::GetFolderPath("UserProfile").TrimEnd("\", "/")
+    if ($trimmedDirectory.Replace("/", "\") -ieq $homeDirectory.Replace("/", "\")) {
+        $directoryName = "~"
+    } else {
+        $directoryName = Split-Path -Leaf $trimmedDirectory
+    }
     if (-not [string]::IsNullOrWhiteSpace($directoryName)) {
         $directorySegment = "$blue$iconDirectory $directoryName$reset"
         $gitState = Get-GitSummary -Directory $currentDirectory
@@ -189,21 +236,32 @@ if (-not [string]::IsNullOrWhiteSpace($currentDirectory)) {
     }
 }
 
+
 # Line two is session state: what this conversation has consumed so far.
 $meterSegments = @()
 if ($null -ne $usedPercentage) {
     $contextPercentage = [math]::Floor([double]$usedPercentage)
     $contextColor = Get-UsageColor -Percentage $contextPercentage
-    $meterSegments += "$contextColor$iconContext $contextPercentage% of context$reset"
+    $meterSegments += "$contextColor$iconContext $contextPercentage% $contextLabel$reset"
 } else {
     # Null until the first API response of a session, and again after /compact.
     # A placeholder keeps this row on screen so the status line does not change
     # height once the first response lands.
-    $meterSegments += "$dim$iconContext $([char]0x2014)% of context$reset"
+    $meterSegments += "$muted$iconContext $contextLabel $([char]0x2014)$reset"
 }
 
 if ($null -ne $sessionCost -and [double]$sessionCost -gt 0) {
-    $meterSegments += '{0}{1} ${2:F2}{3}' -f $yellow, $iconCost, [double]$sessionCost, $reset
+    # The culture is pinned so a comma-decimal machine cannot render this as
+    # $25,04 and diverge from the bash copy.
+    $costText = ([double]$sessionCost).ToString("F2", [System.Globalization.CultureInfo]::InvariantCulture)
+    $meterSegments += "$yellow$iconCost `$$costText$reset"
+}
+
+# The session name belongs to this conversation rather than to identity, and it
+# goes last because it is the one unbounded field: all length variance then lands
+# at the end of the row, leaving every meter at a fixed column.
+if (-not [string]::IsNullOrWhiteSpace($sessionName)) {
+    $meterSegments += "$muted$iconSession $sessionName$reset"
 }
 
 # Line three is account state, which outlives this session. It earns its own row
@@ -228,5 +286,5 @@ if ($meterSegments.Count -gt 0) {
 }
 
 if ($limitValues.Count -gt 0) {
-    Write-Output "$dim$iconLimits limits$reset $($limitValues -join $minorSeparator)"
+    Write-Output "$muted$limitsLabel$reset $($limitValues -join $minorSeparator)"
 }

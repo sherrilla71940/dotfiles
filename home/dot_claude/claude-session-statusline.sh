@@ -7,6 +7,9 @@ model="$(printf '%s' "$input" | jq -r '.model.display_name // empty')"
 # made mid-session.
 effort_level="$(printf '%s' "$input" | jq -r '.effort.level // empty')"
 current_directory="$(printf '%s' "$input" | jq -r '.workspace.current_dir // empty')"
+# Only set by --name, /rename or an AI-generated title; the default my-app-3f
+# style display name does not populate it, so most sessions have none.
+session_name="$(printf '%s' "$input" | jq -r '.session_name // empty')"
 used_percentage="$(printf '%s' "$input" | jq -r 'if .context_window.used_percentage == null then empty else (.context_window.used_percentage | floor | tostring) end')"
 # Client-side estimate only; resets to 0 when /clear starts a new session.
 session_cost="$(printf '%s' "$input" | jq -r 'if (.cost.total_cost_usd // 0) > 0 then (.cost.total_cost_usd | tostring) else empty end')"
@@ -14,11 +17,21 @@ session_cost="$(printf '%s' "$input" | jq -r 'if (.cost.total_cost_usd // 0) > 0
 # can be absent independently, so both are treated as optional.
 five_hour_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.five_hour.used_percentage == null then empty else (.rate_limits.five_hour.used_percentage | floor | tostring) end')"
 seven_day_usage="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.used_percentage == null then empty else (.rate_limits.seven_day.used_percentage | floor | tostring) end')"
-five_hour_reset="$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tostring')"
-seven_day_reset="$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tostring')"
+# Floored like the percentages above: a fractional epoch would reach bash
+# arithmetic as 1786943229.5 and raise a syntax error on every render.
+five_hour_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.five_hour.resets_at == null then empty else (.rate_limits.five_hour.resets_at | floor | tostring) end')"
+seven_day_reset="$(printf '%s' "$input" | jq -r 'if .rate_limits.seven_day.resets_at == null then empty else (.rate_limits.seven_day.resets_at | floor | tostring) end')"
 
+# Emoji carry their own colour, which no escape code can override, so they are
+# chosen for contrast against their neighbours. The money bag is the same yellow
+# as the folder but sits a row below it, far enough not to clash.
 # Basic ANSI codes only, so the terminal's own theme decides the exact hues.
+# Bright black is the separator colour and nothing else: on a dark theme it sits
+# close to the background, which suits structure but loses any text put in it.
+# Secondary text keeps the default foreground instead, the one colour guaranteed
+# to stay legible whether the theme is light or dark.
 dim=$'\033[90m'
+muted=$'\033[39m'
 cyan=$'\033[36m'
 blue=$'\033[94m'
 magenta=$'\033[95m'
@@ -27,9 +40,31 @@ yellow=$'\033[33m'
 red=$'\033[31m'
 reset=$'\033[0m'
 
-# Two separator weights carry the hierarchy: the heavier rule divides unrelated
-# scopes, the lighter dot joins values that belong to the same group.
-major_separator="${dim}  │  ${reset}"
+# Claude Code exports the terminal size before running this script, because output is
+# captured rather than attached to the terminal and the usual width queries cannot see it.
+# The fallback matters: an unset or non-numeric value must not make every session look narrow.
+terminal_columns="${COLUMNS:-80}"
+if [[ ! "$terminal_columns" =~ ^[0-9]+$ ]]; then
+  terminal_columns=80
+fi
+
+# In a split pane the limit row is wider than the pane and its tail is cut, which loses the
+# second window's reset entirely. Prose that reads well with room to spare is what costs the
+# space, so it is what gets shortened; the values themselves are never abbreviated.
+if ((terminal_columns < 60)); then
+  major_separator="${dim} │ ${reset}"
+  context_label="ctx"
+  # An arrow stands in for "resets": still directional, a seventh of the width.
+  reset_prefix="→"
+  limits_label="⏳"
+else
+  major_separator="${dim}  │  ${reset}"
+  context_label="of context"
+  reset_prefix=" resets "
+  limits_label="⏳ limits"
+fi
+
+# The lighter dot joins values inside one group and is already narrow, so it does not change.
 minor_separator="${dim} · ${reset}"
 
 # Context fill and rate-limit fill share one threshold scale, so a given colour
@@ -133,7 +168,7 @@ limit_value() {
     local moment
     moment="$(reset_label "$reset_epoch")"
     if [[ -n "$moment" ]]; then
-      text+="${dim} resets ${moment}${reset}"
+      text+="${muted}${reset_prefix}${moment}${reset}"
     fi
   fi
 
@@ -161,16 +196,23 @@ identity_segments=()
 if [[ -n "$model" ]]; then
   model_segment="${cyan}🤖 ${model}${reset}"
   if [[ -n "$effort_level" ]]; then
-    model_segment+="${minor_separator}${dim}${effort_level}${reset}"
+    model_segment+="${minor_separator}${muted}${effort_level}${reset}"
   fi
   identity_segments+=("$model_segment")
 elif [[ -n "$effort_level" ]]; then
-  identity_segments+=("${dim}🤖 ${effort_level} effort${reset}")
+  identity_segments+=("${muted}🤖 ${effort_level} effort${reset}")
 fi
 # Branch joins the directory for the same reason effort joins the model: both
 # answer "where am I", so they read as one group.
 if [[ -n "$current_directory" ]]; then
-  directory_segment="${blue}📁 $(basename "$current_directory")${reset}"
+  # In the home directory the basename is the account name, which reads as a
+  # project that does not exist; the shell's own shorthand is clearer.
+  if [[ "${current_directory%/}" == "${HOME%/}" ]]; then
+    directory_label="~"
+  else
+    directory_label="$(basename "$current_directory")"
+  fi
+  directory_segment="${blue}📁 ${directory_label}${reset}"
   git_state="$(git_summary "$current_directory")"
   if [[ -n "$git_state" ]]; then
     directory_segment+="${minor_separator}${magenta}🌿 ${git_state}${reset}"
@@ -178,18 +220,28 @@ if [[ -n "$current_directory" ]]; then
   identity_segments+=("$directory_segment")
 fi
 
+
 # Line two is session state: what this conversation has consumed so far.
 meter_segments=()
 if [[ -n "$used_percentage" ]]; then
-  meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% of context${reset}")
+  meter_segments+=("$(usage_color "$used_percentage")🧠 ${used_percentage}% ${context_label}${reset}")
 else
   # Null until the first API response of a session, and again after /compact.
   # A placeholder keeps this row on screen so the status line does not change
   # height once the first response lands.
-  meter_segments+=("${dim}🧠 —% of context${reset}")
+  meter_segments+=("${muted}🧠 ${context_label} —${reset}")
 fi
 if [[ -n "$session_cost" ]]; then
-  meter_segments+=("$(printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+  # LC_ALL is pinned so a comma-decimal locale cannot render this as $25,04 and
+  # diverge from the PowerShell copy.
+  meter_segments+=("$(LC_ALL=C printf '%s💰 $%.2f%s' "$yellow" "$session_cost" "$reset")")
+fi
+
+# The session name belongs to this conversation rather than to identity, and it
+# goes last because it is the one unbounded field: all length variance then lands
+# at the end of the row, leaving every meter at a fixed column.
+if [[ -n "$session_name" ]]; then
+  meter_segments+=("${muted}🔖 ${session_name}${reset}")
 fi
 
 # Line three is account state, which outlives this session. It earns its own row
@@ -212,7 +264,7 @@ if ((${#meter_segments[@]} > 0)); then
   printf '\n'
 fi
 if ((${#limit_values[@]} > 0)); then
-  printf '%s ' "${dim}⏳ limits${reset}"
+  printf '%s ' "${muted}${limits_label}${reset}"
   join_segments "$minor_separator" "${limit_values[@]}"
   printf '\n'
 fi

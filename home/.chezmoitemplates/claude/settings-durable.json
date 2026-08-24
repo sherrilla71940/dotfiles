@@ -1,0 +1,94 @@
+{{- /* Durable, repository-owned Claude Code settings.
+
+       This file is data, not logic. It is deep-merged over the live
+       ~/.claude/settings.json by home/dot_claude/modify_settings.json, and the
+       repository wins on any key named here. Every key absent from this file
+       belongs to Claude Code or to you, and survives untouched.
+
+       Add a setting by adding a JSON key. Use {{ }} only where a value genuinely
+       differs per machine, and pipe computed strings through toJson so quoting
+       and backslash escaping stay correct. */ -}}
+
+{{- $isWindows := eq .chezmoi.os "windows" -}}
+{{- $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
+
+{{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
+
+{{- $notificationCommand := "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
+{{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
+{{- if $isWindows -}}
+{{-   $notificationCommand = printf "%s \"$HOME/.claude/hooks/show-claude-notification.ps1\"" $pwsh -}}
+{{-   $sessionStartCommand = printf "%s \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" $pwsh -}}
+{{-   $statusLineCommand = printf "%s \"$HOME/.claude/claude-session-statusline.ps1\"" $pwsh -}}
+{{- end -}}
+
+{
+  "env": {
+    "API_TIMEOUT_MS": "1200000",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1"
+    {{- if $isWindows }},
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0",
+    "CLAUDE_CODE_GIT_BASH_PATH": {{ $gitBash | toJson }}
+    {{- end }}
+  },
+
+  "permissions": {
+    "ask": ["Bash(git push *)", "Bash(git commit *)"]
+  },
+
+  {{/* Posting a toast costs under a second; the rest of the notification hook's
+       runtime is PowerShell start-up, which has been measured above ten seconds
+       on a loaded machine. */}}
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog|elicitation_url_dialog|idle_prompt|auth_success|agent_needs_input|agent_completed",
+        "hooks": [
+          { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|fork",
+        "hooks": [
+          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 5 }
+        ]
+      }
+    ]
+  },
+
+  {{/* refreshInterval refreshes what the script works out for itself while no
+       event fires here: the branch and the count of modified files, which a
+       background agent or another window changes under an idle session.
+
+       It cannot refresh the rate limits. Those arrive with an API response, so a
+       timed re-run re-renders the same figures, and they only move when this
+       session next talks to the API. Coming back to a window left alone, the
+       limits show what was true when it last did something until you send
+       something. */}}
+  "statusLine": {
+    "type": "command",
+    "command": {{ $statusLineCommand | toJson }},
+    "refreshInterval": 60
+  },
+
+  {{/* A baseline of plugins to enable everywhere. Deep-merged, so a plugin you
+       install at user scope with /plugin is preserved; a plugin named here
+       cannot be disabled locally, because the repository value wins. */}}
+  "enabledPlugins": {
+    "figma@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true
+  },
+
+  "extraKnownMarketplaces": {
+    "claude-code-plugins": {
+      "source": { "source": "github", "repo": "anthropics/claude-code" }
+    }
+  },
+
+  "autoUpdatesChannel": "latest"
+}

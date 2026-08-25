@@ -43,6 +43,13 @@ The columns group surfaces only when they read the same personal configuration:
 Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
 directories exist only where a client requires the directory before a session starts.
 
+VS Code lists every shared skill twice. Claude Code reads personal skills only from
+`~/.claude/skills`, so this repository links each shared skill there, and VS Code scans both
+that directory and `~/.agents/skills`. Both entries resolve to the same file, so the effect is
+cosmetic. It cannot be configured away: VS Code exposes `chat.instructionsFilesLocations` and
+`chat.promptFilesLocations`, which is how the same duplication is suppressed for rules in
+`home/.chezmoitemplates/vscode/settings.json`, but no equivalent setting for skills.
+
 ### Surfaces outside this table
 
 This repository does not manage complete product or account state:

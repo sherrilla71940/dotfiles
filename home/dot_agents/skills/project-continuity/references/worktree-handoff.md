@@ -43,6 +43,17 @@ Then say "continue from project continuity". The receiving client reads the stat
 
 **Do not add a `.worktreeinclude` pattern that matches `.project-continuity/`.** That file copies gitignored files into new worktrees, which is exactly how one task's state would leak into another's.
 
+## Codex app threads
+
+Community reports describe the Codex app creating a worktree per thread and offering a handoff that moves a thread between local and worktree mode, transferring uncommitted changes between the two checkouts. No official documentation for this was found, so treat it as unverified: whether such a handoff also moves ignored files like `.project-continuity/` is unknown.
+
+Until it is confirmed, after any Codex app handoff check that continuity is where you expect:
+
+```bash
+git worktree list
+ls .project-continuity/
+```
+
 ## Privacy across worktrees
 
 The exclude entry that keeps continuity private is a single anchored line, `/.project-continuity/`, in the repository's shared `info/exclude`. Because that file lives in the common Git directory and the anchor resolves against each working tree's own root, one entry covers the primary checkout and every linked worktree, including ones created afterwards.

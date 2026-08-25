@@ -64,7 +64,7 @@ Read [references/state-format.md](references/state-format.md) when creating or r
 
 Claude Code, Codex, and GitHub Copilot. The file is client-neutral, so ordinary operations need no client detection — determine the client only when routing durable private instructions.
 
-Copilot support is verified for Copilot CLI, which loads `~/.copilot/instructions/**/*.instructions.md` and can read and write repository files. Other Copilot surfaces are untested; if the bootstrap did not reach this skill there, the user can invoke it by name.
+Copilot reaches this skill through `~/.copilot/instructions/**/*.instructions.md`, documented for Copilot CLI and for VS Code sessions running on Agent Host, which read user-level instructions from that harness-agnostic folder rather than VS Code profile data. Other Copilot surfaces are untested; if the bootstrap did not arrive, the user can invoke the skill by name.
 
 One Copilot-specific caution: Copilot Memory is repository-scoped and shared with others who have access to that repository, where Claude and Codex memory are machine-local and private. Continuity itself stays untracked and local either way.
 

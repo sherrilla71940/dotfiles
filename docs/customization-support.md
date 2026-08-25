@@ -308,7 +308,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
-| Direct user MCP | Chrome DevTools, GitLab | the manifest and hand-run installer |
+| Direct user MCP | Chrome DevTools, GitLab, GitHub | the manifest and hand-run installer |
 | Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
@@ -343,6 +343,24 @@ Complete authentication locally, once per client. In Claude Code a newly added s
 visible until a new session starts, because MCP configuration is read at session start.
 Codex's declaration reaches only a machine without `~/.codex/config.toml`; add it by hand or
 with `codex mcp add` on a machine that already has one.
+
+### GitHub, on every client
+
+GitHub's hosted MCP server at `https://api.githubcopilot.com/mcp/` covers pull requests,
+issues and reviews on github.com. Its protected-resource metadata names
+`https://github.com/login/oauth` as the authorization server but publishes no registration
+endpoint, so unlike GitLab it does not offer dynamic client registration: a client either
+holds a pre-registered OAuth client or authenticates with a personal access token.
+
+The declarations therefore carry no credential, and which route works is a per-client fact to
+establish once. If a client cannot complete OAuth, add a personal access token as an
+`Authorization` header from an environment variable, never a literal. The scopes the server
+accepts are listed in its own metadata; `repo` and `read:org` are what pull request work
+needs, and the rest of the list is worth reading before granting more.
+
+The `gh` command-line interface remains the simpler route for ordinary pull request work and
+needs no MCP server at all. Prefer it when a session only has to open or review a pull
+request, and keep this server for the cases that genuinely need tool calls.
 
 ### GitHub Copilot
 

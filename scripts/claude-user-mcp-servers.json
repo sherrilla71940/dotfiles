@@ -14,6 +14,10 @@
     "gitlab": {
       "type": "http",
       "url": "https://gitlab.dtdi.com.tw/api/v4/mcp"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   }
 }

@@ -50,7 +50,7 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
         }
 
         if ($siblings.Count -gt 0) {
-            $messages += "$($siblings.Count) other interactive Claude Code session(s) are already running in '$workingDirectory'. They share this working tree, index and HEAD, so a git add or commit here can pick up their staged changes, and a checkout switches their branch too. At the beginning of your first response, tell the user, and suggest 'claude --worktree <name>' for genuinely parallel work. Before any git add or commit in this session, stage explicit paths rather than -A or ., and check git diff --cached for files this session did not touch."
+            $messages += "$($siblings.Count) other interactive Claude Code session(s) are already running in '$workingDirectory'. They share this working tree, index and HEAD, so a git add or commit here can pick up their staged changes, and a checkout switches their branch too. At the beginning of your first response, tell the user and offer the two ways forward rather than picking one for them. Staying here means staging explicit paths instead of -A or . and checking git diff --cached for files this session did not touch before every commit. Isolating this session instead does not need a restart: the EnterWorktree tool moves it into its own worktree now, and 'claude --worktree <name>' is only the launch-time equivalent. Ask which they want and create nothing until they answer. If they choose a worktree, check first whether HEAD is ahead of its upstream, because worktree.baseRef defaults to 'fresh' and branches from the remote default branch, which would leave unpushed commits out; 'head' branches from local HEAD instead."
         }
     }
 }

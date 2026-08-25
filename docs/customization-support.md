@@ -351,7 +351,7 @@ runtime state into `home/`.
 ## Verify after applying
 
 - Claude Code: run `claude mcp get chrome-devtools`, then inspect `/agents`, `/skills`, and
-  `/plugins` in a new session as relevant to the change.
+  `/plugin` in a new session as relevant to the change.
 - Codex: start a new session and inspect its agents, skills, plugins, or MCP tools. Existing
   `~/.codex/config.toml` files need the documented comparison; merge only when the desired
   declaration is missing.

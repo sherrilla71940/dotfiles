@@ -26,7 +26,18 @@ Use these rules to choose a command:
 - **Changed a source file under `home/`:** Run `chezmoi diff`, then `chezmoi apply`.
 - **Changed a plain live target:** Run `chezmoi re-add <target>` to copy it into the source.
 - **Changed a templated live target:** Edit its source template; `re-add` skips templates.
+- **Changed a target whose source carries an attribute** (`create_`, `modify_`, `symlink_`):
+  Edit the source. Never `re-add`; it writes rendered output over the mechanism.
 - **Created a new live file:** Run `chezmoi add <target>` to start managing it.
+
+Check which case applies by reading the whole source filename, not only its suffix:
+
+```bash
+basename "$(chezmoi source-path ~/.some-config)"
+```
+
+A plain target has a bare `dot_` name. Anything else — a `.tmpl` suffix, or a `create_`,
+`modify_`, or `symlink_` prefix — means `re-add` is the wrong command.
 
 `chezmoi add` takes a target path, never a source path. Use `chezmoi add ~/.bashrc`, not
 `chezmoi add home/dot_bashrc`.
@@ -63,8 +74,10 @@ A source filename ending in `.tmpl` identifies a template. Use the matching work
 
 | Source type | Preserve a live edit | Preferred direct edit |
 | --- | --- | --- |
-| Plain file | `chezmoi re-add <target>` | `chezmoi edit <target>` |
-| Template | Copy the desired values into the source; `re-add` skips it | `chezmoi edit <target>` |
+| Plain file (`dot_name`) | `chezmoi re-add <target>` | `chezmoi edit <target>` |
+| Template (`.tmpl`) | Copy the desired values into the source; `re-add` skips it | `chezmoi edit <target>` |
+| Modify template (`modify_`) | Copy the value into the body the script includes; `re-add` would replace the script with rendered output | Edit the body, not the script |
+| Create-once (`create_`) | Merge only the missing durable declarations; the application owns the rest | Edit the source directly |
 
 `chezmoi add` on an existing template can remove the template attribute and flatten the
 rendered target into a literal source file. Do not use it to preserve a template-backed edit.

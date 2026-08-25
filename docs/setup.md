@@ -129,7 +129,8 @@ Handle each changed target according to the desired result:
 | Desired result | Action before applying |
 | --- | --- |
 | Use the repository version | Make no source change; the preview already shows what apply will replace |
-| Preserve an entire plain file | Confirm `chezmoi source-path <target>` does not end in `.tmpl`, then run `chezmoi re-add <target>` |
+| Preserve an entire plain file | Confirm the source filename is a bare `dot_` name, with no `.tmpl` suffix and no `create_`, `modify_`, or `symlink_` prefix, then run `chezmoi re-add <target>` |
+| Preserve values from a `create_` or `modify_` source | Edit the source by hand; `re-add` would overwrite the mechanism with rendered output |
 | Preserve selected values | Open the live target and its source side by side, then copy only portable values into the source |
 | Preserve values from a templated target | Edit the source template or shared body; `re-add` deliberately skips templates |
 

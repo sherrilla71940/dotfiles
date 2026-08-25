@@ -4,12 +4,18 @@ Personal repository for keeping user-level configuration consistent across machi
 user-level configuration can live here; today that is the AI clients — Claude Code, Codex, and
 GitHub Copilot — plus VS Code, the shell, and the bootstrap and validation tooling around them.
 
-The problem it solves: three AI tools want the same instruction, but each in its own file and
-its own shape. So an instruction is written **once** and rendered into whatever each client
-accepts — and a single rendered file can carry shared and tool-specific content together.
-`~/.claude/CLAUDE.md` is exactly that: the working agreement shared with Codex and Copilot,
-then a Claude-only section below it, composed from two sources every time you apply. A symlink
-cannot express that; it gives you one whole file or nothing.
+It solves two problems:
+
+- **Configuration drifts between machines, and the same setting lives in different places on
+  each operating system.** One source of truth lives here, and templates absorb the
+  differences, so one repository produces the right file on Windows and on macOS rather than
+  two copies maintained by hand.
+- **Three AI tools want the same instruction, each in its own file and its own shape.** An
+  instruction is written **once** and rendered into whatever each client accepts — and a single
+  rendered file can carry shared and tool-specific content together. `~/.claude/CLAUDE.md` is
+  exactly that: the working agreement shared with Codex and Copilot, then a Claude-only section
+  below it, composed from two sources every time you apply. A symlink cannot express that; it
+  gives you one whole file or nothing.
 
 Anything genuinely tool-specific stays in that tool's own directory, unshared and never
 reworded into a neutral twin, so the line between shared and specific is declared rather than
@@ -17,9 +23,9 @@ assumed. The next two sections show how.
 
 ## How it works
 
-[Chezmoi](https://www.chezmoi.io) renders all of it. The files under `home/` are the **source
-state**: the desired configuration, which is what you edit and commit. The files chezmoi writes
-into your home directory are **targets**, and that is what each application actually reads.
+[Chezmoi](https://www.chezmoi.io) turns this repository into the live files your applications
+read. The files under `home/` are the **source state**: the desired configuration, which is
+what you edit and commit. What chezmoi writes into your home directory are **targets**.
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc

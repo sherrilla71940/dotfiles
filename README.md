@@ -15,8 +15,22 @@ Anything genuinely tool-specific stays in that tool's own directory, unshared an
 reworded into a neutral twin, so the line between shared and specific is declared rather than
 assumed.
 
-[Chezmoi](https://www.chezmoi.io) renders all of it from this repository into the home
-directory. No separate `git clone` is required.
+## How it works
+
+[Chezmoi](https://www.chezmoi.io) renders all of it. The files under `home/` are the **source
+state**: the desired configuration, which is what you edit and commit. The files chezmoi writes
+into your home directory are **targets**, and that is what each application actually reads.
+
+```text
+home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
+```
+
+So you change a file here and run `chezmoi apply`. Editing a target directly is not durable —
+the next apply overwrites it. Filenames carry meaning too: `dot_` becomes a leading dot, and a
+`.tmpl` file is rendered as a template, which is how one source supports both Windows and
+macOS. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
+
+`chezmoi init` fetches this repository for you, so no separate `git clone` is required.
 
 ## Choose a setup path
 
@@ -56,9 +70,8 @@ use `chezmoi source-path` for this: with `.chezmoiroot` it returns the source di
 
 ### Changing your configuration
 
-Edit the source in this repository, run `chezmoi apply` to update the live file, then commit.
-Editing a live file directly achieves nothing durable, because the next apply overwrites it.
-Preview with `chezmoi diff` first, and `chezmoi status` is empty once the change has landed.
+Edit the source, preview with `chezmoi diff`, run `chezmoi apply`, then commit.
+`chezmoi status` is empty once the change has landed.
 
 The exception is everything the repository does not manage, which is most of what an
 application records about itself. Claude's `settings.json` is the clearest case: the repository
@@ -93,18 +106,7 @@ so both the source-versus-target rule and the structural constraints apply even 
 assistant that has never seen this repository. Starting from the repository root is still
 simplest, since each tool loads that guidance on its own.
 
-## How it works
-
-The `home/` directory is chezmoi's source state. Its filenames describe both the eventual
-home-directory path and how chezmoi should handle the file. For example, `dot_bashrc` renders
-to `~/.bashrc`, while a `.tmpl` file is rendered as a template. Editing this repository does
-not change live configuration until `chezmoi apply` runs.
-
-Templates and operating-system (OS) conditions let one source support Windows and macOS even
-when applications store the same setting in different locations. Files used by only one
-application stay in that application's source directory.
-
-### Shared AI configuration
+## Shared AI configuration
 
 An instruction used by more than one assistant is written **once**, and each tool receives a
 real file in **its own** format. That indirection exists for one reason: the three tools
@@ -122,7 +124,7 @@ home/.chezmoidata.yaml                       <-- the glob, written once
 Anything used by only one tool is a plain file in that tool's folder, with no templating at
 all. Nothing is ever reworded into a tool-neutral twin.
 
-### Copying only part of this repository
+## Copying only part of this repository
 
 Lifting a single file out of `home/.chezmoitemplates/` will not work, because nothing there is
 a target file — each one is a body that some wrapper renders. A VS Code body needs the

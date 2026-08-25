@@ -24,6 +24,37 @@ frontmatter_has() {
   ' "$file" | grep -Eq "$pattern"
 }
 
+# Concurrent-session guard. Claude Code takes no lock on a directory, and git only refuses a
+# duplicate checkout across worktrees, not across processes, so sessions in one folder share
+# this index -- and git commits the index, not the paths a session meant to stage. The
+# SessionStart hook warns at launch; this warns at the operation that actually loses work.
+# It runs before the chezmoi lookup below, which exits 0 when chezmoi is missing.
+if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  sessions="$(timeout 5 claude agents --json 2>/dev/null || true)"
+  if [[ -n "$sessions" ]]; then
+    # Drive-letter case and separator style vary between the agent listing and git's path on
+    # Windows, so compare normalised paths. A session in a subdirectory shares the same index,
+    # so match the repository prefix rather than an exact directory.
+    sharing="$(printf '%s' "$sessions" | jq -r --arg repo "$repo" '
+      def norm: ascii_downcase | gsub("\\\\"; "/") | sub("/$"; "");
+      [ .[]
+        | select(.kind == "interactive")
+        | select(((((.cwd // "") | norm) + "/") | startswith(($repo | norm) + "/")))
+      ] | length
+    ' 2>/dev/null || printf '0')"
+
+    # A git hook receives no session identity, so the committing session counts itself here.
+    # Two or more means the index is genuinely shared.
+    if [[ "$sharing" =~ ^[0-9]+$ ]] && (( sharing > 1 )); then
+      printf 'pre-commit: %s interactive Claude Code sessions share this working tree.\n' \
+        "$sharing" >&2
+      printf '    git commits the index, so this commit takes every staged path below,\n' >&2
+      printf '    whoever staged it. Unstage what is not yours: git restore --staged <path>\n' >&2
+      git diff --cached --name-only | sed 's/^/      /' >&2
+    fi
+  fi
+fi
+
 # Chezmoi may not yet be on Git Bash's PATH after a Winget installation.
 chezmoi_bin="$(command -v chezmoi || true)"
 if [[ -z "$chezmoi_bin" && -n "${LOCALAPPDATA:-}" ]]; then

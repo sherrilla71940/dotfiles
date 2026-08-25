@@ -260,6 +260,14 @@ The pre-commit hook:
 The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
 described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
 
+Before those checks it also warns, without rejecting the commit, when more than one
+interactive Claude Code session is running inside this working tree. Such sessions share one
+index, and `git commit` takes the whole index rather than the paths a session meant to stage,
+so the warning lists every staged file and how to unstage one. The launch-time equivalent is
+the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`; use
+`claude --worktree <name>` for genuinely parallel work. The check needs `claude` and `jq` on
+`PATH` and is skipped without them.
+
 ## Working tree at `~/dotfiles`
 
 This repository is developed in, not only applied: decision records, bootstrap scripts, a

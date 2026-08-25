@@ -328,16 +328,21 @@ runtime paths, project trust, and other machine state there. Complete authentica
 ### GitLab, on every client
 
 The self-managed instance at `gitlab.dtdi.com.tw` exposes GitLab's built-in MCP server over
-HTTP at `/api/v4/mcp`, so every client uses the remote endpoint and none of them runs a local
-server process. No token is stored in this repository. The command-line clients read
-`GITLAB_MCP_TOKEN` from the environment — Claude Code and Copilot CLI expand `${...}` in a
-header, and Codex names the variable with `bearer_token_env_var`. VS Code instead prompts for
-`${input:gitlab-pat}` and keeps the value in its own secret storage, matching the existing
-Figma input.
+HTTP at `/api/v4/mcp`, so every client uses the remote endpoint and none runs a local server
+process. Authentication is OAuth, so no token appears in this repository and none is needed in
+the environment either: the instance publishes `registration_endpoint` in
+`/.well-known/oauth-authorization-server`, meaning dynamic client registration is enabled and
+each client registers itself on first connection.
 
-Set the variable per machine, outside the repository, with a personal access token for that
-instance. Codex's declaration reaches only a machine without `~/.codex/config.toml`; add it by
-hand or with `codex mcp add` on a machine that already has one.
+The scope is `mcp`, which is an OAuth scope rather than a personal access token scope, so it
+does not appear on GitLab's token page. A personal access token is the fallback if an
+administrator turns dynamic client registration off; it would need `read_api` and
+`ai_features`, passed as an `Authorization` header.
+
+Complete authentication locally, once per client. In Claude Code a newly added server is not
+visible until a new session starts, because MCP configuration is read at session start.
+Codex's declaration reaches only a machine without `~/.codex/config.toml`; add it by hand or
+with `codex mcp add` on a machine that already has one.
 
 ### GitHub Copilot
 

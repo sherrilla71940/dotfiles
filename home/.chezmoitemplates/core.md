@@ -33,6 +33,16 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
+## CLI response formatting
+
+- Optimize for terminal readability and quick scanning.
+- Keep explanations concise; avoid dense paragraphs.
+- Prefer short bullets for multi-part explanations, decisions, findings, and next steps.
+- Keep paragraphs to roughly 1–3 sentences when prose is clearer than bullets.
+- Use headings sparingly to separate meaningful sections.
+- Put multi-line code in fenced Markdown blocks with an appropriate language identifier.
+- Do not apply these formatting preferences to requested artifacts such as documentation, PR/MR descriptions, commit messages, emails, or other prose; format those according to their purpose.
+
 ## Session workflow
 
 - When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Put each group on its own bullet, one line per item. Omit the list when nothing remains.

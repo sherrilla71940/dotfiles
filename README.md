@@ -1,28 +1,34 @@
 # Dotfiles
 
 Personal repository for dotfiles: the per-user configuration files applications read out of
-your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and everything under
-`~/.claude/`. Keeping them in Git makes them consistent across machines and gives any
+your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and Claude Code's rules
+and skills. Keeping them in Git makes them consistent across machines and gives any
 configuration change a history, a diff, and a way back. The AI clients — Claude Code, Codex,
 and GitHub Copilot — are what most of the machinery here exists for.
 
-It solves two problems:
+It solves three problems:
 
-- **Configuration drifts between machines, and the same setting lives in different places on
-  each operating system.** One source of truth lives here, and templates absorb the
-  differences, so one repository produces the right file on Windows and on macOS rather than
-  two copies maintained by hand.
+- **Configuration drifts between machines, and the same setting lives at a different path on
+  each operating system.** One source of truth lives here, and templates absorb the difference.
 - **Three AI tools want the same instruction, each in its own file and its own shape.** An
   instruction is written **once** and rendered into whatever each client accepts — and a single
   rendered file can carry shared and tool-specific content together. `~/.claude/CLAUDE.md` is
   exactly that: the working agreement shared with Codex and Copilot, then a Claude-only section
   below it, composed from two sources every time you apply. A symlink cannot express that; it
   gives you one whole file or nothing — which is why skills, where one file *does* serve every
-  tool, are shared by symlink instead. The mechanism follows the need.
+  tool, are shared by symlink instead.
+- **Some of these files the application rewrites behind you.** Claude Code edits its own
+  `settings.json`, so this repository owns four keys in it and merges them over whatever Claude
+  wrote, instead of replacing the file and discarding your model, effort or theme.
 
-Anything genuinely tool-specific stays in that tool's own directory, unshared and never
-reworded into a neutral twin, so the line between shared and specific is declared rather than
-assumed. The next two sections show how.
+None of that is taken on trust. A commit hook re-renders the staged source and fails if the
+shared rule bodies stop matching between clients, if a skill goes missing to a filename
+attribute, if Codex's file grows frontmatter, or if the bash and PowerShell status lines stop
+printing the same thing — the status line being one output that
+genuinely is maintained as two implementations.
+
+A rule only one tool can follow is never reworded into a tool-neutral twin. It either stays in
+that tool's own file, or says plainly which tool it applies to.
 
 ## How it works
 

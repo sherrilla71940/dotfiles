@@ -3,7 +3,7 @@
 This guide covers first-time installation on Windows or macOS. Recurring edits, additions,
 removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
 
-The repository manages durable shell, VS Code, Claude Code, Codex, and GitHub Copilot
+The repository manages durable shell, Git, VS Code, Claude Code, Codex, and GitHub Copilot
 configuration. Credentials, sessions, caches, logs, memory, and workspace state stay local.
 
 Chezmoi calls the desired files in its repository clone the **source state**. It renders

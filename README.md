@@ -26,11 +26,8 @@ It solves three problems:
 None of that is taken on trust. A commit hook re-renders the staged source and fails if the
 shared rule bodies stop matching between clients, if a skill goes missing to a filename
 attribute, if Codex's file grows frontmatter, or if the bash and PowerShell status lines stop
-printing the same thing — the status line being one output that
-genuinely is maintained as two implementations.
-
-A rule only one tool can follow is never reworded into a tool-neutral twin. It either stays in
-that tool's own file, or says plainly which tool it applies to.
+printing the same thing — the status line being one output that genuinely is maintained as two
+implementations.
 
 ## How it works
 
@@ -51,11 +48,10 @@ macOS. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-
 
 ## Shared AI configuration
 
-An instruction used by more than one assistant is written **once**, and each tool receives a
-real file in **its own** format: a Claude rule carrying `paths:`, a Copilot
-`.instructions.md` carrying `applyTo:`, and for Codex one literal file with no frontmatter,
-because Codex can neither import another file nor path-scope at all. No single shared file can
-serve all three.
+Each tool receives a real file in **its own** format: a Claude rule carrying `paths:`, a
+Copilot `.instructions.md` carrying `applyTo:`, and for Codex one literal file with no
+frontmatter, because Codex can neither import another file nor path-scope at all. No single
+shared file can serve all three, which is why the body is rendered rather than linked.
 
 ```
 home/.chezmoitemplates/rules/javascript.md   <-- the body, written once
@@ -71,7 +67,8 @@ lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code 
 
 A skill or instruction meant for one tool alone is a plain file in that tool's own folder —
 `~/.copilot/skills`, for instance — with no templating and no link. Nothing is ever reworded
-into a tool-neutral twin.
+into a tool-neutral twin: a rule only one tool can follow either stays in that tool's file, or
+says plainly which tool it applies to.
 
 ## Choose a setup path
 

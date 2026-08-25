@@ -49,15 +49,19 @@ The phase another session should resume from.
 
 ## Verification
 
+- Working tree: `<absolute path of this working directory>`
 - Branch: `<branch or unknown>`
 - HEAD: `<commit or unknown>`
-- Working tree: `<clean / modified / concise description>`
+- Started from: `<commit this task began at, when known>`
+- Status: `<clean / modified / concise description>`
 - Last reconciled: `<ISO date/time when practical>`
 ```
 
 ## Maintenance rules
 
-- Treat the continuity file's existence as the opt-in marker for active continuity.
+- Treat the continuity file's existence as the marker that continuity is active here.
+- `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
+- Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
 - Prefer current state over historical narrative.

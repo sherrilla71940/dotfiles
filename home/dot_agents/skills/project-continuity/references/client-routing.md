@@ -42,7 +42,7 @@ Do not use it for transient work progress; that belongs in continuity.
 
 ## Native memory boundaries
 
-Claude Code auto memory and Codex memory are separate client-owned persistence mechanisms. They may retain useful learnings, preferences, corrections, or context, but they are not the source of truth for cross-client work-session continuity.
+Claude Code auto memory, Codex memories, and Copilot Memory are separate client-owned persistence mechanisms. They may retain useful learnings, preferences, corrections, or context, but they are not the source of truth for cross-client work-session continuity.
 
 These boundaries apply to the continuity workflow's own actions only. They do not pause, restrict, or override the client's independent memory system, which continues writing and using memory under its own standing rules whether or not continuity is active.
 
@@ -51,8 +51,12 @@ While performing continuity operations, do not:
 - copy native memory wholesale into continuity;
 - depend on native memory as the only record of unfinished work;
 - modify or delete native memory during checkpoint or cleanup;
-- assume one client's memory is visible to the other.
+- assume one client's memory is visible to another. None of the three are.
 
-## Unsupported client
+## GitHub Copilot
 
-GitHub Copilot is intentionally outside this skill's supported routing. Do not invent a private Copilot instruction filename or silently fall back to a different mechanism.
+Copilot participates in continuity, but it has **no private project-scoped instruction file** equivalent to `CLAUDE.local.md` or `AGENTS.override.md`. Its repository-level instructions (`.github/copilot-instructions.md`, `AGENTS.md`) are tracked and shared with the team, and `~/.copilot/instructions/**/*.instructions.md` is user-level and applies to every repository.
+
+So there is nowhere to put a private, project-specific, untracked Copilot instruction. Do not invent a filename, and do not silently fall back to a different client's mechanism. Tell the user the gap exists and offer the two real options: a user-level Copilot instruction that applies everywhere, or a tracked repository instruction the team also gets.
+
+Copilot Memory is also different in kind from the other two: it is repository-scoped and shared with everyone who has access to that repository, where Claude and Codex memory are machine-local and private. Never route anything private there.

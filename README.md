@@ -20,7 +20,8 @@ It solves two problems:
   rendered file can carry shared and tool-specific content together. `~/.claude/CLAUDE.md` is
   exactly that: the working agreement shared with Codex and Copilot, then a Claude-only section
   below it, composed from two sources every time you apply. A symlink cannot express that; it
-  gives you one whole file or nothing.
+  gives you one whole file or nothing — which is why skills, where one file *does* serve every
+  tool, are shared by symlink instead. The mechanism follows the need.
 
 Anything genuinely tool-specific stays in that tool's own directory, unshared and never
 reworded into a neutral twin, so the line between shared and specific is declared rather than
@@ -59,9 +60,13 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-Skills go the other way: one real copy serves all three, so they are shared as files rather
-than rendered. Anything used by only one tool is a plain file in that tool's folder, with no
-templating at all. Nothing is ever reworded into a tool-neutral twin.
+Skills go the other way, because nothing about them needs to differ per client. One real copy
+lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code looks only in
+`~/.claude/skills`, so a symlink bridges it there. Nothing is rendered and nothing is copied.
+
+A skill or instruction meant for one tool alone is a plain file in that tool's own folder —
+`~/.copilot/skills`, for instance — with no templating and no link. Nothing is ever reworded
+into a tool-neutral twin.
 
 ## Choose a setup path
 

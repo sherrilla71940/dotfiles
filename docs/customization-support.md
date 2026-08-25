@@ -29,7 +29,7 @@ The columns group surfaces only when they read the same personal configuration:
 
 | Capability | Claude Code local | Codex local | Copilot CLI | VS Code with Copilot |
 | --- | --- | --- | --- | --- |
-| Always-on personal instructions | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/instructions/core-principles.instructions.md` with `applyTo: "**"` | the same personal `*.instructions.md` file |
+| Always-on personal instructions | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/instructions/core.instructions.md` with `applyTo: "**"` | the same personal `*.instructions.md` file |
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |

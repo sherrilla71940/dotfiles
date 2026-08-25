@@ -34,7 +34,7 @@
 
 ## Session workflow
 
-- When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.
+- When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Put each group on its own bullet, one line per item. Omit the list when nothing remains.
 
 ## Engineering principles
 

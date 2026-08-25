@@ -59,6 +59,9 @@ This repository does not manage complete product or account state:
   tab.
 - Claude.ai connectors, authentication, conversations, and account settings remain with the
   signed-in account.
+- `~/.codex/rules/` is not instruction scoping despite the name. It stores Codex's command
+  approval decisions as `prefix_rule(...)` entries, the equivalent of a permission
+  allow-list, and is app-owned machine state. Codex still has no path-scoped instructions.
 - Codex cloud receives repository files such as root `AGENTS.md` when the repository is
   available to the cloud task. It does not receive personal files from this machine's
   `~/.codex/` directory through chezmoi.

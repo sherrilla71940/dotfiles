@@ -5,9 +5,9 @@ your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and everyth
 `~/.claude/`. Keeping them here makes them consistent across machines and versioned in Git, so
 a configuration change has a history, a diff, and a way back.
 
-Any user-level configuration can live here; today that is the AI clients — Claude Code, Codex,
-and GitHub Copilot — plus VS Code, the shell, and the bootstrap and validation tooling around
-them.
+Managed so far: the AI clients — Claude Code, Codex, and GitHub Copilot — plus VS Code, the
+shell, and the bootstrap and validation tooling around them. Any other dotfile can join them on
+the same terms; that list is an inventory, not a boundary.
 
 It solves two problems:
 

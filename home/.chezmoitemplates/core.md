@@ -37,11 +37,10 @@
 
 - Optimize for terminal readability and quick scanning.
 - Keep explanations concise; avoid dense paragraphs.
-- Prefer short bullets for multi-part explanations, decisions, findings, and next steps.
-- Keep paragraphs to roughly 1–3 sentences when prose is clearer than bullets.
-- Use headings sparingly to separate meaningful sections.
-- Put multi-line code in fenced Markdown blocks with an appropriate language identifier.
-- Do not apply these formatting preferences to requested artifacts such as documentation, PR/MR descriptions, commit messages, emails, or other prose; format those according to their purpose.
+- Prefer short bullets for multi-part explanations, findings, decisions, and next steps.
+- Use headings sparingly for meaningful sections.
+- Put multi-line code in fenced Markdown blocks with the appropriate language identifier.
+- These preferences apply only to interactive responses, not requested artifacts such as docs, PR/MR descriptions, commit messages, or emails.
 
 ## Session workflow
 

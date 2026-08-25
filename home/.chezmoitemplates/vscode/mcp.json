@@ -42,7 +42,10 @@
     },
     "github": {
       "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/"
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${input:github-pat}"
+      }
     }
   },
   "inputs": [
@@ -61,6 +64,12 @@
       "id": "allowed_dirs",
       "type": "promptString",
       "description": "Which directories should the filesystem server be allowed to access? (provide comma-separated paths)"
+    },
+    {
+      "type": "promptString",
+      "id": "github-pat",
+      "description": "GitHub personal access token for the MCP server (repo, read:org)",
+      "password": true
     }
   ]
 }

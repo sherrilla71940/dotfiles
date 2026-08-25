@@ -129,8 +129,16 @@ changed locally and now want on every machine does not appear there. List the ca
 ./scripts/claude-settings-drift.sh
 ```
 
-Copy the value into `home/.chezmoitemplates/claude/settings-durable.json`, then apply and
-commit:
+Most of what it lists is meant to stay local. Before promoting a key, check it against the
+admission criterion in
+[ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md): needed on every machine,
+stable enough not to change mid-session, and not written by the application. `theme`,
+`verbose`, `tui`, `permissions`, and `enabledPlugins` were released deliberately, so re-pinning
+one reverses that decision. Plugins do not belong in the settings at all — add them to the
+`claude plugin install` list in `scripts/bootstrap-*`.
+
+For a key that does qualify, copy the value into
+`home/.chezmoitemplates/claude/settings-durable.json`, then apply and commit:
 
 ```bash
 chezmoi diff ~/.claude/settings.json   # confirm only the promoted key changes
@@ -138,8 +146,10 @@ chezmoi apply
 git add home/.chezmoitemplates/claude/settings-durable.json && git commit
 ```
 
-Promotion stays manual on purpose. Capturing the live file automatically would sweep up
-machine-local state and overwrite the template expressions that render per-machine paths.
+Promotion stays manual on purpose. `chezmoi re-add` is not an option here: the target is a
+modify template, so re-adding would replace the merge script with rendered output. Capturing
+the live file automatically would also sweep up machine-local state and overwrite the template
+expressions that render per-machine paths.
 
 ## Remove a managed file
 

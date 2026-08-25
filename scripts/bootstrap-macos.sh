@@ -13,8 +13,8 @@ fi
 # jq for the Claude MCP installer and verifies whether the VS Code CLI is already available.
 brew list --formula jq >/dev/null 2>&1 || brew install jq
 
-# The Claude settings this repository manages enable the typescript-lsp plugin, and the
-# plugin does not install its language server. Without the binary every session reports a
+# This script installs the typescript-lsp plugin below, and the plugin does not install its
+# language server. Without the binary every session reports a
 # plugin load error. Both packages are needed: the server shells out to tsserver, which
 # ships with typescript.
 if ! command -v typescript-language-server >/dev/null 2>&1; then

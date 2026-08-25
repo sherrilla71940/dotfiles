@@ -130,7 +130,7 @@ Handle each changed target according to the desired result:
 | --- | --- |
 | Use the repository version | Make no source change; the preview already shows what apply will replace |
 | Preserve an entire plain file | Confirm the source filename is a bare `dot_` name, with no `.tmpl` suffix and no `create_`, `modify_`, or `symlink_` prefix, then run `chezmoi re-add <target>` |
-| Preserve values from a `create_` or `modify_` source | Edit the source by hand; `re-add` would overwrite the mechanism with rendered output |
+| Preserve values from a `create_` or `modify_` source | Edit the source by hand; `re-add` skips these silently, and `chezmoi add` would destroy the source entry |
 | Preserve selected values | Open the live target and its source side by side, then copy only portable values into the source |
 | Preserve values from a templated target | Edit the source template or shared body; `re-add` deliberately skips templates |
 
@@ -205,7 +205,7 @@ powershell -File scripts/bootstrap-windows.ps1
 The extension manifest is intentionally separate from routine apply:
 
 ```bash
-grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
+grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
 ```
 
 ```powershell
@@ -252,8 +252,10 @@ The pre-commit hook:
 1. confirms the default chezmoi source resolves inside this repository,
 2. materializes and renders the staged Git snapshot,
 3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
-4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
-5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
+4. compares rendered Claude and Copilot rule bodies with cross-platform tools,
+5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`, and
+6. when a status line script is staged, renders both copies and compares their output, which
+   needs `jq` and PowerShell on `PATH`.
 
 The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
 described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
@@ -272,9 +274,13 @@ way needs no link and the repository sits under `~/.local/share/chezmoi`. Both l
 To use `~/dotfiles`, clone there and point the default source directory at it. Do this only
 when `~/.local/share/chezmoi` does not already contain changes you need.
 
-macOS or Git Bash with symlink permission:
+macOS or Git Bash with symlink permission. Remove any existing clone first: `ln -s` onto an
+existing directory silently creates `~/.local/share/chezmoi/dotfiles` inside it and exits 0,
+after which chezmoi keeps using the old clone and nothing you edit in `~/dotfiles` ever
+applies.
 
 ```bash
+[ -e ~/.local/share/chezmoi ] && echo "remove or move this first" && ls ~/.local/share/chezmoi
 mkdir -p ~/.local/share
 ln -s ~/dotfiles ~/.local/share/chezmoi
 ```

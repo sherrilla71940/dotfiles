@@ -27,7 +27,7 @@ If any settings should survive—or you are unsure—initialize without applying
 
 ```bash
 chezmoi init sherrilla71940
-chezmoi source-path
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel   # must be this repository
 chezmoi diff
 ```
 
@@ -38,9 +38,10 @@ a fork, replace `sherrilla71940` with the fork's URL.
 
 ## After setup
 
-Work from the repository root: `~/dotfiles` if you kept the working tree there, or whatever
-`chezmoi source-path` reports. `chezmoi cd` launches a shell in it when you are unsure where it
-lives; leave that shell with `exit`.
+Work from the repository root — `~/dotfiles` if you kept the working tree there. `chezmoi cd`
+launches a shell there when you are unsure where it lives; leave that shell with `exit`. Do not
+use `chezmoi source-path` for this: with `.chezmoiroot` it returns the source directory
+(`…/chezmoi/home`), one level below the root, where `scripts/` and `docs/` do not exist.
 
 ### Changing your configuration
 
@@ -52,7 +53,8 @@ The exception is everything the repository does not manage, which is most of wha
 application records about itself. Claude's `settings.json` is the clearest case: the repository
 owns a few durable keys — environment, hooks, status line, update channel — while your model,
 effort, theme, permissions, and enabled plugins stay on the machine. Change those with
-`/config`, `/model`, or `/effort`, and there is nothing to apply or commit.
+`/config`, `/model`, `/effort`, `/permissions`, or `/plugin`, and there is nothing to apply or
+commit.
 `scripts/claude-settings-drift.sh` reports which keys fall on which side, and
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the general procedure.
 
@@ -133,7 +135,7 @@ home/                            chezmoi source state
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
   dot_agents/skills/             SHARED skills -> ~/.agents/skills, read by all three
   .README.md                     how to read this tree (repo-only, never deployed)
-  dot_zshrc.tmpl  dot_bashrc     shells
+  dot_bashrc  dot_zshrc.tmpl  dot_bash_profile   shells
   AppData/ · Library/            VS Code, one per OS
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup (run by hand)
 scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude

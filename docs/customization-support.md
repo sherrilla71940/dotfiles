@@ -99,11 +99,16 @@ adding a directory:
 4. Run `chezmoi diff`, apply the change, restart the client when required, and confirm that
    the client discovers the file.
 
-If the file already exists in the live directory, import its target path:
+If the file already exists in the live directory and is not managed yet, import its target
+path:
 
 ```bash
 chezmoi add ~/.claude/<folder>/<file>
 ```
+
+Check first with `chezmoi source-path <target>`. If it resolves, the file is already managed —
+edit that source instead. `chezmoi add` on a managed `modify_` or `create_` source deletes it
+without asking.
 
 If you create the file directly under this repository's `home/` source state, do not run
 `chezmoi add`. A directory containing managed files is created automatically. Do not add an
@@ -184,6 +189,9 @@ The rendered `~/.claude/CLAUDE.md` combines shared and Claude-only sources:
 | --- | --- | --- | --- |
 | Shared working agreement | `home/.chezmoitemplates/core.md` | `dotf-core` | Claude, Codex, and Copilot |
 | Claude-only addition | `home/dot_claude/CLAUDE.md.tmpl` | `dotf-claude` | Claude only |
+
+The `dotf-*` shortcuts are aliases defined in `home/dot_bashrc` and `home/dot_zshrc.tmpl`, so
+they exist in bash and zsh only. In PowerShell, run the chezmoi commands directly.
 
 Use the shared body only when the text remains correct for all three clients.
 `chezmoi edit ~/.claude/CLAUDE.md` opens the Claude wrapper, not the included shared body.
@@ -362,9 +370,9 @@ runtime state into `home/`.
 ## Official references
 
 - [Claude Code configuration directory](https://code.claude.com/docs/en/claude-directory)
-- [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
+- [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [Claude Code Desktop and shared configuration](https://code.claude.com/docs/en/desktop)
-- [Claude Code IDE integrations](https://code.claude.com/docs/en/ide-integrations)
+- [Claude Code in VS Code](https://code.claude.com/docs/en/vs-code)
 - [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)
 - [Claude Code MCP sources](https://code.claude.com/docs/en/mcp)
 - [Claude Code with Chrome](https://code.claude.com/docs/en/chrome)

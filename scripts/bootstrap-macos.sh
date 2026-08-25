@@ -45,4 +45,16 @@ else
   printf 'claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script.\n' >&2
 fi
 
+# Codex Memories is off upstream and is toggled by Codex's own command, which writes into
+# ~/.codex/config.toml. That file carries the create_ prefix so chezmoi never overwrites the
+# trust and runtime state Codex keeps there, which also means a source edit would not reach a
+# machine that already has the file. Enabling it here is the same trade as the plugins above:
+# set once on a new machine, and a later 'codex features disable memories' stays disabled.
+if command -v codex >/dev/null 2>&1; then
+  codex features enable memories >/dev/null 2>&1 ||
+    printf 'Could not enable Codex memories. Run "codex features enable memories" by hand.\n' >&2
+else
+  printf 'codex is not on PATH, so Codex memories was skipped. Install Codex CLI, then rerun this script.\n' >&2
+fi
+
 printf 'Optional tools are ready.\n'

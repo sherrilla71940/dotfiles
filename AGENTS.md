@@ -56,7 +56,12 @@ Copilot model invocation in `SKILL.md`, keep Codex implicit invocation enabled i
 `agents/openai.yaml`, and make the skill stop if GitHub Copilot invokes it explicitly.
 
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
-because Codex writes machine state into it. Keep it that way.
+because Codex writes trust, marketplace and runtime state into it. The cost is that a source
+edit never reaches a machine that already has the file, so a durable Codex setting is applied
+by Codex's own command from `scripts/bootstrap-*` instead, the way Claude plugins are. Before
+proposing `modify_` here, note that a TOML round-trip reformats the whole file, so
+`chezmoi status` would report it dirty after almost every Codex session; that trade needs an
+ADR, not an edit.
 
 **`/statusline` output never reaches this repository.** It writes `statusLine`, a key
 `home/.chezmoitemplates/claude/settings-durable.json` owns, so the next `chezmoi apply`

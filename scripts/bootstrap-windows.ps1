@@ -50,6 +50,20 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
     Write-Warning "claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script."
 }
 
+# Codex Memories is off upstream and is toggled by Codex's own command, which writes into
+# ~/.codex/config.toml. That file carries the create_ prefix so chezmoi never overwrites the
+# trust and runtime state Codex keeps there, which also means a source edit would not reach a
+# machine that already has the file. Enabling it here is the same trade as the plugins above:
+# set once on a new machine, and a later 'codex features disable memories' stays disabled.
+if (Get-Command codex -ErrorAction SilentlyContinue) {
+    codex features enable memories 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not enable Codex memories. Run 'codex features enable memories' by hand."
+    }
+} else {
+    Write-Warning "codex is not on PATH, so Codex memories was skipped. Install Codex CLI, then rerun this script."
+}
+
 # Windows attributes every toast to an Application User Model ID (AUMID). Given none, it
 # invents a per-process identity whose display name is empty, so a Claude Code notification
 # arrives anonymous. ~/.claude/hooks/show-claude-notification.ps1 asks for the AUMID below and

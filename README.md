@@ -19,9 +19,9 @@ It solves three problems:
   tool, are shared by symlink instead.
 - **Some of these files the application rewrites behind you.** One settings file can hold both
   what should follow your machines and what the application records about itself, so writing it
-  wholesale destroys the second. Claude Code's `settings.json` is the example here: the
-  repository owns a handful of durable keys and merges them over whatever Claude wrote, leaving
-  your model, effort and theme untouched.
+  wholesale destroys the second. Take Claude Code's `settings.json`: the repository owns a
+  handful of durable keys and merges them over whatever Claude wrote, leaving your model,
+  effort and theme untouched.
 
 None of that is taken on trust. A commit hook re-renders the staged source and fails if the
 shared rule bodies stop matching between clients, if a skill goes missing to a filename

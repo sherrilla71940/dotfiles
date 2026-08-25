@@ -49,6 +49,22 @@ keeps personal files consistent with their surrounding ecosystem.
 Reconsider if the preferred language changes for either repository category; do not collapse
 the distinction accidentally while editing the global rule.
 
+### Project continuity alongside native memory
+
+The bootstrap rule that invokes `project-continuity` survives even though Claude Code and Codex
+both ship memory of their own, because neither crosses the boundary the skill exists for.
+Claude Code's auto memory is per-repository but stored under `~/.claude/`, machine-local and
+readable only by Claude. Codex Memories is Codex-only, globally scoped rather than
+per-repository, and off unless `[features] memories = true` is set. Nothing native gives the
+two clients one repository-local, Git-reconciled record of where work stopped.
+
+The rule is short and its subject sounds like something the clients already do, which makes it
+an easy deletion for anyone who notices auto memory and stops there.
+
+Reconsider if Codex Memories becomes per-repository, if either client gains a shared or
+in-repository store the other can read, or if handoffs between Claude Code and Codex within one
+repository stop happening in practice.
+
 ## JavaScript instructions
 
 ### PascalCase functions and globals

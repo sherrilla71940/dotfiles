@@ -6,8 +6,11 @@
 <!-- Rendered by chezmoi from the dotfiles repo. Editing THIS file does nothing durable:
      it is a template, so `chezmoi re-add` skips it and the next `chezmoi apply` reverts it.
 
-       Rules above the "Claude Code only" marker are shared with Codex and Copilot.
-         edit  home/.chezmoitemplates/core.md      or run  dotf-core
+       Rules above the "Claude Code only" marker are shared. The core body goes to Codex and
+       Copilot; the continuity section goes to Codex only, because the skill does not support
+       Copilot.
+         edit  home/.chezmoitemplates/core.md        or run  dotf-core
+         edit  home/.chezmoitemplates/continuity.md
 
        Rules below the marker are Claude Code-specific.
          edit  home/dot_claude/CLAUDE.md.tmpl      or run  dotf-claude
@@ -16,6 +19,7 @@
      context. Codex and Copilot do not strip them, which is why it lives here and not in
      the shared body. -->
 {{ includeTemplate "core.md" }}
+{{ includeTemplate "continuity.md" }}
 # Claude Code only
 
 Everything below depends on a Claude Code feature that Codex and Copilot do not have.

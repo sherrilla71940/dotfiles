@@ -252,6 +252,7 @@ Chezmoi reads attributes from the start of source filenames. These names are sig
 | Empty file must exist | `empty___init__.py` | Chezmoi omits an ordinary empty file |
 | Application owns an existing file | `create_config.toml.tmpl` | Removing `create_` can overwrite application state |
 | File needs template rendering | `name.tmpl` | Removing `.tmpl` writes template syntax literally |
+| Target directory also holds unmanaged files | `dot_config`, never `exact_config` | Adding `exact_` makes apply delete every entry in the directory that the source does not contain |
 
 Files beginning with `.` in the source state are ignored. This behavior keeps
 `home/.README.md` as repository documentation instead of deploying it.

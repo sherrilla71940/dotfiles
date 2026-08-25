@@ -41,7 +41,6 @@ Use the repository's continuity file as the durable opt-in marker for later sess
 - If an active continuity file already exists, treat continuity as enabled. Resume and reconcile it without asking the user to opt in again.
 - If the user explicitly asks to enable or use continuity and no file exists, initialize it.
 - If no continuity file exists and the user has not opted in, do not create one automatically.
-- If `.agent/` already exists but `.agent/continuity.md` does not, treat the directory as pre-existing and potentially owned by another tool or workflow. Tell the user that the directory already contains other state and ask whether to add continuity there before creating the file. Never suggest removing or repurposing the existing directory merely to enable continuity.
 - If no continuity file exists but the task is clearly likely to span multiple sessions and continuity would materially reduce rediscovery, ask once whether the user wants to enable project continuity.
 - Do not suggest continuity for small, routine, or obviously single-session work.
 
@@ -56,25 +55,17 @@ Use an existing continuity file if the repository already defines one and it is 
 Otherwise use:
 
 ```text
-.agent/continuity.md
+.project-continuity/state.md
 ```
 
-Before creating it, inspect `.agent/`:
+The directory belongs to this workflow. Create it when the user has opted in, and never place anything in it other than continuity state.
 
-- If `.agent/` does not exist, the workflow may create it after the user has opted in. Record that the workflow created the containing directory.
-- If `.agent/` already exists and contains anything other than this workflow's continuity file, do not treat the directory as workflow-owned. Inform the user that existing local agent state is present and ask whether continuity should be added alongside it.
-- Never delete, move, rename, ignore as a whole, or otherwise take ownership of pre-existing `.agent/` contents.
+In a Git repository, ensure the directory is ignored before relying on it as private state. Prefer a **repository-local Git exclude** over changing tracked `.gitignore`:
 
-In a Git repository, ensure **only the continuity file** is ignored before relying on it as private state. Never ignore the entire `.agent/` directory solely for this workflow.
-
-Prefer a **repository-local Git exclude** over changing tracked `.gitignore`:
-
-1. Check whether `.agent/continuity.md` is already ignored.
-2. If it is already ignored, record that privacy protection as pre-existing and do not claim ownership of the ignore rule.
-3. If it is not ignored, resolve the local exclude path with Git, for example `git rev-parse --git-path info/exclude`.
-4. Add an anchored ignore entry for `/.agent/continuity.md` to that local exclude file. Do not add `/.agent/` or another directory-wide pattern.
-5. Record whether the workflow created `.agent/` and whether it added that exact exclude entry so cleanup can safely reverse only workflow-owned setup later.
-6. Do not modify tracked `.gitignore` solely for this skill unless the user explicitly asks.
+1. Check whether `.project-continuity/` is already ignored, and stop here if it is.
+2. Resolve the local exclude path with Git, for example `git rev-parse --git-path info/exclude`.
+3. Add an anchored entry for `/.project-continuity/` to that local exclude file.
+4. Do not modify tracked `.gitignore` solely for this skill unless the user explicitly asks.
 
 If the repository is not managed by Git, keep the file local but clearly tell the user that Git-based ignore protection is unavailable.
 
@@ -93,8 +84,8 @@ If the user says to "use continuity for this task" without naming an operation, 
 
 ## Start / resume
 
-1. Find the repository root, inspect `.agent/` if present, and locate the existing continuity file.
-2. If the file exists, treat continuity as already enabled and read it before substantive project work. The presence of unrelated files in `.agent/` does not disable continuity and does not make those files part of this workflow.
+1. Find the repository root and locate the existing continuity file.
+2. If the file exists, treat continuity as already enabled and read it before substantive project work.
 3. Inspect enough current repository state to verify the saved claims. Use relevant evidence such as:
    - current branch and HEAD;
    - working-tree status and diffs;
@@ -108,7 +99,7 @@ If the user says to "use continuity for this task" without naming an operation, 
    - update next actions when the implementation path changed;
    - deduplicate overlapping items.
 5. Preserve unresolved state that is still useful for continuation.
-6. If no continuity file exists, initialize one only when the user explicitly opted in. If `.agent/` already contains other files, first disclose that existing state and confirm that the user wants continuity added alongside it. Use [references/state-format.md](references/state-format.md).
+6. If no continuity file exists, initialize one only when the user explicitly opted in. Use [references/state-format.md](references/state-format.md).
 7. Continue the user's actual task. Do not spend the response merely restating continuity unless the user asked for a status report.
 
 If saved state conflicts with repository evidence, use repository evidence and update continuity accordingly.
@@ -205,12 +196,10 @@ During cleanup:
 
 1. Reconcile one final time and verify that no unfinished work, blockers, deferred integration, required follow-up, or useful handoff state remains.
 2. If useful information belongs in durable documentation or private project instructions, tell the user before deleting it; do not promote it silently.
-3. Delete `.agent/continuity.md`, or the repository's explicitly configured continuity file.
-4. Remove `.agent/` only if **all** of the following are true: the workflow recorded that it created the directory, the directory is now empty, and no unrelated file or workflow has appeared there since. If `.agent/` pre-existed, never delete it even if it is empty after continuity cleanup.
-5. If this workflow added the exact repository-local Git exclude entry `/.agent/continuity.md` solely for the continuity file, remove only that exact entry. If the ignore rule pre-existed, leave it untouched. Never remove a broader ignore pattern such as `/.agent/` unless the user explicitly asks and ownership is independently verified.
-6. Leave the local Git exclude file itself in place if it contains any other entries or is part of Git's normal repository metadata.
-7. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native client memory, or unrelated local files as part of continuity cleanup unless the user explicitly requests that separate removal.
-8. Confirm what continuity state and workflow-owned privacy setup were removed.
+3. Delete `.project-continuity/`, or the repository's explicitly configured continuity file.
+4. Leave the repository-local Git exclude entry in place. It is one anchored line matching a path this workflow owns, so a later re-enable finds the privacy protection already correct.
+5. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native client memory, or unrelated local files as part of continuity cleanup unless the user explicitly requests that separate removal.
+6. Confirm what continuity state was removed.
 
 After successful cleanup, the absence of the continuity file means continuity is no longer active for future sessions.
 

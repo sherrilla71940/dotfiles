@@ -1,8 +1,13 @@
 # Dotfiles
 
-Personal repository for keeping user-level configuration consistent across machines. Any
-user-level configuration can live here; today that is the AI clients — Claude Code, Codex, and
-GitHub Copilot — plus VS Code, the shell, and the bootstrap and validation tooling around them.
+Personal repository for dotfiles: the per-user configuration files applications read out of
+your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and everything under
+`~/.claude/`. Keeping them here makes them consistent across machines and versioned in Git, so
+a configuration change has a history, a diff, and a way back.
+
+Any user-level configuration can live here; today that is the AI clients — Claude Code, Codex,
+and GitHub Copilot — plus VS Code, the shell, and the bootstrap and validation tooling around
+them.
 
 It solves two problems:
 

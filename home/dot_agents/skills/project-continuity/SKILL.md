@@ -45,6 +45,10 @@ Opening a *different* directory gives you a different working tree, without that
 
 Lost the directory? `git worktree list` shows every working tree of the repository. [references/worktree-handoff.md](references/worktree-handoff.md) covers switching clients in practice.
 
+**What it feels like.** Not conversation teleportation — the receiving client does not get the old conversation. Expect to say "continue from project continuity", wait through a short reconciliation while it reads the state and checks the diff, then keep working. The goal is not re-explaining the task from scratch.
+
+The friction that remains is operational, not architectural: opening a different directory than the one that holds the state, a cutoff arriving before the last important reasoning was checkpointed, or a managed worktree being archived while still needed. [references/worktree-handoff.md](references/worktree-handoff.md) exists to reduce exactly those.
+
 **A caution about memory.** All three clients keep memory of their own, and it may hold stale claims about this task. Memory can inform reasoning, but continuity reconciled against Git is what establishes where the work actually stands.
 
 ## Operating principles
@@ -76,13 +80,13 @@ Continuity belongs to **one working directory**, and each working tree has at mo
 - The same working tree is reused over time: finish task 1, clean up, start task 2 there.
 - Same repository does not imply same continuity. Neither does same branch.
 - **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, use a separate worktree.
-- A new worktree starts with no continuity and must not inherit another task's state. Claude Code's `.worktreeinclude` copies gitignored files into new worktrees, so never write a pattern there that matches `.project-continuity/`.
+- A new worktree starts with no continuity and must not inherit another task's state. Claude Code and the Codex app both read `.worktreeinclude` at the repository root to decide which ignored files to copy into a new worktree, so a pattern there matching `.project-continuity/` would leak one task's state into every new worktree of both clients. Never add one.
 
 Client worktree support differs, and that affects only how a directory is *created*, never who may work in it:
 
 - **Claude Code** creates worktrees natively (`--worktree`, `EnterWorktree`, `isolation: worktree`) under `.claude/worktrees/`.
 - **Codex CLI** has no worktree flag; it operates on the directory you start it in, which is all interoperability requires.
-- **The Codex app** manages its own worktrees per thread. Do not assume CLI, IDE extension and app behave alike.
+- **The Codex app** manages worktrees itself, in `$CODEX_HOME/worktrees` and in detached HEAD. Archiving a chat can delete its worktree, so clean up or hand off before archiving. Do not assume CLI, IDE extension and app behave alike.
 
 Whoever created the directory, any supported client can work in it.
 

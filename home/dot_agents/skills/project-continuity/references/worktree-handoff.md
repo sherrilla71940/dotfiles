@@ -43,11 +43,17 @@ Then say "continue from project continuity". The receiving client reads the stat
 
 **Do not add a `.worktreeinclude` pattern that matches `.project-continuity/`.** That file copies gitignored files into new worktrees, which is exactly how one task's state would leak into another's.
 
-## Codex app threads
+## Codex app worktrees
 
-Community reports describe the Codex app creating a worktree per thread and offering a handoff that moves a thread between local and worktree mode, transferring uncommitted changes between the two checkouts. No official documentation for this was found, so treat it as unverified: whether such a handoff also moves ignored files like `.project-continuity/` is unknown.
+The Codex app manages worktrees itself, and its documented behavior matters here in three ways.
 
-Until it is confirmed, after any Codex app handoff check that continuity is where you expect:
+**Where they are.** Managed worktrees live in `$CODEX_HOME/worktrees` — `~/.codex/worktrees` by default, changeable under Settings > Worktrees — and are checked out in detached HEAD rather than on a branch. So a Codex app worktree will not appear where a Claude Code one does, but `git worktree list` still finds it.
+
+**Archiving a chat can delete its worktree.** Codex keeps roughly the 15 most recent managed worktrees, preserves those that are pinned or still in progress, and snapshots the work before deleting one. Do not archive a Codex chat while another client is still working in its worktree.
+
+**`.worktreeinclude` is shared.** Both Claude Code and the Codex app read this one file at the repository root to decide which ignored files to copy into a new worktree, and Codex copies *only* files matching it. So `.project-continuity/` is not copied by default — and one careless pattern in that file would leak one task's continuity into every new worktree of both clients.
+
+Codex's **Handoff** moves a chat between a worktree and the local checkout, performing the Git operations itself. Whether it also moves ignored files such as `.project-continuity/` is not documented, so after a handoff confirm where continuity ended up:
 
 ```bash
 git worktree list

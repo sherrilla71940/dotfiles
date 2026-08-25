@@ -172,7 +172,9 @@
   // shared rule is listed twice, and Copilot also ingests ~/.claude/CLAUDE.md, whose lower
   // half is Claude Code-only (Agent calls, claude-code-guide, the Bash/PowerShell tools).
   // Copilot gets its own copies from ~/.copilot/instructions instead.
-  // This affects VS Code only; Claude Code still reads ~/.claude/rules itself.
+  // This affects VS Code only. Claude Code still reads ~/.claude/rules itself, and Copilot CLI
+  // is unaffected either way: it reads ~/.copilot/instructions plus the repository's own
+  // AGENTS.md and CLAUDE.md, never ~/.claude/rules, so it has no duplicate to suppress.
   "chat.instructionsFilesLocations": {
     ".github/instructions": true,
     ".claude/rules": true,

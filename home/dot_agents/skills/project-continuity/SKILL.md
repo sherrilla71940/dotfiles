@@ -50,9 +50,7 @@ The skill itself cannot bootstrap discovery in a fresh session before it is sele
 
 ## Continuity location and privacy
 
-Use an existing continuity file if the repository already defines one and it is clearly intended for this workflow.
-
-Otherwise use:
+Continuity always lives at one canonical path:
 
 ```text
 .project-continuity/state.md
@@ -196,7 +194,7 @@ During cleanup:
 
 1. Reconcile one final time and verify that no unfinished work, blockers, deferred integration, required follow-up, or useful handoff state remains.
 2. If useful information belongs in durable documentation or private project instructions, tell the user before deleting it; do not promote it silently.
-3. Delete `.project-continuity/`, or the repository's explicitly configured continuity file.
+3. Delete `.project-continuity/`.
 4. Leave the repository-local Git exclude entry in place. It is one anchored line matching a path this workflow owns, so a later re-enable finds the privacy protection already correct.
 5. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native client memory, or unrelated local files as part of continuity cleanup unless the user explicitly requests that separate removal.
 6. Confirm what continuity state was removed.
@@ -215,6 +213,5 @@ Before doing so, inspect the repository's existing instruction architecture and 
 
 - If repository access is unavailable, do not fabricate reconciliation. State what could not be verified.
 - If a saved completion claim cannot be verified, downgrade it to unverified/in-progress rather than preserving it as complete.
-- If multiple continuity files exist, prefer the one explicitly referenced by repository instructions or the user; otherwise choose the clearly active one and mention the ambiguity.
 - If the current client cannot be identified but no client-specific routing is needed, continue with the client-neutral continuity workflow.
 - If client-specific routing is required and the client cannot be identified reliably, ask only then.

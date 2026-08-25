@@ -1,6 +1,6 @@
 # Client-specific private instruction routing
 
-Use this reference only when the user explicitly asks to promote a discovery into durable **private project instructions**. Routine continuity checkpoints remain in `.agent/continuity.md` and must not modify these files.
+Use this reference only when the user explicitly asks to promote a discovery into durable **private project instructions**. Routine continuity checkpoints remain in `.project-continuity/state.md` and must not modify these files.
 
 ## General routing rule
 

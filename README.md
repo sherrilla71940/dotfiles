@@ -17,9 +17,11 @@ It solves three problems:
   below it, composed from two sources every time you apply. A symlink cannot express that; it
   gives you one whole file or nothing — which is why skills, where one file *does* serve every
   tool, are shared by symlink instead.
-- **Some of these files the application rewrites behind you.** Claude Code edits its own
-  `settings.json`, so this repository owns four keys in it and merges them over whatever Claude
-  wrote, instead of replacing the file and discarding your model, effort or theme.
+- **Some of these files the application rewrites behind you.** One settings file can hold both
+  what should follow your machines and what the application records about itself, so writing it
+  wholesale destroys the second. Claude Code's `settings.json` is the example here: the
+  repository owns a handful of durable keys and merges them over whatever Claude wrote, leaving
+  your model, effort and theme untouched.
 
 None of that is taken on trust. A commit hook re-renders the staged source and fails if the
 shared rule bodies stop matching between clients, if a skill goes missing to a filename
@@ -112,11 +114,10 @@ Edit the source, preview with `chezmoi diff`, run `chezmoi apply`, then commit.
 
 The exception is everything the repository does not manage, which is most of what an
 application records about itself. Claude's `settings.json` is the clearest case: the repository
-owns a few durable keys — environment, hooks, status line, update channel — while your model,
-effort, theme, permissions, and enabled plugins stay on the machine. Change those with
-`/config`, `/model`, `/effort`, `/permissions`, or `/plugin`, and there is nothing to apply or
-commit.
-`scripts/claude-settings-drift.sh` reports which keys fall on which side, and
+owns the keys that should be identical everywhere, and leaves the rest — your model, theme,
+permissions and the like — on the machine. Change those from inside the client, with `/config`
+or `/model` or `/plugin`, and there is nothing to apply or commit. Run
+`scripts/claude-settings-drift.sh` for the current split;
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the general procedure.
 
 ### Or describe what you want to an AI assistant

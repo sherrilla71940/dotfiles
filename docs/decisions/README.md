@@ -30,6 +30,7 @@ agent session.
 | [0004](./0004-manage-mixed-state-claude-settings-by-key.md) | Superseded by 0005 | Manage durable Claude settings while preserving app-owned choices |
 | [0005](./0005-merge-durable-claude-settings-as-json.md) | Accepted | Merge durable Claude settings from a JSON source and narrow repository ownership |
 | [0006](./0006-keep-the-working-tree-at-dotfiles.md) | Accepted | Keep the Git working tree at ~/dotfiles and link the default source directory |
+| [0007](./0007-host-gate-codex-targeted-skills.md) | Accepted | Isolate a Codex-targeted skill by host gates rather than by directory |
 
 ## Template
 

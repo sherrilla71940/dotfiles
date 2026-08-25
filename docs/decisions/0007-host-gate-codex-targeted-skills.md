@@ -1,0 +1,87 @@
+# ADR-0007: Host-gate Codex-targeted skills
+
+- Status: Accepted
+- Date: 2026-08-25
+
+## Context
+
+[ADR-0002](./0002-share-cross-tool-configuration-with-thin-wrappers.md) established that a
+shared body is rendered into a per-tool wrapper, and left one case open: "Codex personal skills
+normally live in `~/.agents/skills`, which Copilot also scans. Treat them as portable shared
+skills. If one must be Codex-only, verify the current supported isolation options rather than
+assuming a plugin is required."
+
+That case is real. Codex cannot path-scope an instruction, so a rule that Claude receives as
+`~/.claude/rules/<name>.md` with `paths:` and Copilot as an `.instructions.md` with `applyTo:`
+has no Codex equivalent. The remaining way to give Codex the same guidance on demand is a
+skill. But `~/.agents/skills` is a shared discovery path: Codex, Copilot CLI and VS Code all
+read it natively, so a skill placed there for Codex alone is visible to Copilot too, which
+already has the path-scoped version. Directory placement cannot isolate it.
+
+Since ADR-0002 the isolation options were checked. No supported per-tool skill root exists, and
+no plugin is required.
+
+## Decision
+
+Keep such a skill in `~/.agents/skills` and isolate it by host gates rather than by location.
+A Codex-targeted skill carries all five:
+
+1. An empty source-only marker at `home/dot_agents/skills/<name>/.codex-only`. Chezmoi ignores
+   the dotfile; the pre-commit hook reads it to tell the skill apart from a portable one.
+2. No `home/dot_claude/skills/symlink_<name>.tmpl`, so Claude Code never discovers it.
+3. `disable-model-invocation: true` in `SKILL.md`, so Copilot discovers it but does not choose
+   it.
+4. `agents/openai.yaml` with `allow_implicit_invocation: true`, so Codex still may.
+5. A host guard at the top of the body telling GitHub Copilot to stop, since its path-scoped
+   instructions are already active. This covers an explicit Copilot invocation, which gate 3
+   does not prevent.
+
+Gates 3 and 4 pull in opposite directions on purpose: one denies the tool that has another
+route to the same guidance, the other permits the tool that does not.
+
+The pre-commit hook enforces the set, so a skill cannot be marked `.codex-only` and then lose a
+gate silently.
+
+## Alternatives considered
+
+- **A separate Codex-only skill directory:** no supported per-tool skill root exists. Copilot
+  scans `~/.agents/skills` natively and offers no setting to exclude a path.
+- **Distribute the skill as a Codex plugin:** heavier than the problem, and ADR-0002 already
+  cautioned against assuming a plugin is required before checking.
+- **Let Copilot see it:** rejected. Copilot would hold two routes to the same guidance, one
+  always-on and one invocable, which is the duplication this repository exists to prevent.
+- **Give Codex nothing:** rejected. Codex would silently lack guidance the other two receive,
+  and the gap would be invisible rather than declared.
+
+## Consequences
+
+Isolation depends on five separate conditions rather than a directory, so it is easy to get
+partly right. That is why the hook checks it and why the procedure is written out in
+[docs/customization-support.md](../customization-support.md#add-a-codex-targeted-skill).
+
+No skill in the repository is gated this way today. The procedure is a standing answer to a
+case that has not yet arisen; `project-continuity` is the near miss, carrying `openai.yaml` and
+a Copilot guard but deliberately symlinked to Claude, because Claude should use it.
+
+A gated skill is still visible in Copilot's skill list. Gates 3 and 5 stop it being used, not
+being seen.
+
+## Reconsider when
+
+- Copilot stops scanning `~/.agents/skills`, or gains a setting to exclude a path, which would
+  make a plain directory sufficient.
+- Codex gains path-scoped instructions, which would remove the reason for the skill entirely.
+- A per-tool skill root appears in any of the three clients.
+- `disable-model-invocation` or `allow_implicit_invocation` changes meaning, since gates 3 and
+  4 depend on them behaving differently from each other.
+
+## Related files and verification
+
+- [`AGENTS.md`](../../AGENTS.md) — the always-on constraint
+- [`docs/customization-support.md`](../customization-support.md#add-a-codex-targeted-skill) —
+  the procedure
+- [`scripts/git-hooks/pre-commit`](../../scripts/git-hooks/pre-commit) — the check, keyed on
+  the `.codex-only` marker
+
+Stage a skill with a `.codex-only` marker and one gate missing; the pre-commit hook must
+reject the commit.

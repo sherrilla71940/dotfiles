@@ -27,6 +27,8 @@ while retaining a separate directory for Claude-only skills.
 - Codex personal skills normally live in `~/.agents/skills`, which Copilot also scans. Treat
   them as portable shared skills. If one must be Codex-only, verify the current supported
   isolation options rather than assuming a plugin is required.
+  [ADR-0007](./0007-host-gate-codex-targeted-skills.md) settles this case: isolate by host
+  gates, since no per-tool skill root exists.
 
 ## Alternatives considered
 

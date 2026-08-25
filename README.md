@@ -4,16 +4,16 @@ Personal repository for keeping user-level configuration consistent across machi
 client setup is its centre — Claude Code, Codex, and GitHub Copilot — alongside VS Code, the
 shell, and the bootstrap and validation tooling around them.
 
-The problem it solves: three AI tools want the same instruction in three different shapes. So
-a shared body is written **once** and rendered per client — a Claude rule carrying `paths:`, a
-Copilot `.instructions.md` carrying `applyTo:`, and for Codex a single literal file with no
-frontmatter, because Codex can neither import another file nor scope by path. Skills need none
-of that: one real copy serves all three, so they are shared as files rather than rendered.
-Each mechanism matches what the tools actually accept.
+The problem it solves: three AI tools want the same instruction, but each in its own file and
+its own shape. So an instruction is written **once** and rendered into whatever each client
+accepts — and a single rendered file can carry shared and tool-specific content together.
+`~/.claude/CLAUDE.md` is exactly that: the working agreement shared with Codex and Copilot,
+then a Claude-only section below it, composed from two sources every time you apply. A symlink
+cannot express that; it gives you one whole file or nothing.
 
 Anything genuinely tool-specific stays in that tool's own directory, unshared and never
 reworded into a neutral twin, so the line between shared and specific is declared rather than
-assumed.
+assumed. [Shared AI configuration](#shared-ai-configuration) shows the mechanism.
 
 ## How it works
 
@@ -36,11 +36,9 @@ macOS. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-
 
 ### Empty machine
 
-Use this one-line setup only when no existing shell, editor, or AI-client configuration
-needs to be preserved:
-
-On Windows, first enable Developer Mode or provide symbolic-link privileges as described in
-[the setup prerequisites](./docs/setup.md#enable-windows-symlink-creation).
+Use this one-line setup only when no existing shell, editor, or AI-client configuration needs
+to be preserved. On Windows, first enable Developer Mode or provide symbolic-link privileges as
+described in [the setup prerequisites](./docs/setup.md#enable-windows-symlink-creation).
 
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
@@ -56,17 +54,17 @@ git -C "$(chezmoi source-path)" rev-parse --show-toplevel   # must be this repos
 chezmoi diff
 ```
 
-Do not apply until you have adopted the existing values you want to keep. The
+Do not apply until you have adopted — copied into the repository — the values you want to keep. The
 [existing-configuration guide](./docs/setup.md#existing-configuration) explains how to
 preserve a complete plain file or selected settings from a template-backed file. If you use
 a fork, replace `sherrilla71940` with the fork's URL.
 
 ## After setup
 
-Work from the repository root — `~/dotfiles` if you kept the working tree there. `chezmoi cd`
-launches a shell there when you are unsure where it lives; leave that shell with `exit`. Do not
-use `chezmoi source-path` for this: with `.chezmoiroot` it returns the source directory
-(`…/chezmoi/home`), one level below the root, where `scripts/` and `docs/` do not exist.
+Work from the repository root — `~/dotfiles` if you kept the working tree there, or run
+`chezmoi cd`, which launches a shell there; leave it with `exit`. Note that
+`chezmoi source-path` points one level deeper, at the source directory rather than the root, so
+it is not the way to find this folder.
 
 ### Changing your configuration
 
@@ -109,9 +107,10 @@ simplest, since each tool loads that guidance on its own.
 ## Shared AI configuration
 
 An instruction used by more than one assistant is written **once**, and each tool receives a
-real file in **its own** format. That indirection exists for one reason: the three tools
-disagree about how to scope an instruction, and Codex can neither import another file nor
-path-scope at all — so no single shared file can serve all three.
+real file in **its own** format: a Claude rule carrying `paths:`, a Copilot
+`.instructions.md` carrying `applyTo:`, and for Codex one literal file with no frontmatter,
+because Codex can neither import another file nor path-scope at all. No single shared file can
+serve all three.
 
 ```
 home/.chezmoitemplates/rules/javascript.md   <-- the body, written once
@@ -121,8 +120,9 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-Anything used by only one tool is a plain file in that tool's folder, with no templating at
-all. Nothing is ever reworded into a tool-neutral twin.
+Skills go the other way: one real copy serves all three, so they are shared as files rather
+than rendered. Anything used by only one tool is a plain file in that tool's folder, with no
+templating at all. Nothing is ever reworded into a tool-neutral twin.
 
 ## Copying only part of this repository
 

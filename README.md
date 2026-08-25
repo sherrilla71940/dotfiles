@@ -2,12 +2,9 @@
 
 Personal repository for dotfiles: the per-user configuration files applications read out of
 your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and everything under
-`~/.claude/`. Keeping them here makes them consistent across machines and versioned in Git, so
-a configuration change has a history, a diff, and a way back.
-
-The AI clients — Claude Code, Codex, and GitHub Copilot — account for most of the machinery
-here. Editors, shells, and anything else sit alongside them on the same terms;
-[Layout](#layout) shows what is managed today.
+`~/.claude/`. Keeping them in Git makes them consistent across machines and gives any
+configuration change a history, a diff, and a way back. The AI clients — Claude Code, Codex,
+and GitHub Copilot — are what most of the machinery here exists for.
 
 It solves two problems:
 

@@ -11,6 +11,7 @@
 ## Response behavior
 
 - Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
+- When producing, translating into, or substantially revising Traditional Chinese for Taiwan (zh-TW), load and follow the `natural-zhtw` skill.
 - Be concise and actionable.
 - **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
   commit messages, docs, messages to others — do not write that something was asked,

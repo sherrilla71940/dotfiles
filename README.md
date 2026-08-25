@@ -73,6 +73,13 @@ request into a safe source-state change, explain what will happen, and distingui
 applying, and committing. Claude receives it through [`CLAUDE.md`](./CLAUDE.md); Codex and
 Copilot can read it directly.
 
+A session started anywhere else still gets the essential part. The shared core instructions
+this repository installs tell every assistant to resolve a configuration file with
+`chezmoi source-path` before changing it, so it edits the source rather than the generated
+file even when it has never seen this repository. Working from the repository root adds what
+`AGENTS.md` carries on top of that: which bodies are shared, what Codex cannot do, and the
+checks to run before finishing.
+
 ## How it works
 
 The `home/` directory is chezmoi's source state. Its filenames describe both the eventual

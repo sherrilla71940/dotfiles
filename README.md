@@ -99,10 +99,11 @@ a fork, replace `sherrilla71940` with the fork's URL.
 
 ## After setup
 
-Work from the repository root — `~/dotfiles` if you kept the working tree there, or run
-`chezmoi cd`, which launches a shell there; leave it with `exit`. Note that
-`chezmoi source-path` points one level deeper, at the source directory rather than the root, so
-it is not the way to find this folder.
+You can do this from anywhere. Chezmoi uses its configured source directory whatever your
+current folder is, so `chezmoi edit`, `chezmoi diff`, `chezmoi apply` and `chezmoi git` all
+work without changing directory first. The repository root — `~/dotfiles` if you kept the
+working tree there, or `chezmoi cd` to open a shell in it — is just where plain `git` and the
+repository's own scripts are convenient.
 
 ### Changing your configuration
 
@@ -119,9 +120,9 @@ or `/model` or `/plugin`, and there is nothing to apply or commit. Run
 
 ### Or describe what you want to an AI assistant
 
-Use Claude Code, Codex, or VS Code with GitHub Copilot from the repository root. Describe the
-result you want in ordinary language; you do not need to know chezmoi's encoded source
-filenames or commands first. For example:
+Describe the result you want to Claude Code, Codex, or VS Code with GitHub Copilot in ordinary
+language; you do not need to know chezmoi's encoded source filenames or commands first. For
+example:
 
 - "Guide me through managing my dotfiles with this repository."
 - "Add React instructions shared by Claude Code and Copilot, and explain what Codex can support."
@@ -134,12 +135,12 @@ request into a safe source-state change, explain what will happen, and distingui
 applying, and committing. Claude receives it through [`CLAUDE.md`](./CLAUDE.md); Codex and
 Copilot can read it directly.
 
-A session started anywhere else works too. The shared core instructions this repository
-installs tell every assistant to resolve a configuration file with `chezmoi source-path`
-before changing it, and to read this repository's `AGENTS.md` before editing anything in it —
-so both the source-versus-target rule and the structural constraints apply even to an
-assistant that has never seen this repository. Starting from the repository root is still
-simplest, since each tool loads that guidance on its own.
+Starting the session at the repository root is simplest, because each tool loads that guidance
+on its own. It holds from anywhere else too: the shared core instructions this repository
+installs tell every assistant to resolve a configuration file with `chezmoi source-path` before
+changing it, and to read this repository's `AGENTS.md` before editing anything in it — so both
+the source-versus-target rule and the structural constraints reach an assistant that has never
+seen this repository.
 
 ## Copying only part of this repository
 

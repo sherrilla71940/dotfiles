@@ -4,8 +4,17 @@ Personal repository for keeping user-level configuration consistent across machi
 manages shell configuration, VS Code, Claude Code, Codex, GitHub Copilot, and supporting
 bootstrap and validation tools.
 
-[Chezmoi](https://www.chezmoi.io) stores the desired configuration in this repository and
-writes that configuration to the home directory. No separate `git clone` is required.
+The AI client configuration is the part that earns the machinery. Three tools want the same
+instruction in three different shapes, so each instruction is written **once** as a shared
+body and rendered into a real file per client: a Claude rule carrying `paths:`, a Copilot
+`.instructions.md` carrying `applyTo:`, and for Codex one literal file with no frontmatter,
+because it can neither import another file nor scope by path. Symlinks cannot express that —
+the file each tool needs is not the same file. Anything genuinely tool-specific stays in that
+tool's own directory, unshared and never reworded into a neutral twin, so the line between
+shared and specific is declared rather than assumed.
+
+[Chezmoi](https://www.chezmoi.io) renders all of it from this repository into the home
+directory. No separate `git clone` is required.
 
 ## Choose a setup path
 

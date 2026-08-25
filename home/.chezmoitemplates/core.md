@@ -6,6 +6,7 @@
 - Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Regenerate output only when the requested change or proportionate verification requires it.
 - Your own user-level configuration on this machine is rendered by chezmoi from a dotfiles repository, so a live configuration file in your home directory — a shell profile, editor settings, or an AI client's instructions, skills, agents, hooks, prompts, or settings — is generated output rather than source. Before creating or changing one, run `chezmoi source-path <file>`. If it resolves, edit the file it names and leave the live file alone; `chezmoi edit <file>` opens the correct source directly. If it does not resolve, or chezmoi is not installed, the file is unmanaged and safe to edit in place.
 - A partially managed file's source states which keys it owns; leave the rest to the application. Preview with `chezmoi diff`, and ask before running `chezmoi apply`, which can replace live configuration.
+- That repository sets its own conventions for how its sources may be changed. Read the `AGENTS.md` at its root — the repository root, not the source directory — before editing anything there, because a session started outside it does not load that file automatically.
 
 ## Response behavior
 

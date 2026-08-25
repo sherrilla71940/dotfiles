@@ -72,6 +72,14 @@ scripts and the `statusLine` block instead.
 `chezmoi apply`, so a routine apply — or a test render — installs software. That happened
 once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 
+**Do not work on this repository from a worktree.** `chezmoi source-path` resolves to the
+main checkout wherever the session runs, so a source edited in a worktree is not the source
+chezmoi reads: `chezmoi diff` renders the main checkout instead, and the pre-commit identity
+check refuses the commit with `default chezmoi source is outside this repository`. The
+`SessionStart` hook offers a worktree whenever sessions share this tree, and here that offer
+should be declined — stage explicit paths in the shared tree instead. Worktrees remain correct
+for ordinary repositories and for subagents editing in parallel.
+
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish

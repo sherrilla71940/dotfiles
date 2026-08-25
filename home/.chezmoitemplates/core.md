@@ -45,6 +45,7 @@
 
 ## Session workflow
 
+- When a response commits anything, list each commit's short hash and subject line in that response. A hash can be checked against `git log`; a prose summary of your own work cannot.
 - When a response leaves unresolved work, end with a short list grouped as **Next**, **Blocked** (name what it waits on), or **Watching**. Every item is outstanding work, never a completed one; report what you finished in the response itself. Put each group on its own bullet, one line per item, and name the owner of an item when the list mixes your own next actions with the user's. Omit the list when nothing remains.
 
 ## Engineering principles

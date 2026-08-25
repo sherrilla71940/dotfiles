@@ -254,8 +254,8 @@ The pre-commit hook:
 4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
 5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
 
-The hook renders only into a temporary directory. Its `--exclude=scripts` flag excludes
-chezmoi-managed script entry types; it does not mean the top-level `scripts/` directory.
+The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
+described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
 
 ## Working tree at `~/dotfiles`
 

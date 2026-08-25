@@ -26,7 +26,7 @@ instructions.
 The rule directing agents to resolve a live configuration file through `chezmoi source-path`
 before editing it exists because the failure it prevents is silent. A session outside this
 repository, asked to add a skill or a hook, writes to the tool's live directory and reports
-success; the work is then unmanaged, reverted by the next `chezmoi apply` or simply absent
+success; the work is then unmanaged, reverted by the next `chezmoi apply` or absent
 from the next machine. The concrete warning already lived in
 `home/dot_claude/CLAUDE.md.tmpl`, but inside an HTML comment that Claude Code strips before
 loading, so no agent ever read it.

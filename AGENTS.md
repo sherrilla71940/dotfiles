@@ -84,17 +84,10 @@ that path may resolve through a symlink or Windows junction, so it will not look
 repository. Compare Git identity as above rather than the displayed string.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
-filenames, so real names are transformed silently and files can vanish. This has caused
-real loss here twice — four skills dropped in one refactor, and empty `__init__.py` package
-markers omitted in another.
-
-```bash
-chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
-# compare file counts against the source tree
-```
-
-Always pass `--exclude=scripts` when test-rendering. This excludes chezmoi-managed script
-entry types; it does not refer to the repository's top-level `scripts/` directory.
+filenames, so real names are transformed silently and files can vanish. This has caused real
+loss here twice — four skills dropped in one refactor, and empty `__init__.py` package markers
+omitted in another. Test-render and compare counts before you finish; the workflow guide has
+the command.
 
 ## Verify against docs, not memory
 

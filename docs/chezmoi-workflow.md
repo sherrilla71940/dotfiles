@@ -204,7 +204,7 @@ chezmoi diff                        # preview live changes
 chezmoi apply -v                    # write reviewed changes
 chezmoi re-add ~/.bashrc            # preserve a plain live edit
 chezmoi update -v                   # pull and apply on another machine
-chezmoi cd                          # open the source repository
+chezmoi cd                          # launch a shell in the working tree; exit to leave
 chezmoi status                      # empty means fully applied
 ```
 

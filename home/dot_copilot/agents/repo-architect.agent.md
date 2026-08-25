@@ -1,8 +1,24 @@
 ---
-description: 'Bootstraps and validates agentic project structures for GitHub Copilot (VS Code) and OpenCode CLI workflows. Run after `opencode /init` or VS Code Copilot initialization to scaffold proper folder hierarchies, instructions, agents, skills, and prompts.'
-name: 'Repo Architect Agent'
-model: GPT-4.1
-tools: ["search/changes", "search/codebase", "edit/editFiles", "web/fetch", "vscode/getProjectSetupInfo", "vscode/installExtension", "vscode/newWorkspace", "vscode/runCommand", "read/problems", "execute/getTerminalOutput", "execute/runInTerminal", "read/terminalLastCommand", "read/terminalSelection", "search", "read/terminalLastCommand"]
+description: "Bootstraps and validates agentic project structures for GitHub Copilot (VS Code) and OpenCode CLI workflows. Run after `opencode /init` or VS Code Copilot initialization to scaffold proper folder hierarchies, instructions, agents, skills, and prompts."
+name: "Repo Architect Agent"
+tools:
+  [
+    "search/changes",
+    "search/codebase",
+    "edit/editFiles",
+    "web/fetch",
+    "vscode/getProjectSetupInfo",
+    "vscode/installExtension",
+    "vscode/newWorkspace",
+    "vscode/runCommand",
+    "read/problems",
+    "execute/getTerminalOutput",
+    "execute/runInTerminal",
+    "read/terminalLastCommand",
+    "read/terminalSelection",
+    "search",
+    "read/terminalLastCommand",
+  ]
 ---
 
 # Repo Architect Agent
@@ -111,6 +127,7 @@ Validate existing agentic project structure (focus on structure, not deep file i
    - [ ] Symlinks are valid and point to existing files
 
 4. **Generate Report**
+
    ```
    ✅ Structure Valid | ⚠️ Warnings Found | ❌ Issues Found
 
@@ -173,6 +190,7 @@ If the `mcp_awesome-copil_search_instructions` or `mcp_awesome-copil_load_collec
    - Offer to download files directly to project structure
 
 **Example Workflow:**
+
 ```
 Detected: TypeScript + React project
 
@@ -204,31 +222,38 @@ Would you like to install any of these? (Provide install links)
 # Project: {PROJECT_NAME}
 
 ## Overview
+
 {Brief project description}
 
 ## Tech Stack
+
 - Language: {LANGUAGE}
 - Framework: {FRAMEWORK}
 - Package Manager: {PACKAGE_MANAGER}
 
 ## Code Standards
+
 - Follow {STYLE_GUIDE} conventions
 - Use {FORMATTER} for formatting
 - Run {LINTER} before committing
 
 ## Architecture
+
 {High-level architecture notes}
 
 ## Development Workflow
+
 1. {Step 1}
 2. {Step 2}
 3. {Step 3}
 
 ## Important Patterns
+
 - {Pattern 1}
 - {Pattern 2}
 
 ## Do Not
+
 - {Anti-pattern 1}
 - {Anti-pattern 2}
 ```
@@ -237,21 +262,24 @@ Would you like to install any of these? (Provide install links)
 
 ```markdown
 ---
-description: '{DESCRIPTION}'
+description: "{DESCRIPTION}"
 model: GPT-4.1
-tools: [{RELEVANT_TOOLS}]
+tools: [{ RELEVANT_TOOLS }]
 ---
 
 # {AGENT_NAME}
 
 ## Role
+
 {Role description}
 
 ## Capabilities
+
 - {Capability 1}
 - {Capability 2}
 
 ## Guidelines
+
 {Specific guidelines for this agent}
 ```
 
@@ -259,20 +287,23 @@ tools: [{RELEVANT_TOOLS}]
 
 ```markdown
 ---
-description: '{DESCRIPTION}'
-applyTo: '{FILE_PATTERNS}'
+description: "{DESCRIPTION}"
+applyTo: "{FILE_PATTERNS}"
 ---
 
 # {LANGUAGE/DOMAIN} Instructions
 
 ## Conventions
+
 - {Convention 1}
 - {Convention 2}
 
 ## Patterns
+
 {Preferred patterns}
 
 ## Anti-patterns
+
 {Patterns to avoid}
 ```
 
@@ -280,8 +311,8 @@ applyTo: '{FILE_PATTERNS}'
 
 ```markdown
 ---
-agent: 'agent'
-description: '{DESCRIPTION}'
+agent: "agent"
+description: "{DESCRIPTION}"
 ---
 
 {PROMPT_CONTENT}
@@ -291,19 +322,22 @@ description: '{DESCRIPTION}'
 
 ```markdown
 ---
-name: '{skill-name}'
-description: '{DESCRIPTION - 10 to 1024 chars}'
+name: "{skill-name}"
+description: "{DESCRIPTION - 10 to 1024 chars}"
 ---
 
 # {Skill Name}
 
 ## Purpose
+
 {What this skill enables}
 
 ## Instructions
+
 {Detailed instructions for the skill}
 
 ## Assets
+
 {Reference any bundled files}
 ```
 
@@ -312,26 +346,31 @@ description: '{DESCRIPTION - 10 to 1024 chars}'
 When bootstrapping, offer presets based on detected stack:
 
 ### JavaScript/TypeScript
+
 - ESLint + Prettier instructions
 - Jest/Vitest testing prompt
 - Component generation skills
 
 ### Python
+
 - PEP 8 + Black/Ruff instructions
 - pytest testing prompt
 - Type hints conventions
 
 ### Go
+
 - gofmt conventions
 - Table-driven test patterns
 - Error handling guidelines
 
 ### Rust
+
 - Cargo conventions
 - Clippy guidelines
 - Memory safety patterns
 
 ### .NET/C#
+
 - dotnet conventions
 - xUnit testing patterns
 - Async/await guidelines
@@ -342,14 +381,15 @@ When bootstrapping, offer presets based on detected stack:
 
 These are the official requirements from awesome-copilot. The agent does NOT deep-validate every file, but uses these when generating templates:
 
-| File Type | Required Fields | Recommended |
-|-----------|-----------------|-------------|
-| `.agent.md` | `description` | `model`, `tools`, `name` |
-| `.prompt.md` | `agent`, `description` | `model`, `tools`, `name` |
-| `.instructions.md` | `description`, `applyTo` | - |
-| `SKILL.md` | `name`, `description` | - |
+| File Type          | Required Fields          | Recommended              |
+| ------------------ | ------------------------ | ------------------------ |
+| `.agent.md`        | `description`            | `model`, `tools`, `name` |
+| `.prompt.md`       | `agent`, `description`   | `model`, `tools`, `name` |
+| `.instructions.md` | `description`, `applyTo` | -                        |
+| `SKILL.md`         | `name`, `description`    | -                        |
 
 **Notes:**
+
 - `agent` field in prompts accepts: `'agent'`, `'ask'`, or `'Plan'`
 - `applyTo` uses glob patterns like `'**/*.ts'` or `'**/*.js, **/*.ts'`
 - `name` in SKILL.md must match folder name, lowercase with hyphens
@@ -389,12 +429,14 @@ Available MCP tools to check:
 ```
 
 **If tools are NOT available:**
+
 - Skip all `/suggest` functionality
 - Do not mention awesome-copilot collections
 - Focus only on local scaffolding
 - Optionally inform user: "Enable the awesome-copilot MCP server for community resource suggestions"
 
 **If tools ARE available:**
+
 - Proactively suggest relevant resources after `/bootstrap`
 - Include collection recommendations in validation reports
 - Offer to search for specific patterns the user might need

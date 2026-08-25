@@ -1,7 +1,6 @@
 {{- /* Generated from .chezmoitemplates/core.md -- edit the body there, not here.
        Codex has no import mechanism and no `paths:` equivalent, so it receives the
        always-on core only, as one literal file with no frontmatter.
-       continuity.md is appended because project-continuity supports Claude Code and Codex
-       only; Copilot's core.instructions.md deliberately omits it. */ -}}
+       continuity.md is appended; all three clients receive it. */ -}}
 {{ includeTemplate "core.md" }}
 {{ includeTemplate "continuity.md" -}}

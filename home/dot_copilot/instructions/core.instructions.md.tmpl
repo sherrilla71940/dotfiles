@@ -1,9 +1,10 @@
 {{- /* Generated from .chezmoitemplates/core.md -- edit the body there, not here.
-       continuity.md is deliberately not included: project-continuity supports Claude Code
-       and Codex only. */ -}}
+       continuity.md is appended: Copilot CLI loads this file and can read and write the
+       continuity state, so it participates in the same cross-client protocol. */ -}}
 ---
 applyTo: "**"
-description: 'Shared tool-neutral working agreement, as read by Claude Code and Codex.'
+description: 'Shared tool-neutral working agreement, identical to Claude Code and Codex.'
 ---
 
-{{ includeTemplate "core.md" -}}
+{{ includeTemplate "core.md" }}
+{{ includeTemplate "continuity.md" -}}

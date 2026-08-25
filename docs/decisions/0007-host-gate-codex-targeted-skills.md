@@ -60,8 +60,10 @@ partly right. That is why the hook checks it and why the procedure is written ou
 [docs/customization-support.md](../customization-support.md#add-a-codex-targeted-skill).
 
 No skill in the repository is gated this way today. The procedure is a standing answer to a
-case that has not yet arisen; `project-continuity` is the near miss, carrying `openai.yaml` and
-a Copilot guard but deliberately symlinked to Claude, because Claude should use it.
+case that has not yet arisen. `project-continuity` was the near miss, carrying a Copilot guard
+while being symlinked to Claude; that guard was removed once Copilot CLI was verified to load
+`~/.copilot/instructions/**/*.instructions.md` and to read and write the continuity state, so
+the skill now supports all three clients and is gated for none.
 
 A gated skill is still visible in Copilot's skill list. Gates 3 and 5 stop it being used, not
 being seen.

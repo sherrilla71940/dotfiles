@@ -36,11 +36,30 @@ Do not apply until you have adopted the existing values you want to keep. The
 preserve a complete plain file or selected settings from a template-backed file. If you use
 a fork, replace `sherrilla71940` with the fork's URL.
 
-## After setup: manage it with an AI assistant
+## After setup
 
-After chezmoi has initialized the repository, open its source directory with `chezmoi cd`,
-then use Claude Code, Codex, or VS Code with GitHub Copilot from that repository root. Describe
-the result you want in ordinary language; you do not need to know chezmoi's encoded source
+Work from the repository root: `~/dotfiles` if you kept the working tree there, or whatever
+`chezmoi source-path` reports. `chezmoi cd` launches a shell in it when you are unsure where it
+lives; leave that shell with `exit`.
+
+### Changing your configuration
+
+Edit the source in this repository, run `chezmoi apply` to update the live file, then commit.
+Editing a live file directly achieves nothing durable, because the next apply overwrites it.
+Preview with `chezmoi diff` first, and `chezmoi status` is empty once the change has landed.
+
+The exception is everything the repository does not manage, which is most of what an
+application records about itself. Claude's `settings.json` is the clearest case: the repository
+owns a few durable keys — environment, hooks, status line, update channel — while your model,
+effort, theme, permissions, and enabled plugins stay on the machine. Change those with
+`/config`, `/model`, or `/effort`, and there is nothing to apply or commit.
+`scripts/claude-settings-drift.sh` reports which keys fall on which side, and
+[docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the general procedure.
+
+### Or describe what you want to an AI assistant
+
+Use Claude Code, Codex, or VS Code with GitHub Copilot from the repository root. Describe the
+result you want in ordinary language; you do not need to know chezmoi's encoded source
 filenames or commands first. For example:
 
 - "Guide me through managing my dotfiles with this repository."

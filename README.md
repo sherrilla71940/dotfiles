@@ -1,8 +1,8 @@
 # Dotfiles
 
-Personal repository for keeping user-level configuration consistent across machines. The AI
-client setup is its centre — Claude Code, Codex, and GitHub Copilot — alongside VS Code, the
-shell, and the bootstrap and validation tooling around them.
+Personal repository for keeping user-level configuration consistent across machines. Any
+user-level configuration can live here; today that is the AI clients — Claude Code, Codex, and
+GitHub Copilot — plus VS Code, the shell, and the bootstrap and validation tooling around them.
 
 The problem it solves: three AI tools want the same instruction, but each in its own file and
 its own shape. So an instruction is written **once** and rendered into whatever each client
@@ -13,7 +13,7 @@ cannot express that; it gives you one whole file or nothing.
 
 Anything genuinely tool-specific stays in that tool's own directory, unshared and never
 reworded into a neutral twin, so the line between shared and specific is declared rather than
-assumed. [Shared AI configuration](#shared-ai-configuration) shows the mechanism.
+assumed. The next two sections show how.
 
 ## How it works
 
@@ -31,6 +31,26 @@ the next apply overwrites it. Filenames carry meaning too: `dot_` becomes a lead
 macOS. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
 
 `chezmoi init` fetches this repository for you, so no separate `git clone` is required.
+
+## Shared AI configuration
+
+An instruction used by more than one assistant is written **once**, and each tool receives a
+real file in **its own** format: a Claude rule carrying `paths:`, a Copilot
+`.instructions.md` carrying `applyTo:`, and for Codex one literal file with no frontmatter,
+because Codex can neither import another file nor path-scope at all. No single shared file can
+serve all three.
+
+```
+home/.chezmoitemplates/rules/javascript.md   <-- the body, written once
+home/.chezmoidata.yaml                       <-- the glob, written once
+
+  -> ~/.claude/rules/javascript.md                        paths: "**/*.{js,jsx,ts,tsx}"
+  -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
+```
+
+Skills go the other way: one real copy serves all three, so they are shared as files rather
+than rendered. Anything used by only one tool is a plain file in that tool's folder, with no
+templating at all. Nothing is ever reworded into a tool-neutral twin.
 
 ## Choose a setup path
 
@@ -103,26 +123,6 @@ before changing it, and to read this repository's `AGENTS.md` before editing any
 so both the source-versus-target rule and the structural constraints apply even to an
 assistant that has never seen this repository. Starting from the repository root is still
 simplest, since each tool loads that guidance on its own.
-
-## Shared AI configuration
-
-An instruction used by more than one assistant is written **once**, and each tool receives a
-real file in **its own** format: a Claude rule carrying `paths:`, a Copilot
-`.instructions.md` carrying `applyTo:`, and for Codex one literal file with no frontmatter,
-because Codex can neither import another file nor path-scope at all. No single shared file can
-serve all three.
-
-```
-home/.chezmoitemplates/rules/javascript.md   <-- the body, written once
-home/.chezmoidata.yaml                       <-- the glob, written once
-
-  -> ~/.claude/rules/javascript.md                        paths: "**/*.{js,jsx,ts,tsx}"
-  -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
-```
-
-Skills go the other way: one real copy serves all three, so they are shared as files rather
-than rendered. Anything used by only one tool is a plain file in that tool's folder, with no
-templating at all. Nothing is ever reworded into a tool-neutral twin.
 
 ## Copying only part of this repository
 

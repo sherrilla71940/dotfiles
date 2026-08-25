@@ -28,7 +28,9 @@ Do not use it for transient work progress such as "page layout is 80% complete";
 
 Use `AGENTS.override.md` for private project instructions when the user explicitly wants a Codex-specific durable override.
 
-Codex aggregates `AGENTS.override.md` / `AGENTS.md` instructions through the project directory hierarchy, with more-specific project instructions applied later. Inspect the current repository layout before creating an override.
+At each directory level Codex reads `AGENTS.override.md` if it exists and `AGENTS.md` otherwise, so an override **replaces** its sibling rather than adding to it. The files found from the project root down are then concatenated, with the ones closest to the working directory applied last. The same replacement rule governs the global scope in `~/.codex`.
+
+Creating `AGENTS.override.md` beside a committed `AGENTS.md` therefore silences that file for every Codex session, with no warning. Inspect the repository layout first, and prefer extending the existing instructions unless the user explicitly wants the committed ones bypassed.
 
 Examples appropriate for `AGENTS.override.md`:
 

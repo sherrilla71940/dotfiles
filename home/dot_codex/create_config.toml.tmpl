@@ -56,6 +56,10 @@ args = [
     "--autoConnect",
 ]
 
+[mcp_servers.gitlab]
+url = "https://gitlab.dtdi.com.tw/api/v4/mcp"
+bearer_token_env_var = "GITLAB_MCP_TOKEN"
+
 [shell_environment_policy]
 inherit = "core"
 

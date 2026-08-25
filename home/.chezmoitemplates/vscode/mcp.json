@@ -35,6 +35,13 @@
         "--autoConnect"
       ],
       "gallery": "https://api.mcp.github.com"
+    },
+    "gitlab": {
+      "type": "http",
+      "url": "https://gitlab.dtdi.com.tw/api/v4/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:gitlab-pat}"
+      }
     }
   },
   "inputs": [
@@ -53,6 +60,12 @@
       "id": "allowed_dirs",
       "type": "promptString",
       "description": "Which directories should the filesystem server be allowed to access? (provide comma-separated paths)"
+    },
+    {
+      "type": "promptString",
+      "id": "gitlab-pat",
+      "description": "GitLab personal access token for gitlab.dtdi.com.tw (api scope)",
+      "password": true
     }
   ]
 }

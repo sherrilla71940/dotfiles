@@ -308,7 +308,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
-| Direct user MCP | Chrome DevTools | the manifest and hand-run installer |
+| Direct user MCP | Chrome DevTools, GitLab | the manifest and hand-run installer |
 | Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
@@ -324,6 +324,20 @@ only when `~/.codex/config.toml` does not exist. For an existing live config, co
 desired blocks and merge only what is missing; do nothing when those declarations are already
 present. Never replace the complete live file, because Codex also writes marketplace metadata,
 runtime paths, project trust, and other machine state there. Complete authentication locally.
+
+### GitLab, on every client
+
+The self-managed instance at `gitlab.dtdi.com.tw` exposes GitLab's built-in MCP server over
+HTTP at `/api/v4/mcp`, so every client uses the remote endpoint and none of them runs a local
+server process. No token is stored in this repository. The command-line clients read
+`GITLAB_MCP_TOKEN` from the environment — Claude Code and Copilot CLI expand `${...}` in a
+header, and Codex names the variable with `bearer_token_env_var`. VS Code instead prompts for
+`${input:gitlab-pat}` and keeps the value in its own secret storage, matching the existing
+Figma input.
+
+Set the variable per machine, outside the repository, with a personal access token for that
+instance. Codex's declaration reaches only a machine without `~/.codex/config.toml`; add it by
+hand or with `codex mcp add` on a machine that already has one.
 
 ### GitHub Copilot
 

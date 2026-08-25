@@ -185,8 +185,11 @@ files when it is installed and started later.
 | GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
 | Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
-The post-clone bootstrap helper installs `jq` for the Claude Model Context Protocol (MCP)
-installer and checks whether the VS Code CLI is available:
+The post-clone bootstrap helper installs the supporting tools this repository expects: `jq`
+for the Claude Model Context Protocol (MCP) installer, the TypeScript language server that
+the `typescript-lsp` plugin needs but does not install itself, and the Claude Code plugins.
+It also checks whether the VS Code CLI is available. It installs none of the applications
+above:
 
 ```bash
 bash scripts/bootstrap-macos.sh

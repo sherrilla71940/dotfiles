@@ -121,7 +121,7 @@ docs/decisions/                  architecture decisions and reconsideration trig
 
 | I want to… | Read |
 | --- | --- |
-| Set up a machine, or understand what happens if an app isn't installed | [docs/setup.md](./docs/setup.md) |
+| Set up a machine, or see which applications you install yourself | [docs/setup.md](./docs/setup.md) |
 | Add, change, or remove a general managed file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | Add or change AI instructions, skills, agents, prompts, MCP servers, or plugins | [docs/customization-support.md](./docs/customization-support.md) |
 | Understand why the repository is structured this way | [docs/decisions/README.md](./docs/decisions/README.md) |

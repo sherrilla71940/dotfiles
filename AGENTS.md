@@ -1,9 +1,11 @@
 # Working in this repository
 
-Always-on constraints for coding agents. This file is loaded into your context
-automatically, so it stays short: it lists only what you could get **wrong**, not how to do
-things. Procedures live in [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it
-before adding, changing or removing anything.
+Constraints for coding agents. A session working here loads this file automatically; a
+session working from elsewhere is sent here by the shared core instructions before it changes
+anything in this repository. Either way it stays short: it lists only what you could get
+**wrong**, not how to do things. Procedures live in
+[docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it before adding, changing or
+removing anything.
 
 This is a general user-level dotfiles repository. It manages editor, shell, tool, and AI
 configuration; the AI files are especially sensitive because a mistake can silently change
@@ -70,15 +72,16 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 ## Before you finish
 
 ```bash
-chezmoi source-path  # MUST identify this repository; otherwise stop
-chezmoi diff         # ALWAYS preview before apply; apply can replace live configuration
-chezmoi status       # empty after apply
+chezmoi source-path                                        # where chezmoi reads from
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # MUST be this repository, else stop
+chezmoi diff                                               # ALWAYS preview; apply replaces live config
+chezmoi status                                             # empty after apply
 ```
 
-Never run `chezmoi apply` until the source-path check and diff both succeed. A plain chezmoi
-command uses its configured source directory regardless of the current working directory. A
-symlink or Windows junction is valid when its resolved target is this repository; verify the
-filesystem or Git identity instead of comparing displayed path strings alone.
+Never run `chezmoi apply` until the identity check and the diff both succeed. A plain chezmoi
+command uses its configured source directory regardless of the current working directory, and
+that path may resolve through a symlink or Windows junction, so it will not look like this
+repository. Compare Git identity as above rather than the displayed string.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
 filenames, so real names are transformed silently and files can vanish. This has caused

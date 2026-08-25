@@ -36,7 +36,13 @@
 
   {{/* Posting a toast costs under a second; the rest of the notification hook's
        runtime is PowerShell start-up, which has been measured above ten seconds
-       on a loaded machine. */}}
+       on a loaded machine.
+
+       SessionStart shares that start-up cost on Windows and additionally runs
+       `claude agents --json` to spot another session in this working directory,
+       measured at about a second. Its timeout matches Notification for the same
+       reason: the work is cheap, the interpreter is not. A timeout here loses the
+       warning silently, so it is set well clear of the measured worst case. */}}
   "hooks": {
     "Notification": [
       {
@@ -50,7 +56,7 @@
       {
         "matcher": "startup|resume|fork",
         "hooks": [
-          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 5 }
+          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 20 }
         ]
       }
     ]

@@ -1,3 +1,10 @@
+# SessionStart hook. Two independent checks, either of which may add context:
+#   1. Another interactive session is already in this working directory, so both share one
+#      working tree, one index and one HEAD. Claude Code takes no lock on a directory, and
+#      git only refuses a duplicate checkout across worktrees, not across processes.
+#   2. Claude started in a directory that merely contains worktrees, so repository auto
+#      memory may not have loaded.
+# Check 1 applies inside a checkout and check 2 outside one, so neither may exit early.
 $ErrorActionPreference = "SilentlyContinue"
 
 $inputJson = [Console]::In.ReadToEnd()
@@ -15,30 +22,64 @@ $workingDirectory = [string]$payload.cwd
 if ([string]::IsNullOrWhiteSpace($workingDirectory) -or -not (Test-Path -LiteralPath $workingDirectory -PathType Container)) {
     exit 0
 }
+$sessionId = [string]$payload.session_id
 
-$insideWorkTree = & git -C $workingDirectory rev-parse --is-inside-work-tree 2>$null
-if ($LASTEXITCODE -eq 0 -and $insideWorkTree -eq "true") {
-    exit 0
+$messages = @()
+
+# Drive-letter case and separator style both vary between the hook payload and the agent
+# listing on Windows, so compare normalised paths rather than raw strings.
+function Get-NormalisedPath([string] $path) {
+    if ([string]::IsNullOrWhiteSpace($path)) { return "" }
+    return $path.ToLowerInvariant().Replace("\", "/").TrimEnd("/")
 }
 
-$worktrees = @(
-    Get-ChildItem -LiteralPath $workingDirectory -Directory -Force | Where-Object {
-        $gitFile = Join-Path $_.FullName ".git"
-        if (-not (Test-Path -LiteralPath $gitFile -PathType Leaf)) {
-            return $false
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    $listing = & claude agents --json 2>$null
+    if (-not [string]::IsNullOrWhiteSpace($listing)) {
+        try {
+            $here = Get-NormalisedPath $workingDirectory
+            $siblings = @(
+                ($listing | ConvertFrom-Json) | Where-Object {
+                    $_.kind -eq "interactive" -and
+                    [string]$_.sessionId -ne $sessionId -and
+                    (Get-NormalisedPath ([string]$_.cwd)) -eq $here
+                }
+            )
+        } catch {
+            $siblings = @()
         }
 
-        $childInsideWorkTree = & git -C $_.FullName rev-parse --is-inside-work-tree 2>$null
-        return $LASTEXITCODE -eq 0 -and $childInsideWorkTree -eq "true"
+        if ($siblings.Count -gt 0) {
+            $messages += "$($siblings.Count) other interactive Claude Code session(s) are already running in '$workingDirectory'. They share this working tree, index and HEAD, so a git add or commit here can pick up their staged changes, and a checkout switches their branch too. At the beginning of your first response, tell the user, and suggest 'claude --worktree <name>' for genuinely parallel work. Before any git add or commit in this session, stage explicit paths rather than -A or ., and check git diff --cached for files this session did not touch."
+        }
     }
-)
+}
 
-if ($worktrees.Count -eq 0) {
+$insideWorkTree = & git -C $workingDirectory rev-parse --is-inside-work-tree 2>$null
+if (-not ($LASTEXITCODE -eq 0 -and $insideWorkTree -eq "true")) {
+    $worktrees = @(
+        Get-ChildItem -LiteralPath $workingDirectory -Directory -Force | Where-Object {
+            $gitFile = Join-Path $_.FullName ".git"
+            if (-not (Test-Path -LiteralPath $gitFile -PathType Leaf)) {
+                return $false
+            }
+
+            $childInsideWorkTree = & git -C $_.FullName rev-parse --is-inside-work-tree 2>$null
+            return $LASTEXITCODE -eq 0 -and $childInsideWorkTree -eq "true"
+        }
+    )
+
+    if ($worktrees.Count -gt 0) {
+        $worktreeNames = ($worktrees | Select-Object -First 5 -ExpandProperty Name) -join ", "
+        $messages += "Claude Code started in '$workingDirectory', which is not a git checkout but contains linked worktrees ($worktreeNames). Repository auto memory may not have loaded for this session. At the beginning of your first response, briefly tell the user and recommend restarting Claude inside the intended worktree."
+    }
+}
+
+if ($messages.Count -eq 0) {
     exit 0
 }
 
-$worktreeNames = ($worktrees | Select-Object -First 5 -ExpandProperty Name) -join ", "
-$context = "Claude Code started in '$workingDirectory', which is not a git checkout but contains linked worktrees ($worktreeNames). Repository auto memory may not have loaded for this session. At the beginning of your first response, briefly tell the user and recommend restarting Claude inside the intended worktree. Do not repeat the reminder in later responses."
+$context = ($messages -join " ") + " Do not repeat these reminders in later responses."
 
 @{
     hookSpecificOutput = @{

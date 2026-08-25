@@ -13,7 +13,18 @@ Treat it as **where the work stopped and why**, not as project documentation, na
 
 **What it is.** One markdown file, `.project-continuity/state.md`, private to one working directory. Any of Claude Code, Codex or Copilot can read it and continue.
 
-**The move it exists for.** Claude runs out of quota mid-task. You open Codex *in that same directory*, say "continue from project continuity", and it picks up the objective, the blockers, and the reasoning behind decisions the diff alone cannot explain.
+**The move it exists for.**
+
+```text
+Claude working
+  → quota hits
+  → open Codex in the same worktree
+  → "Continue from project continuity"
+  → Codex reads state.md and checks Git
+  → continues
+```
+
+It picks up the objective, the blockers, and the reasoning behind decisions the diff alone cannot explain. The reverse, Codex to Claude, works the same way, as does either to Copilot.
 
 **The one rule that matters:** same interrupted task → reopen the same directory. New independent task → a new worktree, if isolation helps.
 

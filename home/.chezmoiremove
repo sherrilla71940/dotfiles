@@ -1,7 +1,0 @@
-{{/* Removes the retired Git Commit prompt's live target. Delete this file once every
-     managed machine has pulled and applied the removal. */}}
-{{ if eq .chezmoi.os "windows" -}}
-AppData/Roaming/Code/User/prompts/git-commit.prompt.md
-{{ else if eq .chezmoi.os "darwin" -}}
-Library/Application Support/Code/User/prompts/git-commit.prompt.md
-{{ end -}}

@@ -8,24 +8,25 @@ configuration consistent across environments.
 It solves three problems:
 
 - **Configuration drifts between machines, and the same setting lives at a different path on
-  each operating system.** One source of truth lives here, and templates absorb the difference.
+  each operating system.** Templates keep one managed configuration consistent across those
+  differences.
 - **Three AI tools need overlapping configuration, but each expects it in a different file and
   format.** Shared content is written once and rendered into the form each client accepts,
   while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the
   working agreement shared with Codex and Copilot with an additional Claude-only section at
   render time. Where the exact same file can serve multiple tools, as with shared skills, the
   repository uses symlinks instead of rendering copies.
-- **Some of these files the application rewrites behind you.** One settings file can hold both
-  what should follow your machines and what the application records about itself, so writing it
-  wholesale destroys the second. Take Claude Code's `settings.json`: the repository owns a
-  handful of durable keys and merges them over whatever Claude wrote, leaving your model,
-  effort and theme untouched.
+- **Some managed files are also rewritten by the applications that consume them.** One settings
+  file can hold both what should follow your machines and what the application records about
+  itself, so writing it wholesale destroys the second. Take Claude Code's `settings.json`:
+  the repository owns a handful of durable keys and merges them over whatever Claude wrote,
+  leaving your model, effort and theme untouched.
 
-None of that is taken on trust. A commit hook re-renders the staged source and fails if the
-shared rule bodies stop matching between clients, if a skill goes missing to a filename
-attribute, if Codex's file grows frontmatter, if a cross-reference points at a heading that no
-longer exists, or if the bash and PowerShell status lines stop printing the same thing — the
-status line being one output that genuinely is maintained as two implementations.
+None of that is taken on trust. A commit hook re-renders the staged source and fails if shared
+rule bodies diverge between clients, a skill disappears because of a filename attribute,
+Codex's file gains frontmatter, a cross-reference points to a missing heading, or the bash and
+PowerShell status lines produce different output — one of the few pieces intentionally
+maintained as two implementations.
 
 ## How it works
 

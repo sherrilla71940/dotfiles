@@ -253,9 +253,11 @@ The pre-commit hook:
 2. materializes and renders the staged Git snapshot,
 3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
 4. compares rendered Claude and Copilot rule bodies with cross-platform tools,
-5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`, and
+5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
 6. when a status line script is staged, renders both copies and compares their output, which
-   needs `jq` and PowerShell on `PATH`.
+   needs `jq` and PowerShell on `PATH`, and
+7. when any markdown is staged, resolves every relative link carrying a `#fragment` against
+   the headings that actually exist.
 
 The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
 described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
@@ -264,9 +266,11 @@ Before those checks it also warns, without rejecting the commit, when more than 
 interactive Claude Code session is running inside this working tree. Such sessions share one
 index, and `git commit` takes the whole index rather than the paths a session meant to stage,
 so the warning lists every staged file and how to unstage one. The launch-time equivalent is
-the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`; use
-`claude --worktree <name>` for genuinely parallel work. The check needs `claude` and `jq` on
-`PATH` and is skipped without them.
+the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`. Decline that
+offer in this repository and stage explicit paths instead: `chezmoi source-path` resolves to
+the main checkout wherever the session runs, so a worktree edit is not the source chezmoi
+reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The check
+needs `claude` and `jq` on `PATH` and is skipped without them.
 
 ## Working tree at `~/dotfiles`
 

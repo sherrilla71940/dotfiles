@@ -1,9 +1,8 @@
 # Dotfiles
 
-Personal cross-platform configuration system for dotfiles and AI development tooling. It uses
-[chezmoi](https://www.chezmoi.io) as the source of truth, with managed configuration versioned
-in Git, and provides a safe way to keep machine-specific, shared, and tool-specific
-configuration consistent across environments.
+Personal cross-platform configuration system for dotfiles and AI development tooling. It keeps
+the authoritative configuration in Git and uses [chezmoi](https://www.chezmoi.io) to render
+and apply that source state across machines.
 
 It solves three problems:
 

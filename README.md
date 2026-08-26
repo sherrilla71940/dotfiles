@@ -1,9 +1,9 @@
 # Dotfiles
 
-Personal cross-platform configuration system for dotfiles and AI development tooling. Managed
-configuration lives in Git, and [chezmoi](https://www.chezmoi.io) renders and applies it so
-each machine's live configuration matches the repository's desired state, with support for
-machine-specific, shared, and tool-specific configuration across environments.
+Personal cross-platform configuration for dotfiles and AI development tooling. The desired
+state lives in Git; [chezmoi](https://www.chezmoi.io) renders it into the live files each
+machine reads, resolving what is shared, what differs per operating system, and what belongs
+to a single tool.
 
 It solves three problems:
 

@@ -77,8 +77,10 @@ main checkout wherever the session runs, so a source edited in a worktree is not
 chezmoi reads: `chezmoi diff` renders the main checkout instead, and the pre-commit identity
 check refuses the commit with `default chezmoi source is outside this repository`. The
 `SessionStart` hook offers a worktree whenever sessions share this tree, and here that offer
-should be declined — stage explicit paths in the shared tree instead. Worktrees remain correct
-for ordinary repositories and for subagents editing in parallel.
+should be declined without asking, because this file has already answered it. Report that the
+tree is shared and that you are staying in it, staging explicit paths rather than `-A` or `.`,
+then get on with the work. Worktrees remain correct for ordinary repositories and for subagents
+editing in parallel.
 
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 

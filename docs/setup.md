@@ -27,7 +27,8 @@ a later step assumes an earlier one, and two of them are easy to discover too la
    enables the validation hook, then installs whatever supporting tools it can.
 5. Install the applications themselves and log in to each, which nothing here can do for you:
    see the table under
-   [Application installation and login](#application-installation-and-login).
+   [Application installation and login](#application-installation-and-login), then supply the
+   [MCP server credentials](#mcp-server-credentials) that no script can set.
 6. Run the [bootstrap helper](#bootstrap-helper) again. Its plugin, extension and MCP steps are
    each gated on a CLI that step 5 installs, so on a genuinely new machine the first run skips
    them. The second run is not optional.
@@ -208,6 +209,26 @@ files when it is installed and started later.
 | Codex CLI, IDE extension, or ChatGPT desktop app | Yes; install the surfaces you use | Log in and authenticate enabled connectors or plugins; local surfaces share `~/.codex/` configuration |
 | GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
 | Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
+
+### MCP server credentials
+
+The bootstrap helper installs the MCP server *declarations*, but never a credential. Two of
+them need a local step before their tools work, and neither announces itself: the server is
+simply listed and fails to connect.
+
+| Server | Local step |
+| --- | --- |
+| GitLab | None beyond authenticating once. Run `/mcp` in Claude Code, select `gitlab`, and choose **Authenticate**. The instance supports OAuth dynamic client registration, so no token is involved. |
+| GitHub | Set a `GITHUB_MCP_TOKEN` user environment variable to a personal access token scoped to `repo`, adding `read:org` only for organization repositories. GitHub publishes no registration endpoint, so OAuth is unavailable and Claude Code rejects the server without a token. |
+
+Set the variable before starting the client, not after: a process inherits its environment at
+start, and on Windows an editor's integrated terminal inherits the editor's, so a terminal
+opened inside an editor that was already running still will not see it. Restart the editor
+itself, then confirm with `echo ${#GITHUB_MCP_TOKEN}` before assuming the token is wrong.
+
+An unexpanded variable is not reported as a missing credential. The literal `${GITHUB_MCP_TOKEN}`
+is sent as the header and the server answers `HTTP 400`, which reads as a broken server rather
+than an unset variable.
 
 ### Bootstrap helper
 

@@ -33,15 +33,6 @@
   architectural impact), summarize what changed, why, and any assumptions or remaining
   risks. Scale the summary to the change.
 
-## CLI response formatting
-
-- Optimize for terminal readability and quick scanning.
-- Keep explanations concise; avoid dense paragraphs.
-- Prefer short bullets for multi-part explanations, findings, decisions, and next steps.
-- Use headings sparingly for meaningful sections.
-- Put multi-line code in fenced Markdown blocks with the appropriate language identifier.
-- These preferences apply only to interactive responses, not requested artifacts such as docs, PR/MR descriptions, commit messages, or emails.
-
 ## Session workflow
 
 - When a response commits anything, list each commit's short hash and subject line in that response. A hash can be checked against `git log`; a prose summary of your own work cannot.

@@ -58,7 +58,6 @@
   },
   // Source control
   "scm.inputFontFamily": "JetBrains Mono, Cascadia Code, Consolas, monospace",
-  // "scm.inputFontFamily": "Cascadia Mono, Fantasque Sans Mono, Fira Code Q",
   "scm.inputMinLineCount": 3,
   "scm.inputMaxLineCount": 10,
   "[scminput]": {

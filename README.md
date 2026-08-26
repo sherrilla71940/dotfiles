@@ -27,9 +27,9 @@ It solves three problems:
 
 None of that is taken on trust. A commit hook re-renders the staged source and fails if the
 shared rule bodies stop matching between clients, if a skill goes missing to a filename
-attribute, if Codex's file grows frontmatter, or if the bash and PowerShell status lines stop
-printing the same thing — the status line being one output that genuinely is maintained as two
-implementations.
+attribute, if Codex's file grows frontmatter, if a cross-reference points at a heading that no
+longer exists, or if the bash and PowerShell status lines stop printing the same thing — the
+status line being one output that genuinely is maintained as two implementations.
 
 ## How it works
 

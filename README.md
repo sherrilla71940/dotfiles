@@ -1,8 +1,10 @@
 # Dotfiles
 
-Personal repository for dotfiles: the per-user configuration files applications read out of
-your home directory, such as `~/.bashrc`, VS Code's `settings.json`, and Claude Code's rules
-and skills. Keeping them in Git makes them consistent across machines and gives any
+Personal cross-platform configuration system for dotfiles and AI development tooling — the
+per-user files applications read out of your home directory, such as `~/.bashrc`, VS Code's
+`settings.json`, and Claude Code's rules and skills. It uses
+[chezmoi](https://www.chezmoi.io) as the source of truth, keeping machine-specific, shared,
+and tool-specific configuration consistent across Windows and macOS, and gives any
 configuration change a history, a diff, and a way back. The AI clients — Claude Code, Codex,
 and GitHub Copilot — are what most of the machinery here exists for.
 
@@ -10,13 +12,13 @@ It solves three problems:
 
 - **Configuration drifts between machines, and the same setting lives at a different path on
   each operating system.** One source of truth lives here, and templates absorb the difference.
-- **Three AI tools want the same instruction, each in its own file and its own shape.** An
-  instruction is written **once** and rendered into whatever each client accepts — and a single
-  rendered file can carry shared and tool-specific content together. `~/.claude/CLAUDE.md` is
-  exactly that: the working agreement shared with Codex and Copilot, then a Claude-only section
-  below it, composed from two sources every time you apply. A symlink cannot express that; it
-  gives you one whole file or nothing — which is why skills, where one file *does* serve every
-  tool, are shared by symlink instead.
+- **Three AI tools need overlapping configuration, but each expects it in a different file and
+  format.** Shared content is written **once** and rendered into the form each client accepts,
+  while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the
+  working agreement shared with Codex and Copilot with a Claude-only section below it, composed
+  from two sources at render time. A symlink cannot express that — it gives you one whole file
+  or nothing — which is why skills, where one file *does* serve every tool unchanged, are
+  shared by symlink instead.
 - **Some of these files the application rewrites behind you.** One settings file can hold both
   what should follow your machines and what the application records about itself, so writing it
   wholesale destroys the second. Take Claude Code's `settings.json`: the repository owns a
@@ -31,9 +33,9 @@ implementations.
 
 ## How it works
 
-[Chezmoi](https://www.chezmoi.io) turns this repository into the live files your applications
-read. The files under `home/` are the **source state**: the desired configuration, which is
-what you edit and commit. What chezmoi writes into your home directory are **targets**.
+Chezmoi turns this repository into the live files your applications read. The files under
+`home/` are the **source state**: the desired configuration, which is what you edit and
+commit. What chezmoi writes into your home directory are **targets**.
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc

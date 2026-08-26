@@ -1,24 +1,20 @@
 # Dotfiles
 
-Personal cross-platform configuration system for dotfiles and AI development tooling — the
-per-user files applications read out of your home directory, such as `~/.bashrc`, VS Code's
-`settings.json`, and Claude Code's rules and skills. It uses
-[chezmoi](https://www.chezmoi.io) as the source of truth, keeping machine-specific, shared,
-and tool-specific configuration consistent across Windows and macOS, and gives any
-configuration change a history, a diff, and a way back. The AI clients — Claude Code, Codex,
-and GitHub Copilot — are what most of the machinery here exists for.
+Personal cross-platform configuration system for dotfiles and AI development tooling. It uses
+[chezmoi](https://www.chezmoi.io) as the source of truth, with managed configuration versioned
+in Git, and provides a safe way to keep machine-specific, shared, and tool-specific
+configuration consistent across environments.
 
 It solves three problems:
 
 - **Configuration drifts between machines, and the same setting lives at a different path on
   each operating system.** One source of truth lives here, and templates absorb the difference.
 - **Three AI tools need overlapping configuration, but each expects it in a different file and
-  format.** Shared content is written **once** and rendered into the form each client accepts,
+  format.** Shared content is written once and rendered into the form each client accepts,
   while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the
-  working agreement shared with Codex and Copilot with a Claude-only section below it, composed
-  from two sources at render time. A symlink cannot express that — it gives you one whole file
-  or nothing — which is why skills, where one file *does* serve every tool unchanged, are
-  shared by symlink instead.
+  working agreement shared with Codex and Copilot with an additional Claude-only section at
+  render time. Where the exact same file can serve multiple tools, as with shared skills, the
+  repository uses symlinks instead of rendering copies.
 - **Some of these files the application rewrites behind you.** One settings file can hold both
   what should follow your machines and what the application records about itself, so writing it
   wholesale destroys the second. Take Claude Code's `settings.json`: the repository owns a

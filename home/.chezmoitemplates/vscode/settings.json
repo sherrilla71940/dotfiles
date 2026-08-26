@@ -103,7 +103,7 @@
   "terminal.integrated.cursorWidth": 4,
   "terminal.integrated.cursorBlinking": false,
   "task.notifyWindowOnTaskCompletion": 0,
-  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.fontSize": 13,
   // Git
   "git.confirmSync": false,
   "git.autofetch": true,

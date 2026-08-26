@@ -7,6 +7,32 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."
 }
 
+$repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+
+# Chezmoi reads its source from ~/.local/share/chezmoi, and this repository is developed at
+# ~/dotfiles instead (ADR-0006), so the default path is satisfied with a directory junction --
+# which, unlike a symlink, needs no elevated privilege. That junction is not part of the source
+# state, so `chezmoi apply` neither creates nor repairs it, and a machine missing it silently
+# uses whatever the directory happens to contain. An existing entry is never replaced.
+$sourceDir = Join-Path $HOME ".local\share\chezmoi"
+if (Test-Path $sourceDir) {
+    $resolved = (Resolve-Path $sourceDir).Path
+    if ($resolved -eq $repo) {
+        Write-Host "chezmoi source directory already points at $repo"
+    } else {
+        Write-Warning "chezmoi source directory exists and is not this repository: $sourceDir. Move it aside and rerun, or set sourceDir yourself. Leaving it untouched."
+    }
+} else {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourceDir) | Out-Null
+    New-Item -ItemType Junction -Path $sourceDir -Target $repo | Out-Null
+    Write-Host "linked $sourceDir -> $repo"
+}
+
+# The pre-commit hook lives in the repository rather than .git/hooks, so it does nothing until
+# core.hooksPath is set. Left unset, every validation check is silently absent on a new clone.
+git -C $repo config core.hooksPath scripts/git-hooks
+Write-Host "repository validation enabled (core.hooksPath)"
+
 $packageId = "jqlang.jq"
 # The documented setup installs Git and chezmoi before cloning. This post-clone helper adds
 # jq for the Claude MCP installer and verifies whether the VS Code CLI is already available.
@@ -32,6 +58,16 @@ if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue))
 
 if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
+} else {
+    # The manifest stays out of routine apply because installing this many extensions is slow
+    # and is not something a configuration change should trigger. This script runs once, by
+    # hand, which is where it belongs.
+    $manifest = Join-Path $repo "scripts\vscode-extensions.txt"
+    if (Test-Path $manifest) {
+        Write-Host "installing VS Code extensions from the manifest..."
+        Get-Content $manifest | Where-Object { $_ -and -not $_.StartsWith("#") } |
+            ForEach-Object { code --install-extension $_ --force 2>$null | Out-Null }
+    }
 }
 
 # Claude Code plugins are installed software, not configuration, so they belong here rather
@@ -44,6 +80,16 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
         claude plugin install "$plugin@claude-plugins-official" --scope user 2>$null | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Could not install $plugin. Add it from /plugin once Claude Code is running."
+        }
+    }
+
+    # ~/.claude.json also holds application-owned state, so the installer adds only missing
+    # server names and leaves any existing one exactly as it is.
+    $mcpInstaller = Join-Path $repo "scripts\install-claude-mcp.ps1"
+    if (Test-Path $mcpInstaller) {
+        powershell -NoProfile -ExecutionPolicy Bypass -File $mcpInstaller
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "The Claude MCP installer failed. Run scripts\install-claude-mcp.ps1 by hand."
         }
     }
 } else {

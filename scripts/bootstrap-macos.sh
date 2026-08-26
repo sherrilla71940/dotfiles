@@ -9,6 +9,32 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+
+# Chezmoi reads its source from ~/.local/share/chezmoi, and this repository is developed at
+# ~/dotfiles instead (ADR-0006), so the default path is satisfied with a symlink. That link is
+# not part of the source state, so `chezmoi apply` neither creates nor repairs it, and a
+# machine missing it silently uses whatever the directory happens to contain. An existing
+# entry is never replaced: `ln -s` onto a directory nests inside it and still exits 0.
+source_dir="$HOME/.local/share/chezmoi"
+if [[ -e "$source_dir" ]]; then
+  if [[ "$(cd "$source_dir" && pwd -P)" == "$repo" ]]; then
+    printf 'chezmoi source directory already points at %s\n' "$repo"
+  else
+    printf 'chezmoi source directory exists and is not this repository: %s\n' "$source_dir" >&2
+    printf '  Move it aside and rerun, or set sourceDir yourself. Leaving it untouched.\n' >&2
+  fi
+else
+  mkdir -p "$(dirname "$source_dir")"
+  ln -s "$repo" "$source_dir"
+  printf 'linked %s -> %s\n' "$source_dir" "$repo"
+fi
+
+# The pre-commit hook lives in the repository rather than .git/hooks, so it does nothing until
+# core.hooksPath is set. Left unset, every validation check is silently absent on a new clone.
+git -C "$repo" config core.hooksPath scripts/git-hooks
+printf 'repository validation enabled (core.hooksPath)\n'
+
 # The documented setup installs Git and chezmoi before cloning. This post-clone helper adds
 # jq for the Claude MCP installer and verifies whether the VS Code CLI is already available.
 brew list --formula jq >/dev/null 2>&1 || brew install jq
@@ -28,6 +54,17 @@ fi
 
 if ! command -v code >/dev/null 2>&1; then
   printf 'VS Code CLI not on PATH. Install VS Code, then run "Shell Command: Install '"'"'code'"'"' command in PATH".\n' >&2
+else
+  # The manifest stays out of routine apply because installing this many extensions is slow
+  # and is not something a configuration change should trigger. This script runs once, by
+  # hand, which is where it belongs.
+  manifest="$repo/scripts/vscode-extensions.txt"
+  if [[ -f "$manifest" ]]; then
+    printf 'installing VS Code extensions from the manifest...\n'
+    grep -v '^#' "$manifest" | grep . |
+      xargs -I{} code --install-extension {} --force >/dev/null 2>&1 ||
+      printf 'Some VS Code extensions failed. Rerun the manifest command from docs/setup.md.\n' >&2
+  fi
 fi
 
 # Claude Code plugins are installed software, not configuration, so they belong here rather
@@ -41,6 +78,13 @@ if command -v claude >/dev/null 2>&1; then
       printf 'Could not install %s. Add it from /plugin once Claude Code is running.\n' "$plugin" >&2
     fi
   done
+
+  # ~/.claude.json also holds application-owned state, so the installer adds only missing
+  # server names and leaves any existing one exactly as it is.
+  if [[ -f "$repo/scripts/install-claude-mcp.sh" ]]; then
+    bash "$repo/scripts/install-claude-mcp.sh" ||
+      printf 'The Claude MCP installer failed. Run scripts/install-claude-mcp.sh by hand.\n' >&2
+  fi
 else
   printf 'claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script.\n' >&2
 fi

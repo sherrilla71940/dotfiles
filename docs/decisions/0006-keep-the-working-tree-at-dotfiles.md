@@ -58,6 +58,8 @@ machine whose link is missing silently uses whatever `~/.local/share/chezmoi` co
 identity check belongs immediately after cloning rather than at first failure.
 
 A new machine needs one step beyond cloning, and that step differs per operating system.
+`scripts/bootstrap-*` now creates the link on both platforms, reports it when it already
+points at this repository, and refuses to replace an unrelated directory.
 
 ## Reconsider when
 

@@ -1,4 +1,5 @@
-# Verify that every relative markdown link carrying a #fragment resolves to a real heading.
+# Verify that every markdown link carrying a #fragment resolves to a real heading, whether it
+# points into another file relatively or at a heading in the same file.
 #
 # Anchor rot is silent: the link still renders, and only fails when a reader clicks it. The
 # guides and the decision records cross-reference each other by anchor, so renaming one
@@ -39,8 +40,9 @@ fence { next }
 }
 
 {
+  # Two forms: a relative link into another file, and a bare fragment inside this one.
   line = $0
-  while (match(line, /\]\(\.[^)]*#[A-Za-z0-9_-]+\)/)) {
+  while (match(line, /\]\((\.[^)]*)?#[A-Za-z0-9_-]+\)/)) {
     src[++total] = FILENAME
     raw[total] = substr(line, RSTART + 2, RLENGTH - 3)
     lno[total] = FNR
@@ -51,9 +53,13 @@ fence { next }
 END {
   for (i = 1; i <= total; i++) {
     split(raw[i], part, "#")
-    dir = src[i]
-    if (!sub(/\/[^\/]*$/, "", dir)) dir = "."
-    target = normalise(dir, part[1])
+    if (part[1] == "") {
+      target = src[i]                             # bare #fragment: same file
+    } else {
+      dir = src[i]
+      if (!sub(/\/[^\/]*$/, "", dir)) dir = "."
+      target = normalise(dir, part[1])
+    }
     if (!(target in scanned)) why = "no such file"
     else if (!(target SUBSEP part[2] in heading)) why = "no such heading"
     else continue

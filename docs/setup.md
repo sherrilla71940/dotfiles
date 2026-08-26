@@ -10,6 +10,25 @@ Chezmoi calls the desired files in its repository clone the **source state**. It
 those files into live **targets** under your home directory when you run `chezmoi apply`.
 For example, the source `home/dot_bashrc` renders to the target `~/.bashrc`.
 
+## New machine, in order
+
+The steps below are the whole path. Each links to its own section; the ordering matters
+because a later step assumes an earlier one.
+
+1. [Install Git and chezmoi](#install-git-and-chezmoi), and on Windows
+   [enable symlink creation](#enable-windows-symlink-creation). Both are needed before cloning.
+2. Pick a path: [empty machine](#empty-machine) for a machine with nothing to preserve, or
+   [existing configuration](#existing-configuration) when any current setting should survive.
+   When unsure, choose the second — it changes no live file until you say so.
+3. Decide where the working tree lives. Cloning to `~/dotfiles` is this repository's layout
+   and is cheapest to choose now: see [Working tree at `~/dotfiles`](#working-tree-at-dotfiles).
+4. Run the [bootstrap helper](#application-installation-and-login). It links the default source
+   directory, enables the validation hook, and installs the supporting tools, VS Code
+   extensions and user MCP servers.
+5. Install the applications themselves and log in to each, which nothing here can do for you:
+   see the table under [Application installation and login](#application-installation-and-login).
+6. [Verify](#verification).
+
 ## Choose a setup path
 
 Choose based on the configuration already in the home directory:
@@ -186,11 +205,13 @@ files when it is installed and started later.
 | GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
 | Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
-The post-clone bootstrap helper installs the supporting tools this repository expects: `jq`
-for the Claude Model Context Protocol (MCP) installer, the TypeScript language server that
-the `typescript-lsp` plugin needs but does not install itself, and the Claude Code plugins.
-It also checks whether the VS Code CLI is available. It installs none of the applications
-above:
+The post-clone bootstrap helper wires the clone up and installs the supporting tools this
+repository expects. It points chezmoi's default source directory at this working tree, sets
+`core.hooksPath` so the validation hook runs, then installs `jq` for the Claude Model
+Context Protocol (MCP) installer, the TypeScript language server that the `typescript-lsp`
+plugin needs but does not install itself, the Claude Code plugins, the VS Code extensions
+from the manifest, and the user MCP servers. It installs none of the applications above,
+and it never replaces an existing source directory:
 
 ```bash
 bash scripts/bootstrap-macos.sh
@@ -202,7 +223,8 @@ powershell -File scripts/bootstrap-windows.ps1
 
 ### VS Code extensions
 
-The extension manifest is intentionally separate from routine apply:
+The bootstrap helper installs these when the `code` CLI is on `PATH`. The manifest stays out
+of routine apply, so run it directly to reinstall or to pick up manifest changes later:
 
 ```bash
 grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
@@ -215,8 +237,8 @@ Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.Start
 
 ### Claude user MCP servers
 
-After Claude Code is installed, add the repository's direct user MCP servers with the
-platform installer:
+The bootstrap helper runs this when the `claude` CLI is on `PATH`. Run it directly if Claude
+Code was installed afterwards, or to pick up manifest changes:
 
 ```bash
 bash scripts/install-claude-mcp.sh
@@ -241,7 +263,7 @@ client-specific source and Codex's create-once behavior.
 
 ## Enable repository validation
 
-Run once in each clone:
+The bootstrap helper does this. Run it by hand in a clone that has not been bootstrapped:
 
 ```bash
 git config core.hooksPath scripts/git-hooks
@@ -285,6 +307,10 @@ source state — only where the checkout you edit lives. See
 way needs no link and the repository sits under `~/.local/share/chezmoi`. Both layouts work.
 To use `~/dotfiles`, clone there and point the default source directory at it. Do this only
 when `~/.local/share/chezmoi` does not already contain changes you need.
+
+The bootstrap helper creates the link when the path is free, reports it when it already
+points here, and refuses to touch an unrelated directory. The commands below are what it
+runs, for a machine being set up by hand.
 
 macOS or Git Bash with symlink permission. Remove any existing clone first: `ln -s` onto an
 existing directory silently creates `~/.local/share/chezmoi/dotfiles` inside it and exits 0,

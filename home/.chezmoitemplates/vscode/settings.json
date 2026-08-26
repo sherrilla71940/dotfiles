@@ -97,7 +97,12 @@
     "typescript"
   ],
   // Terminal
-  "terminal.integrated.fontFamily": "MesloLGS NF",
+  // MesloLGS NF carries the Nerd Font glyphs terminal output draws; plain JetBrains
+  // Mono does not, so it sits behind it as a fallback rather than replacing it.
+  // The commented line is the one-font-everywhere option, and needs JetBrainsMono
+  // Nerd Font installed first - the plain family is not a substitute for it.
+  "terminal.integrated.fontFamily": "MesloLGS NF, JetBrains Mono, Consolas, monospace",
+  // "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font, MesloLGS NF, monospace",
   "terminal.integrated.defaultProfile.windows": "Git Bash",
   "terminal.integrated.cursorStyle": "line",
   "terminal.integrated.cursorWidth": 4,

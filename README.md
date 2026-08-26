@@ -173,6 +173,7 @@ home/                            chezmoi source state
 scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup: links the chezmoi source
                                  directory, enables the hook, installs the tools (run by hand)
 scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude
+scripts/claude-user-mcp-servers.json  the MCP manifest those installers read
 scripts/claude-settings-drift.sh lists Claude settings changed locally but not in the repo
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/git-hooks/markdown-anchors.awk  resolves documentation cross-references

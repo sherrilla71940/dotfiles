@@ -4,3 +4,4 @@ scripts/git-hooks/* text eol=lf
 dot_bashrc text eol=lf
 dot_bash_profile text eol=lf
 dot_zshrc.tmpl text eol=lf
+scripts/vscode-extensions.txt text eol=lf

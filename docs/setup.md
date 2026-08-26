@@ -12,22 +12,26 @@ For example, the source `home/dot_bashrc` renders to the target `~/.bashrc`.
 
 ## New machine, in order
 
-The steps below are the whole path. Each links to its own section; the ordering matters
-because a later step assumes an earlier one.
+The steps below are the whole path. Each links to its own section, and the order matters:
+a later step assumes an earlier one, and two of them are easy to discover too late.
 
 1. [Install Git and chezmoi](#install-git-and-chezmoi), and on Windows
    [enable symlink creation](#enable-windows-symlink-creation). Both are needed before cloning.
-2. Pick a path: [empty machine](#empty-machine) for a machine with nothing to preserve, or
+2. Decide where the Git working tree lives, **before** cloning, because both setup paths below
+   clone for you: see [Working tree at `~/dotfiles`](#working-tree-at-dotfiles). To use
+   `~/dotfiles`, `git clone` there yourself rather than letting `chezmoi init` choose.
+3. Pick a path: [empty machine](#empty-machine) for a machine with nothing to preserve, or
    [existing configuration](#existing-configuration) when any current setting should survive.
    When unsure, choose the second — it changes no live file until you say so.
-3. Decide where the working tree lives. Cloning to `~/dotfiles` is this repository's layout
-   and is cheapest to choose now: see [Working tree at `~/dotfiles`](#working-tree-at-dotfiles).
-4. Run the [bootstrap helper](#application-installation-and-login). It links the default source
-   directory, enables the validation hook, and installs the supporting tools, VS Code
-   extensions and user MCP servers.
+4. Run the [bootstrap helper](#bootstrap-helper). It links the default source directory and
+   enables the validation hook, then installs whatever supporting tools it can.
 5. Install the applications themselves and log in to each, which nothing here can do for you:
-   see the table under [Application installation and login](#application-installation-and-login).
-6. [Verify](#verification).
+   see the table under
+   [Application installation and login](#application-installation-and-login).
+6. Run the [bootstrap helper](#bootstrap-helper) again. Its plugin, extension and MCP steps are
+   each gated on a CLI that step 5 installs, so on a genuinely new machine the first run skips
+   them. The second run is not optional.
+7. [Verify](#verification).
 
 ## Choose a setup path
 
@@ -205,6 +209,8 @@ files when it is installed and started later.
 | GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
 | Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
+### Bootstrap helper
+
 The post-clone bootstrap helper wires the clone up and installs the supporting tools this
 repository expects. It points chezmoi's default source directory at this working tree, sets
 `core.hooksPath` so the validation hook runs, then installs `jq` for the Claude Model
@@ -269,17 +275,17 @@ The bootstrap helper does this. Run it by hand in a clone that has not been boot
 git config core.hooksPath scripts/git-hooks
 ```
 
-The pre-commit hook:
+The pre-commit hook, in order (the script's own numbering starts at the render step):
 
-1. confirms the default chezmoi source resolves inside this repository,
-2. materializes and renders the staged Git snapshot,
-3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
-4. compares rendered Claude and Copilot rule bodies with cross-platform tools,
-5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
-6. when a status line script is staged, renders both copies and compares their output, which
-   needs `jq` and PowerShell on `PATH`, and
-7. when any markdown is staged, resolves every relative link carrying a `#fragment` against
-   the headings that actually exist.
+- confirms the default chezmoi source resolves inside this repository,
+- materializes and renders the staged Git snapshot,
+- checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
+- compares rendered Claude and Copilot rule bodies with cross-platform tools,
+- rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
+- when a status line script is staged, renders both copies and compares their output, which
+  needs `jq` and PowerShell on `PATH`, and
+- when any markdown is staged, resolves every link carrying a `#fragment` — into another file
+  or within the same one — against the headings that actually exist.
 
 The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
 described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
@@ -309,8 +315,8 @@ To use `~/dotfiles`, clone there and point the default source directory at it. D
 when `~/.local/share/chezmoi` does not already contain changes you need.
 
 The bootstrap helper creates the link when the path is free, reports it when it already
-points here, and refuses to touch an unrelated directory. The commands below are what it
-runs, for a machine being set up by hand.
+points here, names a broken one, and refuses to touch an unrelated directory. The commands
+below are what it runs, for a machine being set up by hand.
 
 macOS or Git Bash with symlink permission. Remove any existing clone first: `ln -s` onto an
 existing directory silently creates `~/.local/share/chezmoi/dotfiles` inside it and exits 0,

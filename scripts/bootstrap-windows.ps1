@@ -3,24 +3,31 @@
 # could install software unexpectedly.
 $ErrorActionPreference = "Stop"
 
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."
-}
-
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+
+# Wiring the clone up runs before the package-manager gate below. Neither step needs winget,
+# and both are the ones that fail silently when skipped.
 
 # Chezmoi reads its source from ~/.local/share/chezmoi, and this repository is developed at
 # ~/dotfiles instead (ADR-0006), so the default path is satisfied with a directory junction --
 # which, unlike a symlink, needs no elevated privilege. That junction is not part of the source
 # state, so `chezmoi apply` neither creates nor repairs it, and a machine missing it silently
 # uses whatever the directory happens to contain. An existing entry is never replaced.
+#
+# Compare the reparse target, not Resolve-Path: that normalises a path but does not follow a
+# junction, so it returns the link itself and a correctly linked machine would be reported as
+# holding an unrelated directory.
 $sourceDir = Join-Path $HOME ".local\share\chezmoi"
-if (Test-Path $sourceDir) {
-    $resolved = (Resolve-Path $sourceDir).Path
-    if ($resolved -eq $repo) {
+$existing = Get-Item -LiteralPath $sourceDir -Force -ErrorAction SilentlyContinue
+if ($existing) {
+    $linkTarget = $existing.Target | Select-Object -First 1
+    $resolved = if ($linkTarget) { [IO.Path]::GetFullPath($linkTarget) } else { $existing.FullName }
+    if ($resolved -ieq $repo) {
         Write-Host "chezmoi source directory already points at $repo"
+    } elseif ($linkTarget -and -not (Test-Path -LiteralPath $resolved)) {
+        Write-Warning "chezmoi source directory is a broken link to $resolved. Remove $sourceDir, then rerun."
     } else {
-        Write-Warning "chezmoi source directory exists and is not this repository: $sourceDir. Move it aside and rerun, or set sourceDir yourself. Leaving it untouched."
+        Write-Warning "chezmoi source directory exists and is not this repository: $sourceDir -> $resolved. Move it aside and rerun, or set sourceDir yourself. Leaving it untouched."
     }
 } else {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourceDir) | Out-Null
@@ -30,8 +37,19 @@ if (Test-Path $sourceDir) {
 
 # The pre-commit hook lives in the repository rather than .git/hooks, so it does nothing until
 # core.hooksPath is set. Left unset, every validation check is silently absent on a new clone.
+# A failing native command does not stop the script even under ErrorActionPreference Stop, so
+# report the failure instead of printing success over it.
 git -C $repo config core.hooksPath scripts/git-hooks
-Write-Host "repository validation enabled (core.hooksPath)"
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not set core.hooksPath, so the validation hook will not run. Is $repo a Git checkout?"
+} else {
+    Write-Host "repository validation enabled (core.hooksPath)"
+}
+
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."
+}
 
 $packageId = "jqlang.jq"
 # The documented setup installs Git and chezmoi before cloning. This post-clone helper adds
@@ -65,8 +83,16 @@ if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     $manifest = Join-Path $repo "scripts\vscode-extensions.txt"
     if (Test-Path $manifest) {
         Write-Host "installing VS Code extensions from the manifest..."
-        Get-Content $manifest | Where-Object { $_ -and -not $_.StartsWith("#") } |
-            ForEach-Object { code --install-extension $_ --force 2>$null | Out-Null }
+        $failed = 0
+        Get-Content $manifest | ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and -not $_.StartsWith("#") } |
+            ForEach-Object {
+                code --install-extension $_ --force 2>$null | Out-Null
+                if ($LASTEXITCODE -ne 0) { $failed++ }
+            }
+        if ($failed -gt 0) {
+            Write-Warning "$failed VS Code extensions failed. Rerun the manifest command from docs/setup.md."
+        }
     }
 }
 

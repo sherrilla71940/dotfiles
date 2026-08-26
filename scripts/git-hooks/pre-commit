@@ -229,7 +229,8 @@ if [[ "$statusline_changed" == true ]]; then
   fi
 fi
 
-# 7. Every relative markdown link with a #fragment must resolve to a real heading. Anchor rot
+# 7. Every markdown link with a #fragment must resolve to a real heading, whether it points
+#    into another file or at a heading in the same one. Anchor rot
 #    is silent: the link still renders and only fails when a reader clicks it. The guides and
 #    the decision records cross-reference each other this way, so one renamed heading can
 #    break several files at once. Only run when markdown is staged.

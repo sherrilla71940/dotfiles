@@ -4,21 +4,25 @@
 # install software unexpectedly.
 set -euo pipefail
 
-if ! command -v brew >/dev/null 2>&1; then
-  printf 'Homebrew is required. Install it from https://brew.sh, then rerun this script.\n' >&2
-  exit 1
-fi
-
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+
+# Wiring the clone up runs before the package-manager gate below. Neither step needs Homebrew,
+# and both are the ones that fail silently when skipped.
 
 # Chezmoi reads its source from ~/.local/share/chezmoi, and this repository is developed at
 # ~/dotfiles instead (ADR-0006), so the default path is satisfied with a symlink. That link is
 # not part of the source state, so `chezmoi apply` neither creates nor repairs it, and a
 # machine missing it silently uses whatever the directory happens to contain. An existing
 # entry is never replaced: `ln -s` onto a directory nests inside it and still exits 0.
+#
+# -L as well as -e, because a dangling symlink is invisible to -e alone and would fall through
+# to the ln below, which then fails with "File exists".
 source_dir="$HOME/.local/share/chezmoi"
-if [[ -e "$source_dir" ]]; then
-  if [[ "$(cd "$source_dir" && pwd -P)" == "$repo" ]]; then
+if [[ -e "$source_dir" || -L "$source_dir" ]]; then
+  if [[ -L "$source_dir" && ! -e "$source_dir" ]]; then
+    printf 'chezmoi source directory is a broken link: %s\n' "$source_dir" >&2
+    printf '  Remove it, then rerun. Leaving it untouched.\n' >&2
+  elif [[ "$(cd "$source_dir" && pwd -P)" == "$repo" ]]; then
     printf 'chezmoi source directory already points at %s\n' "$repo"
   else
     printf 'chezmoi source directory exists and is not this repository: %s\n' "$source_dir" >&2
@@ -32,8 +36,18 @@ fi
 
 # The pre-commit hook lives in the repository rather than .git/hooks, so it does nothing until
 # core.hooksPath is set. Left unset, every validation check is silently absent on a new clone.
-git -C "$repo" config core.hooksPath scripts/git-hooks
-printf 'repository validation enabled (core.hooksPath)\n'
+# Guarded so a non-checkout does not abort the rest of the script under set -e.
+if git -C "$repo" config core.hooksPath scripts/git-hooks 2>/dev/null; then
+  printf 'repository validation enabled (core.hooksPath)\n'
+else
+  printf 'Could not set core.hooksPath, so the validation hook will not run. Is %s a Git checkout?\n' "$repo" >&2
+fi
+
+
+if ! command -v brew >/dev/null 2>&1; then
+  printf 'Homebrew is required. Install it from https://brew.sh, then rerun this script.\n' >&2
+  exit 1
+fi
 
 # The documented setup installs Git and chezmoi before cloning. This post-clone helper adds
 # jq for the Claude MCP installer and verifies whether the VS Code CLI is already available.

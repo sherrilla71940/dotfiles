@@ -19,7 +19,7 @@
   "editor.insertSpaces": true,
   "editor.fontSize": 12.5,
   // "editor.fontSize": 13,
-  "editor.fontFamily": "JetBrains Mono, Cascadia Mono, Fantasque Sans Mono, Fira Code Q",
+  "editor.fontFamily": "JetBrains Mono, Cascadia Mono, Fantasque Sans Mono, Consolas, monospace",
   "editor.mouseWheelZoom": true,
   "editor.renderWhitespace": "all",
   "editor.renderControlCharacters": true,

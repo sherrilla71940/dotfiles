@@ -1,0 +1,50 @@
+{
+  "name": "Dracula",
+  "base": "dark",
+  "overrides": {
+    "claude": "#bd93f9",
+    "claudeShimmer": "#e0c9ff",
+    "text": "#f8f8f2",
+    "inverseText": "#282a36",
+    "inactive": "#6272a4",
+    "inactiveShimmer": "#8b9dd0",
+    "subtle": "#44475a",
+    "suggestion": "#8be9fd",
+    "permission": "#bd93f9",
+    "permissionShimmer": "#e0c9ff",
+    "remember": "#ff79c6",
+
+    "success": "#50fa7b",
+    "error": "#ff5555",
+    "warning": "#ffb86c",
+    "warningShimmer": "#ffd6ae",
+    "merged": "#bd93f9",
+
+    "promptBorder": "#6272a4",
+    "promptBorderShimmer": "#8b9dd0",
+    "planMode": "#8be9fd",
+    "autoAccept": "#50fa7b",
+    "bashBorder": "#ff79c6",
+    "ide": "#8be9fd",
+    "fastMode": "#f1fa8c",
+    "fastModeShimmer": "#f9fdc0",
+
+    "diffAdded": "#1e3a2a",
+    "diffRemoved": "#4a1f26",
+    "diffAddedDimmed": "#1a2a22",
+    "diffRemovedDimmed": "#33222a",
+    "diffAddedWord": "#2d5a3d",
+    "diffRemovedWord": "#6e2b35",
+
+    "userMessageBackground": "#21222c",
+    "userMessageBackgroundHover": "#2b2d3a",
+    "bashMessageBackgroundColor": "#3a2433",
+    "memoryBackgroundColor": "#302a4a",
+    "selectionBg": "#44475a",
+
+    "rate_limit_fill": "#bd93f9",
+    "rate_limit_empty": "#44475a",
+    "briefLabelYou": "#8be9fd",
+    "briefLabelClaude": "#bd93f9"
+  }
+}

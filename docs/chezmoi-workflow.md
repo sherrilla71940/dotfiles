@@ -115,6 +115,12 @@ project settings own everything else, including `model`, `effortLevel`, `theme`,
 `tui`, `permissions`, `enabledPlugins`, and unknown future keys, so those survive
 `chezmoi apply` without entering Git.
 
+Releasing `theme` releases the *choice*, not the palette. Custom theme definitions are
+separate files in `~/.claude/themes/`, and those are managed: `home/dot_claude/themes/` holds
+one JSON file per theme, named for its slug, so every machine offers the same palettes in
+`/theme`. Selecting one writes `theme: "custom:<slug>"` into the live settings, which the
+repository does not own, so each machine can pick a different one.
+
 A key earns a place in the durable set by being needed on every machine, stable enough that
 you would not change it mid-session, and not written by the application. `permissions` fails
 the second test: which rules are worth having changes with the workflow. A project's own

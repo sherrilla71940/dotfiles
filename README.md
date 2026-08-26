@@ -9,8 +9,9 @@ It solves three problems:
 
 - **Configuration drifts between machines, and the same setting lives at a different path on
   each operating system.** Templates keep one managed configuration consistent across those
-  differences, and a new machine picks all of it up from the same source in one command —
-  installing the tools themselves stays a separate, deliberate step.
+  differences. A new machine clones this repository and renders every managed file with a
+  single chezmoi command; the tools those files configure are installed by their own scripts,
+  kept out of the apply path so a routine apply never installs software.
 - **Three AI tools need overlapping configuration, but each expects it in a different file and
   format.** Shared content is written once and rendered into the form each client accepts,
   while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the

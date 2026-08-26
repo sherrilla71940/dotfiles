@@ -38,10 +38,11 @@ commit. What chezmoi writes into your home directory are **targets**.
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
 ```
 
-So you change a file here and run `chezmoi apply`. Editing a target directly is not durable —
-the next apply overwrites it. Filenames carry meaning too: `dot_` becomes a leading dot, and a
-`.tmpl` file is rendered as a template, which is how one source supports both Windows and
-macOS. [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
+So you change a file here and run `chezmoi apply`, which makes the targets match the source
+state. Editing a target directly is not durable — the next apply overwrites it. Filenames
+carry meaning too: `dot_` becomes a leading dot, and a `.tmpl` file is rendered as a template,
+which is how one source supports both Windows and macOS.
+[docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
 
 `chezmoi init` fetches this repository for you, so no separate `git clone` is required.
 

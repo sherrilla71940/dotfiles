@@ -193,13 +193,17 @@ Then remove the cleanup entries in a later commit.
 
 ### Example: remove a VS Code Copilot prompt
 
-A VS Code prompt has one body and two operating-system-specific wrappers:
+A VS Code prompt named `<name>` has one body and two operating-system-specific wrappers:
 
 | Source file | Purpose |
 | --- | --- |
-| `home/.chezmoitemplates/vscode/git-commit.prompt.md` | Shared prompt body |
-| `home/AppData/Roaming/Code/User/prompts/git-commit.prompt.md.tmpl` | Windows wrapper |
-| `home/Library/Application Support/Code/User/prompts/git-commit.prompt.md.tmpl` | macOS wrapper |
+| `home/.chezmoitemplates/vscode/<name>.prompt.md` | Shared prompt body |
+| `home/AppData/Roaming/Code/User/prompts/<name>.prompt.md.tmpl` | Windows wrapper |
+| `home/Library/Application Support/Code/User/prompts/<name>.prompt.md.tmpl` | macOS wrapper |
+
+Delete all three together. Each wrapper pulls the body in with `includeTemplate`, so deleting
+the body on its own leaves the wrappers pointing at a template that no longer exists, and the
+next `chezmoi apply` fails instead of removing anything.
 
 Only one live target exists on each machine. To remove the prompt everywhere:
 
@@ -208,9 +212,9 @@ Only one live target exists on each machine. To remove the prompt everywhere:
 
    ```gotemplate
    {{ if eq .chezmoi.os "windows" -}}
-   AppData/Roaming/Code/User/prompts/git-commit.prompt.md
+   AppData/Roaming/Code/User/prompts/<name>.prompt.md
    {{ else if eq .chezmoi.os "darwin" -}}
-   Library/Application Support/Code/User/prompts/git-commit.prompt.md
+   Library/Application Support/Code/User/prompts/<name>.prompt.md
    {{ end -}}
    ```
 
@@ -220,8 +224,8 @@ Only one live target exists on each machine. To remove the prompt everywhere:
 6. Remove the cleanup block after every machine has applied it. Delete `.chezmoiremove` if
    the file is then empty.
 
-Replace `git-commit` with the actual prompt name. `.chezmoiremove` is a template, so the
-conditional removes only the current operating system's target.
+`.chezmoiremove` is a template, so the conditional removes only the current operating
+system's target.
 
 ### Example: retire a shared instruction
 

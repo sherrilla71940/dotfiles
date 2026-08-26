@@ -109,6 +109,7 @@ according to the file's ownership policy:
 | Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/claude/settings-durable.json` for durable keys; use `/config`, `/model` or `/effort` for app-owned choices |
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
+| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys; use its settings UI for everything else |
 
 The repository owns `env`, `hooks`, `statusLine`, and `autoUpdatesChannel`. Claude Code and
 project settings own everything else, including `model`, `effortLevel`, `theme`, `verbose`,

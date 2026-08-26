@@ -1,0 +1,23 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Deep-merge repository-owned settings over the live file, so Windows
+       Terminal's own writes survive an apply: the profiles it generates for new
+       WSL distributions and Visual Studio installs, their GUIDs, and anything
+       changed through its settings UI.
+
+       The durable keys live in readable JSON at
+       home/.chezmoitemplates/windows-terminal/settings-durable.json - edit that,
+       not this.
+
+       merge gives the first argument precedence, so the repository wins on any
+       key it names and the live file fills in everything else. It recurses into
+       nested objects, which is why the durable file can name profiles.defaults
+       without touching profiles.list beside it.
+
+       fromJson fails on malformed input rather than replacing it, which keeps a
+       hand-broken settings.json recoverable instead of silently overwritten. */ -}}
+{{- $live := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJson .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "windows-terminal/settings-durable.json" . | fromJson -}}
+{{ merge $durable $live | toPrettyJson }}

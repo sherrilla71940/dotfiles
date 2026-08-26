@@ -1,0 +1,31 @@
+{{- /* Durable, repository-owned Windows Terminal settings.
+
+       This file is data, not logic. It is deep-merged over the live
+       settings.json by the sibling modify_settings.json, and the repository wins
+       on any key named here. Every key absent from this file belongs to Windows
+       Terminal and survives untouched - profiles, their generated GUIDs,
+       keybindings, actions, schemes and themes among them.
+
+       Name only object keys. merge replaces arrays wholesale rather than
+       merging them, so naming profiles.list would overwrite the machine's
+       generated profiles with this file's copy. */ -}}
+
+{
+  "profiles": {
+    "defaults": {
+      {{/* MesloLGS NF is a Nerd Font. Terminal output draws powerline separators,
+           box-drawing and icon glyphs that an unpatched family renders as tofu, so
+           this is a functional requirement on every machine rather than a taste
+           setting. It is the same face the VS Code terminal names. */}}
+      "font": {
+        "face": "MesloLGS NF"
+      },
+
+      {{/* Grayscale antialiasing renders light-on-dark heavier than dark-on-light,
+           so a highlighted row and a normal row appear to differ in weight when
+           only the colors differ. ClearType renders subpixel and closes most of
+           that gap. Windows Terminal applies this to new instances only. */}}
+      "antialiasingMode": "cleartype"
+    }
+  }
+}

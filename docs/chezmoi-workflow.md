@@ -227,6 +227,11 @@ conditional removes only the current operating system's target.
 
 ## Daily commands
 
+Before `chezmoi apply`, run the identity check in
+[`AGENTS.md`](../AGENTS.md#before-you-finish). Every chezmoi command reports its configured
+source directory, which may reach this repository through a symlink or Windows junction, so
+the displayed path is not proof.
+
 ```bash
 chezmoi source-path                 # identify the source behind a live target
 chezmoi edit ~/.bashrc              # edit a source by target path

@@ -1,0 +1,10 @@
+{
+  "name": "High Contrast Dark",
+  "base": "dark",
+  "overrides": {
+    "inactive": "#bebebe",
+    "inactiveShimmer": "#e1e1e1",
+    "subtle": "#7d7d7d",
+    "promptBorder": "#aaaaaa"
+  }
+}

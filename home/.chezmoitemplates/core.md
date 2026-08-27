@@ -55,6 +55,7 @@
 - Handle errors explicitly — no silent catches; either handle meaningfully or propagate with context. Validate inputs at trust boundaries, and don't leak internals (stack traces, internal messages) in user-facing errors.
 - Flag any change that breaks a public API, wire format, config schema, or persisted-data shape, and describe the migration/compatibility path. Prefer additive, backward-compatible changes; make schema migrations reversible.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
+- Before substantial Git work, confirm the tree the command will act on is the one this session is working in. A sibling worktree or a nearby checkout carries its own instructions and settings, which were never loaded here, so work done there runs under the wrong ones. If they differ, say so rather than working around it with `cd` or absolute paths.
 - Keep commits atomic — one logical change each — and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately (never blind `git add -A`); when the tree holds several logical changes, state the proposed grouping before committing. The `/git-commit-action` skill executes this (batch grouping by default).
 
 ## Security

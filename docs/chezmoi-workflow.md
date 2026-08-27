@@ -109,7 +109,13 @@ according to the file's ownership policy:
 | Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/claude/settings-durable.json` for durable keys; use `/config`, `/model` or `/effort` for app-owned choices |
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
-| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys; use its settings UI for everything else |
+| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys and for any keybinding; use its settings UI for everything else |
+
+Windows Terminal is the one entry where the repository owns arrays rather than single
+keys. It supplies `actions` and `keybindings` in full, so a keybinding added through the
+Actions page of the settings UI is reverted on the next apply; add it to the durable file
+instead. `profiles.list` stays with the application, because its GUIDs are generated per
+machine. See [ADR-0009](./decisions/0009-own-windows-terminal-actions-and-keybindings.md).
 
 The repository owns `env`, `hooks`, `statusLine`, and `autoUpdatesChannel`. Claude Code and
 project settings own everything else, including `model`, `effortLevel`, `theme`, `verbose`,

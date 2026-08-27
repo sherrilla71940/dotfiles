@@ -3,12 +3,14 @@
        This file is data, not logic. It is deep-merged over the live
        settings.json by the sibling modify_settings.json, and the repository wins
        on any key named here. Every key absent from this file belongs to Windows
-       Terminal and survives untouched - profiles, their generated GUIDs,
-       keybindings, actions, schemes and themes among them.
+       Terminal and survives untouched - profiles, their generated GUIDs, schemes
+       and themes among them.
 
-       Name only object keys. merge replaces arrays wholesale rather than
-       merging them, so naming profiles.list would overwrite the machine's
-       generated profiles with this file's copy. */ -}}
+       Naming an array claims all of it. merge replaces arrays wholesale rather
+       than merging them, so actions and keybindings below must list every entry
+       that should exist, and a binding added through the settings UI is reverted
+       on the next apply. profiles.list stays unnamed for that reason: it holds
+       generated per-machine GUIDs this repository cannot supply. See ADR-0009. */ -}}
 
 {
   "profiles": {
@@ -27,5 +29,30 @@
            that gap. Windows Terminal applies this to new instances only. */}}
       "antialiasingMode": "cleartype"
     }
-  }
+  },
+
+  {{/* Shift+Enter has to reach a terminal user interface as a sequence distinct
+       from Enter, or a multi-line prompt cannot be typed. ESC CR is what Claude
+       Code's own /terminal-setup writes, and the same sequence this repository
+       already binds for the VS Code terminal in vscode/keybindings.json, so both
+       terminals hand Claude Code identical bytes.
+
+       Windows Terminal rejects the \x1b spelling in sendInput; the escape
+       character must be written as \u001b. */}}
+  "actions": [
+    {
+      "command": { "action": "sendInput", "input": "\u001b\r" },
+      "id": "User.SendNewline",
+      "name": "Insert a line break"
+    }
+  ],
+
+  {{/* Claiming this array means repeating the three bindings previously set
+       through the settings UI, which would otherwise be replaced. */}}
+  "keybindings": [
+    { "id": "User.SendNewline", "keys": "shift+enter" },
+    { "id": "Terminal.CopyToClipboard", "keys": "ctrl+c" },
+    { "id": "Terminal.PasteFromClipboard", "keys": "ctrl+v" },
+    { "id": "Terminal.DuplicatePaneAuto", "keys": "alt+shift+d" }
+  ]
 }

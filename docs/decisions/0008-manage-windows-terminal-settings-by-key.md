@@ -38,6 +38,10 @@ The durable file names object keys only. `merge` replaces arrays wholesale rathe
 merging them, so naming `profiles.list` would overwrite a machine's generated profiles with
 this repository's copy of them.
 
+[ADR-0009](./0009-own-windows-terminal-actions-and-keybindings.md) later admitted two
+arrays, `actions` and `keybindings`, on the ground that the repository can supply their
+entire contents. `profiles.list` stays excluded because it cannot.
+
 ## Alternatives considered
 
 **A plain managed file.** The repository would own the whole file, including thirteen
@@ -78,7 +82,8 @@ every other operating system, so no macOS target is created.
   `Microsoft.WindowsTerminal_8wekyb3d8bbwe`; a Preview or Store re-identification would need
   a second source path or a template.
 - The durable set grows to include anything under `profiles.list`, which `merge` cannot
-  express safely.
+  express safely. Growing it to cover `actions` and `keybindings` triggered this in
+  [ADR-0009](./0009-own-windows-terminal-actions-and-keybindings.md).
 
 ## Related files and verification
 

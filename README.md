@@ -188,6 +188,7 @@ docs/decisions/                  architecture decisions and reconsideration trig
 | Set up a machine, or see which applications you install yourself | [docs/setup.md](./docs/setup.md) |
 | Add, change, or remove a general managed file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | Add or change AI instructions, skills, agents, prompts, MCP servers, or plugins | [docs/customization-support.md](./docs/customization-support.md) |
+| Understand how ignored local files reach new Git worktrees | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
 | Understand why the repository is structured this way | [docs/decisions/README.md](./docs/decisions/README.md) |
 | Know why a particular rule exists before trimming it | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | Let a coding agent work in this repo | [AGENTS.md](./AGENTS.md) |

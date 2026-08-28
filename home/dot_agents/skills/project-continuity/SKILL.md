@@ -180,6 +180,8 @@ Do not build an archive or history system to avoid this decision. When both task
 
 Checkpoint when the cost of losing what is not yet recorded becomes material. Favor what cannot be cheaply reconstructed from the repository: undocumented API or backend behavior, a user decision that constrains the implementation, a rejected approach and why, a surprising test or debug finding, a change of architectural direction, a hidden dependency, the cause of a blocker. Execution state also qualifies when rebuilding it would be expensive.
 
+Before the first substantive action of a turn, checkpoint when the current user instruction materially changes the objective, requirements, decisions, blockers or next action. Record normalized task state, not prompt text. During a long-running turn, checkpoint again at meaningful phase boundaries when losing the new state would be materially expensive.
+
 Concretely: before sending a response that leaves unresolved TODOs, blockers, an incomplete phase, or a defined next step, check whether continuity changed and update it if so. Outside that case, ask whether a future session would need something from this work that is not already durable in the repository.
 
 Do not checkpoint when nothing meaningful changed, when the information is already obvious in code or tests, when the update would repeat conversation text, or when the change is trivial and cheap to redo.

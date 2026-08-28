@@ -76,6 +76,12 @@ Create a detached worktree from a remote-tracking branch:
 git wt-add -- --detach ../review origin/develop
 ```
 
+Continuity works in any Git worktree; it does not depend on this wrapper. A cross-client
+handoff does depend on both clients opening the same physical working-tree directory. After
+creating a worktree, `git wt-add` prints the exact path and the suggested continuation prompt
+as a non-blocking reminder. It also reminds you to use a separate worktree for another
+unfinished task.
+
 The wrapper options are:
 
 | Option | Effect |
@@ -94,6 +100,7 @@ The command performs these steps:
 6. Reject paths that escape a worktree or traverse symbolic links. Windows also rejects
    reparse points.
 7. Optionally open the completed worktree in VS Code.
+8. Print the exact-path handoff reminder.
 
 A rejected copy returns exit code 2 but leaves a successfully created worktree in place for
 inspection or manual recovery. Missing optional files and existing target conflicts are

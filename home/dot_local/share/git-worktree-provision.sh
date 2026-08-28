@@ -461,6 +461,7 @@ show_handoff_reminder() {
     printf '%s\n' 'Open this exact path in Claude Code, Codex, or Copilot:'
     printf '  %s\n' "$(display_text "$worktree_path")"
     printf '%s\n' 'Then say: Continue from project continuity.'
+    printf '%s\n' 'Use a separate worktree for another unfinished task.'
 }
 
 find_primary_worktree() {

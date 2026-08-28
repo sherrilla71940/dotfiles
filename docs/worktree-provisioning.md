@@ -79,7 +79,8 @@ git wt-add -- --detach ../review origin/develop
 Continuity works in any Git worktree; it does not depend on this wrapper. A cross-client
 handoff does depend on both clients opening the same physical working-tree directory. After
 creating a worktree, `git wt-add` prints the exact path and the suggested continuation prompt
-as a non-blocking reminder.
+as a non-blocking reminder. It also reminds you to use a separate worktree for another
+unfinished task.
 
 The wrapper options are:
 

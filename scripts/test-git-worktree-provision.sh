@@ -258,6 +258,7 @@ case_branch_forwarding() {
     assert_output_contains 'Handoff reminder: continuity and uncommitted changes stay in this worktree.' 'The handoff reminder should be printed.' || return 1
     assert_output_contains 'Open this exact path in Claude Code, Codex, or Copilot:' 'The exact-path instruction should be printed.' || return 1
     assert_output_contains 'Then say: Continue from project continuity.' 'The continuation prompt should be printed.' || return 1
+    assert_output_contains 'Use a separate worktree for another unfinished task.' 'The task-isolation reminder should be printed.' || return 1
     git_checked "$target" branch --show-current || return 1
     [[ "$result_output" == feat/from-develop && -f "$target/develop.txt" ]]
 }

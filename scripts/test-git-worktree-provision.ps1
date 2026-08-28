@@ -295,6 +295,7 @@ try {
         Assert-OutputContains $result "Handoff reminder: continuity and uncommitted changes stay in this worktree." "The handoff reminder was not printed."
         Assert-OutputContains $result "Open this exact path in Claude Code, Codex, or Copilot:" "The exact-path instruction was not printed."
         Assert-OutputContains $result "Then say: Continue from project continuity." "The continuation prompt was not printed."
+        Assert-OutputContains $result "Use a separate worktree for another unfinished task." "The task-isolation reminder was not printed."
         $branch = Invoke-FixtureGit $target @("branch", "--show-current")
         Assert-Equal "feat/from-develop" $branch.Output.Trim() "The target branch is wrong."
         Assert-True (Test-Path -LiteralPath (Join-Path $target "develop.txt")) "The worktree did not start from develop."

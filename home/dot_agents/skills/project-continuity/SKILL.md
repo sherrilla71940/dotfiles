@@ -210,7 +210,12 @@ Clean up when the user asks, or when the task is complete, nothing continuity-wo
 5. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native memory, or unrelated files as part of cleanup.
 6. Say what was removed.
 
-Clean up before abandoning a client-managed worktree. Claude Code removes a clean worktree on exit, and ignored files do not make it look dirty, so continuity can be destroyed along with it.
+Clean up before abandoning a client-managed worktree. Claude Code automatically removes clean
+subagent worktrees and periodically removes eligible background-session worktrees. It preserves
+detectable work, such as changed or untracked files and unpushed commits, but ignored continuity
+alone does not make a worktree look active. A Claude-managed worktree whose only local state is
+continuity can therefore be removed with that state. Claude's cleanup sweep leaves manually
+created worktrees in place.
 
 ## Separating continuity from durable knowledge
 

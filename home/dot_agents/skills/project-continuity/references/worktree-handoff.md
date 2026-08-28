@@ -39,7 +39,7 @@ when you want to trigger that handoff explicitly or the client's global bootstra
 
 **Do not create a new worktree for the same interrupted task.** A new worktree is a fresh checkout: it has none of the original's uncommitted changes, untracked files, or continuity state. `git worktree add` copies no ignored or untracked files, so the new directory starts empty of everything that made the old one resumable.
 
-**Do not archive or delete the originating session or thread while another client is still using its worktree.** A client-managed worktree can be removed with its session. Claude Code removes a *clean* worktree when the session exits, and ignored files such as `.project-continuity/` do not count as making it dirty — so a worktree whose only remaining local state is continuity can be cleaned up and take continuity with it.
+**Do not archive or delete the originating session or thread while another client is still using its worktree.** A client-managed worktree can be removed with its session. Claude Code automatically removes clean subagent worktrees and periodically removes eligible background-session worktrees. It preserves detectable work, such as changed or untracked files and unpushed commits, but ignored files such as `.project-continuity/` do not count. A Claude-managed worktree whose only remaining local state is continuity can therefore be removed with that state. Claude's cleanup sweep leaves manually created worktrees in place.
 
 **Do not rely on the previous client's memory carrying over.** It does not. Claude auto memory, Codex memories, and Copilot Memory are separate stores, none visible to the others, and each may hold stale claims about the task. Continuity plus Git is the handoff.
 

@@ -31,7 +31,9 @@ claude
 code <existing-directory>
 ```
 
-Then say "continue from project continuity". The receiving client reads the state, reconciles against Git, and resumes at the first genuinely unfinished action.
+On the first task turn, the receiving client should detect the state, reconcile it against Git,
+and resume at the first genuinely unfinished action. Say "continue from project continuity" only
+when you want to trigger that handoff explicitly or the client's global bootstrap did not load.
 
 ## What not to do
 

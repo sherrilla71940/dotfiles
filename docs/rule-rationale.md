@@ -65,6 +65,35 @@ Reconsider if Codex Memories becomes per-repository, if either client gains a sh
 in-repository store the other can read, or if handoffs between Claude Code and Codex within one
 repository stop happening in practice.
 
+The activation decision is visible for work with concrete complexity signals because the
+absence of `.project-continuity/state.md` otherwise leaves no observable event for the client
+to react to. A task can grow through investigation until it is expensive to reconstruct while
+the agent remains focused on its immediate implementation steps.
+
+Claude's compaction lifecycle is the one reliable point where a deterministic backstop can act.
+`PreCompact` creates an ignored emergency state when proactive activation was missed;
+`PostCompact` stores the native compact summary without copying the transcript; and a one-retry
+`Stop` guard asks the shared skill to reconcile and remove that temporary section. This remains
+a backstop rather than the primary workflow: it cannot protect every crash or hard cutoff, and
+only skill-driven checkpoints can preserve important reasoning before those failures. Codex and
+Copilot need no matching Claude hook because they consume the same working-tree-local state.
+
+Reconsider the visible decision only if clients gain a reliable built-in lifecycle event for
+starting and maintaining cross-client task state.
+
+### External project material
+
+The project-material rule triggers after an external file materially informs the work, rather
+than whenever a prompt happens to contain an external path. The agent often needs to inspect a
+file before it can tell whether it is an authoritative source, a durable reference, a reusable
+manual test input or a disposable attachment. Copying remains an explicit proposal because it
+creates a second version that can diverge; moving remains exceptional because it can break the
+user's existing workflow.
+
+Folders use the remote repository name so every linked worktree converges on one location.
+The remote owner is added only to resolve an actual same-name collision, avoiding unnecessary
+migration of existing project folders.
+
 ## JavaScript instructions
 
 ### PascalCase functions and globals

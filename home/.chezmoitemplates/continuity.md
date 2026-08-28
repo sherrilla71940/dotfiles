@@ -1,11 +1,17 @@
 ## Project continuity
 
-If the current working directory contains `.project-continuity/state.md`, use the
-`project-continuity` skill before substantive project work. If the client cannot resolve the
-skill by name (for example, skill discovery fails or the skill does not appear available),
-read and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead.
+Before the first substantive repository action, decide whether continuity is needed. Treat
+the decision as mandatory when the task has a plan, spans multiple files, produces non-obvious
+investigation findings, makes architectural decisions, or has unresolved dependencies. In the
+first progress update for such work, state either `Continuity: enabled` or
+`Continuity: not needed — <reason>` so the decision cannot be skipped silently. Reassess if a
+small task grows substantially or after conversation compaction.
 
-If that file is absent, use the skill when the work is substantive enough that losing this
-conversation abruptly — a usage limit, a crash — would cost materially more than re-reading
-the diff. Skip it for questions, small self-contained edits, and work the diff already
-explains.
+If the working tree root contains `.project-continuity/state.md`, continuity is already active:
+use the `project-continuity` skill and reconcile the state before substantive work. If the file
+is absent and losing the conversation would cost materially more than re-reading the diff, use
+the skill and initialize continuity before proceeding. If the client cannot resolve the skill
+by name, read and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead.
+
+Skip continuity and the visible decision for explanation-only questions, small self-contained
+edits, formatting, and work the diff already explains.

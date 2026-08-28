@@ -56,7 +56,7 @@ Opening a *different* directory gives you a different working tree, without that
 
 Lost the directory? `git worktree list` shows every working tree of the repository. [references/worktree-handoff.md](references/worktree-handoff.md) covers switching clients in practice.
 
-**What it feels like.** Not conversation teleportation — the receiving client does not get the old conversation. Expect to say "continue from project continuity", wait through a short reconciliation while it reads the state and checks the diff, then keep working. The goal is not re-explaining the task from scratch.
+**What it feels like.** Not conversation teleportation — the receiving client does not get the old conversation. On its first task turn in the same working tree, it detects the state, performs a short reconciliation against the diff, then keeps working. "Continue from project continuity" is still a useful explicit instruction, but should not be required when the global bootstrap loaded correctly. The goal is not re-explaining the task from scratch.
 
 The friction that remains is operational, not architectural: opening a different directory than the one that holds the state, a cutoff arriving before the last important reasoning was checkpointed, or a managed worktree being archived while still needed. [references/worktree-handoff.md](references/worktree-handoff.md) exists to reduce exactly those.
 
@@ -144,6 +144,27 @@ Never store secrets, credentials, personal data unrelated to the work, or large 
 6. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
 
 Where repository evidence and continuity disagree, the repository wins and continuity is corrected. Where the user's current instruction and continuity disagree about intent, the user wins.
+
+### Claude compaction recovery
+
+Claude Code may add a temporary `## Emergency recovery` section delimited by
+`claude-compaction-recovery` comments. This is a deterministic lifecycle backstop, not normal
+continuity state and not verified truth.
+
+When the section is present:
+
+1. Perform the ordinary Resume workflow immediately.
+2. Treat the compact summary as unverified evidence. Resolve its objective, progress, decisions,
+   blockers and next action against Git and the current user instruction.
+3. Merge only useful, current facts into the normal sections. Replace an automatically created
+   generic objective and phase when the real task can be established.
+4. Remove the complete emergency section and both delimiter comments in the same checkpoint.
+5. Continue the first genuinely unfinished action. Do not leave the raw compact summary in state
+   after it has been absorbed.
+
+If the summary is insufficient, preserve only the uncertainty that matters and inspect the
+repository; do not invent missing conversation context. Claude's bounded Stop hook may request
+this reconciliation once, but the skill owns the result and another client can reconcile it too.
 
 ## Wrong-task continuity
 

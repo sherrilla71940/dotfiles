@@ -75,6 +75,20 @@
 
 ## Project material
 
-- Store durable non-code project references in `~/Documents/reference-docs/{owner}-{repo}/`, and bulky or cross-worktree manual test inputs in `~/Documents/test-files/{owner}-{repo}/`. Key the folder on the Git remote's owner and repository name, never the working directory, which differs per worktree. Keep each folder flat until retrieval is genuinely harder without structure.
-- Prefer recording an authoritative file's existing location over copying it, because a copy diverges silently. Propose a destination and let the user confirm — never relocate a file on your own. Do not retain client-confidential material unless asked. Neither folder is version-controlled or backed up, so nothing should exist there uniquely.
-- A test input that belongs to the automated suite goes in the repository, following its existing test structure. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.
+- When a non-code file outside the repository materially informs project work, classify it
+  before finishing the first turn that relies on it: authoritative source, durable reference,
+  reusable manual test input, or disposable attachment. Keep using an authoritative file's
+  existing location when that location is stable, and take no filing action for a disposable
+  attachment. Otherwise, propose copying a durable reference to
+  `~/Documents/reference-docs/{repo}/`, or a bulky or cross-worktree manual test input to
+  `~/Documents/test-files/{repo}/`. Leave the original untouched and wait for the user's
+  confirmation before copying or moving anything.
+- Derive `{repo}` from the Git remote's repository name, never the working-directory name,
+  which differs per worktree. Prefix it with `{owner}-` only when needed to distinguish two
+  repositories with the same name. Keep each folder flat until retrieval is genuinely harder
+  without structure.
+- Do not retain client-confidential material unless asked. Neither folder is version-controlled
+  or backed up, so nothing should exist there uniquely. A test input that belongs to the
+  automated suite goes in the repository, following its existing test structure.
+- Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and
+  an ordinary file read for standalone or already-extracted images.

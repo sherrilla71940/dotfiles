@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# SessionStart hook. Two independent checks, either of which may add context:
+# SessionStart hook. Three independent checks may add context:
 #   1. Another interactive session is already in this working directory, so both share one
 #      working tree, one index and one HEAD. Claude Code takes no lock on a directory, and
 #      git only refuses a duplicate checkout across worktrees, not across processes.
 #   2. Claude started in a directory that merely contains worktrees, so repository auto
 #      memory may not have loaded.
-# Check 1 applies inside a checkout and check 2 outside one, so neither may exit early.
+#   3. Project continuity is active, or its activation decision is due before substantive work.
+# Checks 1 and 2 apply only at launch; check 3 also refreshes after clear or compaction.
 set -euo pipefail
 
 input="$(cat)"
@@ -16,12 +17,17 @@ if [[ ! -d "$working_directory" ]]; then
   exit 0
 fi
 session_id="$(printf '%s' "$input" | jq -r '.session_id // empty')"
+source="$(printf '%s' "$input" | jq -r '.source // empty')"
+is_launch=false
+if [[ "$source" == "startup" || "$source" == "resume" || "$source" == "fork" ]]; then
+  is_launch=true
+fi
 
 messages=()
 
 # Drive-letter case and separator style both vary between the hook payload and the agent
 # listing on Windows, so compare normalised paths rather than raw strings.
-if command -v claude >/dev/null 2>&1; then
+if [[ "$is_launch" == true ]] && command -v claude >/dev/null 2>&1; then
   siblings="$(timeout 10 claude agents --json 2>/dev/null || true)"
   if [[ -n "$siblings" ]]; then
     count="$(printf '%s' "$siblings" | jq -r --arg cwd "$working_directory" --arg sid "$session_id" '
@@ -38,7 +44,12 @@ if command -v claude >/dev/null 2>&1; then
   fi
 fi
 
-if ! git -C "$working_directory" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+inside_work_tree=false
+if git -C "$working_directory" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  inside_work_tree=true
+fi
+
+if [[ "$is_launch" == true && "$inside_work_tree" == false ]]; then
   worktree_names=()
   shopt -s nullglob dotglob
   for child in "$working_directory"/*; do
@@ -59,6 +70,24 @@ if ! git -C "$working_directory" rev-parse --is-inside-work-tree >/dev/null 2>&1
       names="${names:+$names, }$name"
     done
     messages+=("Claude Code started in '$working_directory', which is not a git checkout but contains linked worktrees ($names). Repository auto memory may not have loaded for this session. At the beginning of your first response, briefly tell the user and recommend restarting Claude inside the intended worktree.")
+  fi
+fi
+
+if [[ "$inside_work_tree" == true ]]; then
+  working_tree_root="$(git -C "$working_directory" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -n "$working_tree_root" ]]; then
+    continuity_state="$working_tree_root/.project-continuity/state.md"
+    if [[ -f "$continuity_state" ]]; then
+      if grep -qxF '<!-- claude-compaction-recovery:start -->' "$continuity_state"; then
+        messages+=("Claude compaction recovery is pending in '$continuity_state'. Invoke the project-continuity skill now, reconcile the Emergency recovery section against Git and the current request, merge useful facts into normal state, remove that temporary section, and continue the task. State 'Continuity: enabled' in the first progress update.")
+      else
+        messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
+      fi
+    elif [[ "$source" == "compact" ]]; then
+      messages+=("This conversation was compacted without active project continuity in '$working_tree_root'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update.")
+    else
+      messages+=("Project continuity is not active in '$working_tree_root'. Before the first substantive repository action, apply the global continuity rule and make the activation decision visible in the first progress update. Skip this reminder for explanation-only or small self-contained work.")
+    fi
   fi
 fi
 

@@ -318,8 +318,26 @@ so the warning lists every staged file and how to unstage one. The launch-time e
 the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`. Decline that
 offer in this repository and stage explicit paths instead: `chezmoi source-path` resolves to
 the main checkout wherever the session runs, so a worktree edit is not the source chezmoi
-reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The check
-needs `claude` and `jq` on `PATH` and is skipped without them.
+reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The concurrent
+session check needs `claude` and `jq` on `PATH` and is skipped without them.
+
+The same hook supplies the timely part of project-continuity activation. At startup, resume,
+clear and compaction, it reports whether the current working tree already has continuity and
+reminds Claude to make the activation decision visible before substantive work.
+
+Compaction has an additional deterministic backstop in
+`home/dot_claude/hooks/maintain-project-continuity.sh`. `PreCompact` creates private emergency
+state when none exists, `PostCompact` records Claude's native compact summary in a temporary
+section, and `SessionStart compact` directs Claude to reconcile it through the shared skill. A
+`Stop` hook allows one extra response when the section was not reconciled. The script never reads
+or copies the transcript, and normal semantic checkpoints still belong to the
+`project-continuity` skill. On Windows these lifecycle hooks use Git Bash to avoid paying
+PowerShell startup cost after every response.
+
+Claude Code, Codex and Copilot can all resume the resulting
+`.project-continuity/state.md` when started in the same physical working tree. Claude's hooks
+automate its compaction boundary; the global instructions and shared skill provide the receiving
+client's entry path.
 
 ## Working tree at `~/dotfiles`
 

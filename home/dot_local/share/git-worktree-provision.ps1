@@ -518,6 +518,15 @@ function Open-WorktreeInCode {
     }
 }
 
+function Show-HandoffReminder {
+    param([string] $WorktreePath)
+
+    Write-Host "Handoff reminder: continuity and uncommitted changes stay in this worktree."
+    Write-Host "Open this exact path in Claude Code, Codex, or Copilot:"
+    Write-Host "  $(Format-DisplayText $WorktreePath)"
+    Write-Host "Then say: Continue from project continuity."
+}
+
 function Show-AddUsage {
     Write-Host "Usage: git wt-add [--dry-run] [--skip-copy] [--open-code] -- <git worktree add arguments>"
 }
@@ -597,6 +606,7 @@ function Invoke-AddCommand {
     }
 
     if ($openCode) { Open-WorktreeInCode $targetRoot }
+    Show-HandoffReminder $targetRoot
     return 0
 }
 

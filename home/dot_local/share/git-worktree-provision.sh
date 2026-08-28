@@ -454,6 +454,15 @@ open_worktree_in_code() {
     }
 }
 
+show_handoff_reminder() {
+    local worktree_path=$1
+
+    printf '%s\n' 'Handoff reminder: continuity and uncommitted changes stay in this worktree.'
+    printf '%s\n' 'Open this exact path in Claude Code, Codex, or Copilot:'
+    printf '  %s\n' "$(display_text "$worktree_path")"
+    printf '%s\n' 'Then say: Continue from project continuity.'
+}
+
 find_primary_worktree() {
     local target_root=$1
     local common worktree_path git_directory
@@ -569,6 +578,7 @@ add_command() {
     if [[ "$open_code" == true ]]; then
         open_worktree_in_code "$target_root" || return 2
     fi
+    show_handoff_reminder "$target_root"
     return 0
 }
 

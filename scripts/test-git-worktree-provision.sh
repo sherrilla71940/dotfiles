@@ -255,6 +255,9 @@ case_branch_forwarding() {
     git_checked "$repository" checkout --quiet main || return 1
     run_git "$repository" wt-add -- -b feat/from-develop "$target" develop
     assert_status 0 'Native branch and start-point arguments should succeed.' || return 1
+    assert_output_contains 'Handoff reminder: continuity and uncommitted changes stay in this worktree.' 'The handoff reminder should be printed.' || return 1
+    assert_output_contains 'Open this exact path in Claude Code, Codex, or Copilot:' 'The exact-path instruction should be printed.' || return 1
+    assert_output_contains 'Then say: Continue from project continuity.' 'The continuation prompt should be printed.' || return 1
     git_checked "$target" branch --show-current || return 1
     [[ "$result_output" == feat/from-develop && -f "$target/develop.txt" ]]
 }

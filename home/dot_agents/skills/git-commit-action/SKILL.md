@@ -61,6 +61,7 @@ Example invocations (0–4 flags, any order):
 
 - `en` (default) — aliases `eng`, `english`. Description/body in English.
 - `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan) — not Simplified. Keep Conventional Commit type/scope tokens and trailers (`feat`, `fix`, `BREAKING CHANGE:`) in English regardless; scope may be English or Chinese, whichever fits.
+  **Load the `natural-zhtw` skill before composing any zh-TW message**, and follow it — including when it was already loaded earlier in the session for something else. Commit messages are exactly the register it targets: watch for the clustering it warns about (`屬`, `既有`, `本次`, `之`, `者`, `皆`) and prefer plain phrasing (`是` over `屬`, `原本`/`現有` over `既有`, `這次` over `本次`).
 
 ## Workflow
 

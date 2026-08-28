@@ -1,8 +1,9 @@
 $ErrorActionPreference = "Stop"
 
-# Windows PowerShell writes stdout using the console code page, which is not
-# UTF-8 on every machine and mangles the icons below. Force UTF-8 before any
-# output is produced.
+# Windows PowerShell reads and writes through console code pages that are not
+# UTF-8 on every machine. Claude sends UTF-8 JSON on stdin, and the status line
+# emits Unicode icons on stdout, so force UTF-8 in both directions.
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding $false
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 
 $inputJson = [Console]::In.ReadToEnd()

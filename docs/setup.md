@@ -3,12 +3,36 @@
 This guide covers first-time installation on Windows or macOS. Recurring edits, additions,
 removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
 
-The repository manages durable shell, VS Code, Claude Code, Codex, and GitHub Copilot
+The repository manages durable shell, Git, VS Code, Claude Code, Codex, and GitHub Copilot
 configuration. Credentials, sessions, caches, logs, memory, and workspace state stay local.
 
 Chezmoi calls the desired files in its repository clone the **source state**. It renders
 those files into live **targets** under your home directory when you run `chezmoi apply`.
 For example, the source `home/dot_bashrc` renders to the target `~/.bashrc`.
+
+## New machine, in order
+
+The steps below are the whole path. Each links to its own section, and the order matters:
+a later step assumes an earlier one, and two of them are easy to discover too late.
+
+1. [Install Git and chezmoi](#install-git-and-chezmoi), and on Windows
+   [enable symlink creation](#enable-windows-symlink-creation). Both are needed before cloning.
+2. Decide where the Git working tree lives, **before** cloning, because both setup paths below
+   clone for you: see [Working tree at `~/dotfiles`](#working-tree-at-dotfiles). To use
+   `~/dotfiles`, `git clone` there yourself rather than letting `chezmoi init` choose.
+3. Pick a path: [empty machine](#empty-machine) for a machine with nothing to preserve, or
+   [existing configuration](#existing-configuration) when any current setting should survive.
+   When unsure, choose the second — it changes no live file until you say so.
+4. Run the [bootstrap helper](#bootstrap-helper). It links the default source directory and
+   enables the validation hook, then installs whatever supporting tools it can.
+5. Install the applications themselves and log in to each, which nothing here can do for you:
+   see the table under
+   [Application installation and login](#application-installation-and-login), then supply the
+   [MCP server credentials](#mcp-server-credentials) that no script can set.
+6. Run the [bootstrap helper](#bootstrap-helper) again. Its plugin, extension and MCP steps are
+   each gated on a CLI that step 5 installs, so on a genuinely new machine the first run skips
+   them. The second run is not optional.
+7. [Verify](#verification).
 
 ## Choose a setup path
 
@@ -22,6 +46,10 @@ Choose based on the configuration already in the home directory:
 A new computer can already have existing configuration if you used an application before
 installing these dotfiles. When unsure, use the existing-configuration path. It initializes
 the repository without changing live files.
+
+Both paths clone into the default chezmoi source directory. Where the Git working tree lives is
+a separate choice, and it is cheapest to make now rather than after cloning: see
+[Working tree at `~/dotfiles`](#working-tree-at-dotfiles).
 
 ## Common prerequisites
 
@@ -125,7 +153,8 @@ Handle each changed target according to the desired result:
 | Desired result | Action before applying |
 | --- | --- |
 | Use the repository version | Make no source change; the preview already shows what apply will replace |
-| Preserve an entire plain file | Confirm `chezmoi source-path <target>` does not end in `.tmpl`, then run `chezmoi re-add <target>` |
+| Preserve an entire plain file | Confirm the source filename is a bare `dot_` name, with no `.tmpl` suffix and no `create_`, `modify_`, or `symlink_` prefix, then run `chezmoi re-add <target>` |
+| Preserve values from a `create_` or `modify_` source | Edit the source by hand; `re-add` skips these silently, and `chezmoi add` would destroy the source entry |
 | Preserve selected values | Open the live target and its source side by side, then copy only portable values into the source |
 | Preserve values from a templated target | Edit the source template or shared body; `re-add` deliberately skips templates |
 
@@ -181,8 +210,35 @@ files when it is installed and started later.
 | GitHub Copilot command-line interface (CLI) | Yes | Install and log in separately; the CLI has its own settings and MCP configuration |
 | Node Version Manager (NVM) and Node.js | Yes | The shell supports lazy-loaded NVM but does not install NVM or Node.js |
 
-The post-clone bootstrap helper installs `jq` for the Claude Model Context Protocol (MCP)
-installer and checks whether the VS Code CLI is available:
+### MCP server credentials
+
+The bootstrap helper installs the MCP server *declarations*, but never a credential. Two of
+them need a local step before their tools work, and neither announces itself: the server is
+simply listed and fails to connect.
+
+| Server | Local step |
+| --- | --- |
+| GitLab | None beyond authenticating once. Run `/mcp` in Claude Code, select `gitlab`, and choose **Authenticate**. The instance supports OAuth dynamic client registration, so no token is involved. |
+| GitHub | Set a `GITHUB_MCP_TOKEN` user environment variable to a personal access token scoped to `repo`, adding `read:org` only for organization repositories. GitHub publishes no registration endpoint, so OAuth is unavailable and Claude Code rejects the server without a token. |
+
+Set the variable before starting the client, not after: a process inherits its environment at
+start, and on Windows an editor's integrated terminal inherits the editor's, so a terminal
+opened inside an editor that was already running still will not see it. Restart the editor
+itself, then confirm with `echo ${#GITHUB_MCP_TOKEN}` before assuming the token is wrong.
+
+An unexpanded variable is not reported as a missing credential. The literal `${GITHUB_MCP_TOKEN}`
+is sent as the header and the server answers `HTTP 400`, which reads as a broken server rather
+than an unset variable.
+
+### Bootstrap helper
+
+The post-clone bootstrap helper wires the clone up and installs the supporting tools this
+repository expects. It points chezmoi's default source directory at this working tree, sets
+`core.hooksPath` so the validation hook runs, then installs `jq` for the Claude Model
+Context Protocol (MCP) installer, the TypeScript language server that the `typescript-lsp`
+plugin needs but does not install itself, the Claude Code plugins, the VS Code extensions
+from the manifest, and the user MCP servers. It installs none of the applications above,
+and it never replaces an existing source directory:
 
 ```bash
 bash scripts/bootstrap-macos.sh
@@ -194,10 +250,11 @@ powershell -File scripts/bootstrap-windows.ps1
 
 ### VS Code extensions
 
-The extension manifest is intentionally separate from routine apply:
+The bootstrap helper installs these when the `code` CLI is on `PATH`. The manifest stays out
+of routine apply, so run it directly to reinstall or to pick up manifest changes later:
 
 ```bash
-grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -n1 code --install-extension --force
+grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
 ```
 
 ```powershell
@@ -207,8 +264,8 @@ Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.Start
 
 ### Claude user MCP servers
 
-After Claude Code is installed, add the repository's direct user MCP servers with the
-platform installer:
+The bootstrap helper runs this when the `claude` CLI is on `PATH`. Run it directly if Claude
+Code was installed afterwards, or to pick up manifest changes:
 
 ```bash
 bash scripts/install-claude-mcp.sh
@@ -233,32 +290,80 @@ client-specific source and Codex's create-once behavior.
 
 ## Enable repository validation
 
-Run once in each clone:
+The bootstrap helper does this. Run it by hand in a clone that has not been bootstrapped:
 
 ```bash
 git config core.hooksPath scripts/git-hooks
 ```
 
-The pre-commit hook:
+The pre-commit hook, in order (the script's own numbering starts at the render step):
 
-1. confirms the default chezmoi source resolves inside this repository,
-2. materializes and renders the staged Git snapshot,
-3. checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
-4. compares rendered Claude and Copilot rule bodies with cross-platform tools, and
-5. rejects YAML frontmatter in Codex's rendered `AGENTS.md`.
+- confirms the default chezmoi source resolves inside this repository,
+- materializes and renders the staged Git snapshot,
+- checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
+- compares rendered Claude and Copilot rule bodies with cross-platform tools,
+- rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
+- when a status line script is staged, renders both copies and compares their output, which
+  needs `jq` and PowerShell on `PATH`, and
+- when any markdown is staged, resolves every link carrying a `#fragment` — into another file
+  or within the same one — against the headings that actually exist.
 
-The hook renders only into a temporary directory. Its `--exclude=scripts` flag excludes
-chezmoi-managed script entry types; it does not mean the top-level `scripts/` directory.
+The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
+described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
 
-## Using a manually cloned `~/dotfiles`
+Before those checks it also warns, without rejecting the commit, when more than one
+interactive Claude Code session is running inside this working tree. Such sessions share one
+index, and `git commit` takes the whole index rather than the paths a session meant to stage,
+so the warning lists every staged file and how to unstage one. The launch-time equivalent is
+the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`. Decline that
+offer in this repository and stage explicit paths instead: `chezmoi source-path` resolves to
+the main checkout wherever the session runs, so a worktree edit is not the source chezmoi
+reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The concurrent
+session check needs `claude` and `jq` on `PATH` and is skipped without them.
 
-Normal `chezmoi init` already creates the default source directory, so no link is required.
-If you deliberately cloned the repository as `~/dotfiles`, make the default chezmoi source
-point to it. Do this only when `~/.local/share/chezmoi` does not contain changes you need.
+The same hook supplies the timely part of project-continuity activation. At startup, resume,
+clear and compaction, it reports whether the current working tree already has continuity and
+reminds Claude to make the activation decision visible before substantive work.
 
-macOS or Git Bash with symlink permission:
+Compaction has an additional deterministic backstop in
+`home/dot_claude/hooks/maintain-project-continuity.sh`. `PreCompact` creates private emergency
+state when none exists, `PostCompact` records Claude's native compact summary in a temporary
+section, and `SessionStart compact` directs Claude to reconcile it through the shared skill. A
+`Stop` hook allows one extra response when the section was not reconciled. The script never reads
+or copies the transcript, and normal semantic checkpoints still belong to the
+`project-continuity` skill. On Windows these lifecycle hooks use Git Bash to avoid paying
+PowerShell startup cost after every response.
+
+Claude Code, Codex and Copilot can all resume the resulting
+`.project-continuity/state.md` when started in the same physical working tree. Claude's hooks
+automate its compaction boundary; the global instructions and shared skill provide the receiving
+client's entry path.
+
+## Working tree at `~/dotfiles`
+
+This repository is developed in, not only applied: decision records, bootstrap scripts, a
+pre-commit hook and a test-render workflow are all edited and committed regularly. Its Git
+working tree therefore lives at `~/dotfiles`, and chezmoi's default source directory is a
+link to it. This is a deliberate layout, not a workaround, and it changes nothing about the
+source state — only where the checkout you edit lives. See
+[ADR-0006](./decisions/0006-keep-the-working-tree-at-dotfiles.md).
+
+`chezmoi init` clones straight into the default source directory, so a machine set up that
+way needs no link and the repository sits under `~/.local/share/chezmoi`. Both layouts work.
+To use `~/dotfiles`, clone there and point the default source directory at it. Do this only
+when `~/.local/share/chezmoi` does not already contain changes you need.
+
+The bootstrap helper creates the link when the path is free, reports it when it already
+points here, names a broken one, and refuses to touch an unrelated directory. The commands
+below are what it runs, for a machine being set up by hand.
+
+macOS or Git Bash with symlink permission. Remove any existing clone first: `ln -s` onto an
+existing directory silently creates `~/.local/share/chezmoi/dotfiles` inside it and exits 0,
+after which chezmoi keeps using the old clone and nothing you edit in `~/dotfiles` ever
+applies.
 
 ```bash
+[ -e ~/.local/share/chezmoi ] && echo "remove or move this first" && ls ~/.local/share/chezmoi
 mkdir -p ~/.local/share
 ln -s ~/dotfiles ~/.local/share/chezmoi
 ```
@@ -270,11 +375,17 @@ New-Item -ItemType Directory -Force "$HOME\.local\share" | Out-Null
 New-Item -ItemType Junction -Path "$HOME\.local\share\chezmoi" -Target "$HOME\dotfiles"
 ```
 
-Then verify:
+Then verify. Every command reports the link path rather than the working tree, so compare Git
+identity instead of the displayed string:
 
 ```bash
-chezmoi source-path
+chezmoi source-path                                        # ends in .local/share/chezmoi/home
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # must be the working tree
 ```
+
+The link is not part of the source state, so `chezmoi apply` neither creates nor repairs it.
+A machine missing the link silently uses whatever `~/.local/share/chezmoi` contains, which is
+why this check belongs immediately after cloning.
 
 ## Verification
 

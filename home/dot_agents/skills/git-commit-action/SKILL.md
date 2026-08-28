@@ -1,15 +1,14 @@
 ---
 name: git-commit-action
 description: "Create one or more Conventional Commits from the current git diff — batches unrelated changes into separate atomic commits by default, with safe per-group staging. Use when the user asks to commit changes, draft commit messages, or invokes /git-commit-action. Supports draft vs. commit modes, batch vs. single grouping, scope filters (all/staged/chat-edits), and English or Traditional Chinese messages."
-argument-hint: "[draft|commit] [batch|single] [all|staged|last-chat-edit|all-chat-edits] [en|zhtw] optional type, scope, description, or files"
-disable-model-invocation: true
+argument-hint: "[commit|draft] [batch|single] [all|staged|last-chat-edit|all-chat-edits] [en|zhtw] optional type, scope, description, or files"
 ---
 
 # Git Commit Action
 
 Create one or more standardized commits in Conventional Commits format from the current repository state. By default, group unrelated changes into separate atomic commits (batch). Always analyze the actual repository state before choosing messages.
 
-`disable-model-invocation: true` is set deliberately: this skill has side effects (staging, committing), so it should only run when the user explicitly types `/git-commit-action`, never auto-triggered by the agent on its own judgment.
+Automatic invocation is allowed, and the skill creates commits by default. Use `draft` only when the user asks to preview the commit plan without changing the repository.
 
 For the Conventional Commit type table, description/body rules, bullet-body and breaking-change/footer conventions, and message examples, see the `git-commit-reference` skill — this file only covers the `/git-commit-action` workflow itself.
 
@@ -23,7 +22,7 @@ Turn the current logical diff into atomic Conventional Commits — one per logic
 
 | Axis         | Options                                                | Default | Answers                                             |
 | ------------ | ------------------------------------------------------ | ------- | --------------------------------------------------- |
-| **Mode**     | `draft` · `commit`                                     | `draft` | Preview, or actually create commits?                |
+| **Mode**     | `commit` · `draft`                                     | `commit` | Actually create commits, or only preview?           |
 | **Grouping** | `batch` · `single`                                     | `batch` | One commit per logical change, or one commit total? |
 | **Scope**    | `all` · `staged` · `last-chat-edit` · `all-chat-edits` | `all`   | Which files are candidates?                         |
 | **Language** | `en` · `zhtw`                                          | `en`    | Message description/body language?                  |
@@ -32,7 +31,8 @@ Example invocations (0–4 flags, any order):
 
 | Typed                                      | Behaves as                                                   |
 | ------------------------------------------ | ------------------------------------------------------------ |
-| `/git-commit-action`                       | Draft a batched multi-commit plan for all changes            |
+| `/git-commit-action`                       | Create atomic commits for all changes                        |
+| `/git-commit-action draft`                 | Draft a batched multi-commit plan for all changes            |
 | `/git-commit-action commit`                | Create atomic commits for all changes                        |
 | `/git-commit-action commit single`         | One commit for all changes                                   |
 | `/git-commit-action commit staged single`  | Commit exactly the staged files as one commit (classic path) |
@@ -41,8 +41,8 @@ Example invocations (0–4 flags, any order):
 
 ### Mode
 
-- `draft` (default): show the proposed plan — each group's files plus its message — without staging or committing, then stop. End the draft with the exact command to run next, e.g. `/git-commit-action commit <same flags>`, so the user can execute without re-deriving flags.
-- `commit`: create the commit(s).
+- `commit` (default): create the commit(s).
+- `draft`: show the proposed plan — each group's files plus its message — without staging or committing, then stop. End the draft with the exact command to run next, e.g. `/git-commit-action commit <same flags>`, so the user can execute without re-deriving flags.
 
 ### Grouping
 
@@ -64,7 +64,7 @@ Example invocations (0–4 flags, any order):
 
 ## Workflow
 
-1. Parse `$ARGUMENTS` for Mode, Grouping, Scope, Language, and hints. Apply defaults for omitted axes (`draft`, `batch`, `all`, `en`).
+1. Parse `$ARGUMENTS` for Mode, Grouping, Scope, Language, and hints. Apply defaults for omitted axes (`commit`, `batch`, `all`, `en`).
 2. Inspect repository state with `git status --porcelain`.
 3. Determine the candidate file set from Scope:
    - `all`: staged + unstaged + untracked.
@@ -104,11 +104,30 @@ Example invocations (0–4 flags, any order):
 
 ## Safety Rules
 
-- Never update git config.
-- Never run destructive commands such as `git reset --hard`, `git clean`, or force operations unless the user explicitly asks.
-- Never use `--no-verify` unless the user explicitly asks.
-- Never force push to `main` or `master`.
-- Never commit obvious secrets. Stop and explain what needs review if a secret-like file is a candidate.
+These fall into three groups that behave differently. Know which group a rule is in before deciding whether the user can wave it through.
+
+### Never, whatever is asked
+
+- Never commit a real secret. Confirmation does not unlock this: a secret in history is effectively permanent, needing both a history rewrite and a credential rotation, so the only safe outcome is not writing it.
+- When a candidate only *looks* secret-like — a template, an example, a fixture — stop and say which file and why, rather than deciding for yourself that it is fine.
+
+### Confirm before acting
+
+These are legitimate operations with consequences the user may not have in mind. Propose, do not perform. State the exact command, what it changes, and what cannot be undone; then ask. Proceed only on approval of **that specific action in this turn** — a general instruction such as "do whatever's needed" is not approval, and approval for one of these is not approval for another.
+
+- Updating git config.
+- Destructive commands: `git reset --hard`, `git clean`, or any force operation.
+- `--no-verify`.
+- `git commit --amend`.
+- Force-pushing. For `main`, `master`, or any branch others may have pulled, name the branch in the question and say that rewritten history breaks every existing clone.
+
+### Mode contract
+
+Overriding these creates no danger; it makes the result meaningless, because the mode stops describing what happened. There is no confirmation that unlocks them.
+
 - Never stage files or create commits in `draft` mode.
 - In `batch` mode, stage and commit one group at a time; never combine files from different logical groups in a single commit.
-- If hooks fail, fix the reported issue and create a normal commit. Do not amend unless the user asks. In `batch` mode, a hook failure on one group does not roll back commits already made for earlier groups — fix the issue, then continue with the remaining groups.
+
+### When hooks fail
+
+Fix the reported issue and create a normal commit — never bypass the hook to get past it. In `batch` mode, a hook failure on one group does not roll back commits already made for earlier groups: fix the issue, then continue with the remaining groups.

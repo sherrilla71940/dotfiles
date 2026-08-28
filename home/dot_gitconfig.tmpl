@@ -1,0 +1,12 @@
+[user]
+	email = sherrilla71940@gmail.com
+	name = Aaron Sherrill
+{{ if eq .chezmoi.os "windows" }}
+[alias]
+	wt-add = "!powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.local/share/git-worktree-provision.ps1\" add"
+	wt-copy = "!powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.local/share/git-worktree-provision.ps1\" copy"
+{{ else if eq .chezmoi.os "darwin" }}
+[alias]
+	wt-add = "!bash \"$HOME/.local/share/git-worktree-provision.sh\" add"
+	wt-copy = "!bash \"$HOME/.local/share/git-worktree-provision.sh\" copy"
+{{ end }}

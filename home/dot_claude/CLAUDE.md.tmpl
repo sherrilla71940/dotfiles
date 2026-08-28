@@ -1,13 +1,14 @@
 {{- /* The shared working agreement is inlined from .chezmoitemplates/core.md.
        Edit the body there, not here. Codex reads the same body as AGENTS.md and
-       Copilot as core-principles.instructions.md.
+       Copilot as core.instructions.md.
        Everything below the marker is Claude Code-specific and is deliberately
        absent from the shared body -- it is not reworded into a neutral twin. */ -}}
 <!-- Rendered by chezmoi from the dotfiles repo. Editing THIS file does nothing durable:
      it is a template, so `chezmoi re-add` skips it and the next `chezmoi apply` reverts it.
 
        Rules above the "Claude Code only" marker are shared with Codex and Copilot.
-         edit  home/.chezmoitemplates/core.md      or run  dotf-core
+         edit  home/.chezmoitemplates/core.md        or run  dotf-core
+         edit  home/.chezmoitemplates/continuity.md
 
        Rules below the marker are Claude Code-specific.
          edit  home/dot_claude/CLAUDE.md.tmpl      or run  dotf-claude
@@ -16,6 +17,7 @@
      context. Codex and Copilot do not strip them, which is why it lives here and not in
      the shared body. -->
 {{ includeTemplate "core.md" }}
+{{ includeTemplate "continuity.md" }}
 # Claude Code only
 
 Everything below depends on a Claude Code feature that Codex and Copilot do not have.
@@ -34,13 +36,14 @@ Everything below depends on a Claude Code feature that Codex and Copilot do not 
   <!-- Personal Notes: -->
   <!-- - Subagents do NOT inherit the parent session's auto memory (confirmed via Claude Code docs — the main exception is a fork, which inherits the parent conversation). Any project fact, decision, or history a subagent needs must be written into its prompt explicitly; don't assume it can look this up itself. -->
   <!-- - Worktree isolation for parallel subagents is opt-in, not automatic — request it explicitly (`isolation: 'worktree'` on the Agent call, or ask Claude to "use worktrees for your agents") whenever the parallel agents will write to overlapping files. Nothing creates a worktree silently. -->
+  <!-- - Keep the managed `git wt-add` and `git wt-copy` workflow. It is useful here because Claude, Codex, VS Code, and terminal Git can otherwise create worktrees without the same ignored local instructions and development configuration. The wrapper preserves native Git branch, path, and start-point arguments, refuses overwrites, and can provision an existing worktree. Example: `git wt-add -- -b feat/example ../example develop`. See `docs/worktree-provisioning.md` in the dotfiles repository for the full behavior and safety boundaries. -->
 - Subagents do not inherit the parent conversation or the project's auto memory (a fork is the exception). Ordinary custom subagents **do** load the CLAUDE.md hierarchy; the built-in `Explore` and `Plan` agents skip it. Brief each subagent with any required parent-conversation or auto-memory context, and restate CLAUDE.md rules only for agents that do not load them — proportionate to the task, not a blanket context dump.
 - Reassess mid-task if the remaining work becomes independently parallelizable. Keep work sequential when steps share architectural or git state, depend on earlier results, overlap files, or are too small to justify delegation.
 - Agent Teams require the user's approval. Do not treat this preference as standing authorization to create a team.
 
 ## Shell tool preference
 
-Windows only — on macOS/Linux, Bash is the only shell tool and this section doesn't apply.
+Both shell tools can be registered at once. On Windows the PowerShell tool is on by default; on macOS and Linux it is opt-in and needs PowerShell 7+ (`pwsh`) on `PATH`, so the choice usually only arises on Windows.
 
 - Prefer the **Bash tool** for standard operations (`mv`, `mkdir`, `ls`, `grep`, `git`, etc.) — Git Bash backs it and these are simpler and more portable than PowerShell equivalents. (`CLAUDE_CODE_USE_POWERSHELL_TOOL=0` in settings.json forces the Bash tool on Windows even when the PowerShell-tool rollout is active.)
   <!-- Personal Notes: -->

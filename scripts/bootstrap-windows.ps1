@@ -3,6 +3,50 @@
 # could install software unexpectedly.
 $ErrorActionPreference = "Stop"
 
+$repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+
+# Wiring the clone up runs before the package-manager gate below. Neither step needs winget,
+# and both are the ones that fail silently when skipped.
+
+# Chezmoi reads its source from ~/.local/share/chezmoi, and this repository is developed at
+# ~/dotfiles instead (ADR-0006), so the default path is satisfied with a directory junction --
+# which, unlike a symlink, needs no elevated privilege. That junction is not part of the source
+# state, so `chezmoi apply` neither creates nor repairs it, and a machine missing it silently
+# uses whatever the directory happens to contain. An existing entry is never replaced.
+#
+# Compare the reparse target, not Resolve-Path: that normalises a path but does not follow a
+# junction, so it returns the link itself and a correctly linked machine would be reported as
+# holding an unrelated directory.
+$sourceDir = Join-Path $HOME ".local\share\chezmoi"
+$existing = Get-Item -LiteralPath $sourceDir -Force -ErrorAction SilentlyContinue
+if ($existing) {
+    $linkTarget = $existing.Target | Select-Object -First 1
+    $resolved = if ($linkTarget) { [IO.Path]::GetFullPath($linkTarget) } else { $existing.FullName }
+    if ($resolved -ieq $repo) {
+        Write-Host "chezmoi source directory already points at $repo"
+    } elseif ($linkTarget -and -not (Test-Path -LiteralPath $resolved)) {
+        Write-Warning "chezmoi source directory is a broken link to $resolved. Remove $sourceDir, then rerun."
+    } else {
+        Write-Warning "chezmoi source directory exists and is not this repository: $sourceDir -> $resolved. Move it aside and rerun, or set sourceDir yourself. Leaving it untouched."
+    }
+} else {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourceDir) | Out-Null
+    New-Item -ItemType Junction -Path $sourceDir -Target $repo | Out-Null
+    Write-Host "linked $sourceDir -> $repo"
+}
+
+# The pre-commit hook lives in the repository rather than .git/hooks, so it does nothing until
+# core.hooksPath is set. Left unset, every validation check is silently absent on a new clone.
+# A failing native command does not stop the script even under ErrorActionPreference Stop, so
+# report the failure instead of printing success over it.
+git -C $repo config core.hooksPath scripts/git-hooks
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not set core.hooksPath, so the validation hook will not run. Is $repo a Git checkout?"
+} else {
+    Write-Host "repository validation enabled (core.hooksPath)"
+}
+
+
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."
 }
@@ -18,8 +62,8 @@ if (-not $installed) {
     Write-Host "$packageId already installed"
 }
 
-# The Claude settings this repository manages enable the typescript-lsp plugin, and the
-# plugin does not install its language server. Without the binary every session reports a
+# This script installs the typescript-lsp plugin below, and the plugin does not install its
+# language server. Without the binary every session reports a
 # plugin load error. Both packages are needed: the server shells out to tsserver, which
 # ships with typescript.
 if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue)) {
@@ -32,6 +76,24 @@ if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue))
 
 if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     Write-Warning "VS Code CLI is not on PATH. Install VS Code, then enable its 'code' command."
+} else {
+    # The manifest stays out of routine apply because installing this many extensions is slow
+    # and is not something a configuration change should trigger. This script runs once, by
+    # hand, which is where it belongs.
+    $manifest = Join-Path $repo "scripts\vscode-extensions.txt"
+    if (Test-Path $manifest) {
+        Write-Host "installing VS Code extensions from the manifest..."
+        $failed = 0
+        Get-Content $manifest | ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and -not $_.StartsWith("#") } |
+            ForEach-Object {
+                code --install-extension $_ --force 2>$null | Out-Null
+                if ($LASTEXITCODE -ne 0) { $failed++ }
+            }
+        if ($failed -gt 0) {
+            Write-Warning "$failed VS Code extensions failed. Rerun the manifest command from docs/setup.md."
+        }
+    }
 }
 
 # Claude Code plugins are installed software, not configuration, so they belong here rather
@@ -46,8 +108,32 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
             Write-Warning "Could not install $plugin. Add it from /plugin once Claude Code is running."
         }
     }
+
+    # ~/.claude.json also holds application-owned state, so the installer adds only missing
+    # server names and leaves any existing one exactly as it is.
+    $mcpInstaller = Join-Path $repo "scripts\install-claude-mcp.ps1"
+    if (Test-Path $mcpInstaller) {
+        powershell -NoProfile -ExecutionPolicy Bypass -File $mcpInstaller
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "The Claude MCP installer failed. Run scripts\install-claude-mcp.ps1 by hand."
+        }
+    }
 } else {
     Write-Warning "claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script."
+}
+
+# Codex Memories is off upstream and is toggled by Codex's own command, which writes into
+# ~/.codex/config.toml. That file carries the create_ prefix so chezmoi never overwrites the
+# trust and runtime state Codex keeps there, which also means a source edit would not reach a
+# machine that already has the file. Enabling it here is the same trade as the plugins above:
+# set once on a new machine, and a later 'codex features disable memories' stays disabled.
+if (Get-Command codex -ErrorAction SilentlyContinue) {
+    codex features enable memories 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not enable Codex memories. Run 'codex features enable memories' by hand."
+    }
+} else {
+    Write-Warning "codex is not on PATH, so Codex memories was skipped. Install Codex CLI, then rerun this script."
 }
 
 # Windows attributes every toast to an Application User Model ID (AUMID). Given none, it

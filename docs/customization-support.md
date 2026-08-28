@@ -29,7 +29,7 @@ The columns group surfaces only when they read the same personal configuration:
 
 | Capability | Claude Code local | Codex local | Copilot CLI | VS Code with Copilot |
 | --- | --- | --- | --- | --- |
-| Always-on personal instructions | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/instructions/core-principles.instructions.md` with `applyTo: "**"` | the same personal `*.instructions.md` file |
+| Always-on personal instructions | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/instructions/core.instructions.md` with `applyTo: "**"` | the same personal `*.instructions.md` file |
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
@@ -43,6 +43,13 @@ The columns group surfaces only when they read the same personal configuration:
 Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
 directories exist only where a client requires the directory before a session starts.
 
+VS Code lists every shared skill twice. Claude Code reads personal skills only from
+`~/.claude/skills`, so this repository links each shared skill there, and VS Code scans both
+that directory and `~/.agents/skills`. Both entries resolve to the same file, so the effect is
+cosmetic. It cannot be configured away: VS Code exposes `chat.instructionsFilesLocations` and
+`chat.promptFilesLocations`, which is how the same duplication is suppressed for rules in
+`home/.chezmoitemplates/vscode/settings.json`, but no equivalent setting for skills.
+
 ### Surfaces outside this table
 
 This repository does not manage complete product or account state:
@@ -52,6 +59,9 @@ This repository does not manage complete product or account state:
   tab.
 - Claude.ai connectors, authentication, conversations, and account settings remain with the
   signed-in account.
+- `~/.codex/rules/` is not instruction scoping despite the name. It stores Codex's command
+  approval decisions as `prefix_rule(...)` entries, the equivalent of a permission
+  allow-list, and is app-owned machine state. Codex still has no path-scoped instructions.
 - Codex cloud receives repository files such as root `AGENTS.md` when the repository is
   available to the cloud task. It does not receive personal files from this machine's
   `~/.codex/` directory through chezmoi.
@@ -99,11 +109,16 @@ adding a directory:
 4. Run `chezmoi diff`, apply the change, restart the client when required, and confirm that
    the client discovers the file.
 
-If the file already exists in the live directory, import its target path:
+If the file already exists in the live directory and is not managed yet, import its target
+path:
 
 ```bash
 chezmoi add ~/.claude/<folder>/<file>
 ```
+
+Check first with `chezmoi source-path <target>`. If it resolves, the file is already managed —
+edit that source instead. `chezmoi add` on a managed `modify_` or `create_` source deletes it
+without asking.
 
 If you create the file directly under this repository's `home/` source state, do not run
 `chezmoi add`. A directory containing managed files is created automatically. Do not add an
@@ -184,6 +199,9 @@ The rendered `~/.claude/CLAUDE.md` combines shared and Claude-only sources:
 | --- | --- | --- | --- |
 | Shared working agreement | `home/.chezmoitemplates/core.md` | `dotf-core` | Claude, Codex, and Copilot |
 | Claude-only addition | `home/dot_claude/CLAUDE.md.tmpl` | `dotf-claude` | Claude only |
+
+The `dotf-*` shortcuts are aliases defined in `home/dot_bashrc` and `home/dot_zshrc.tmpl`, so
+they exist in bash and zsh only. In PowerShell, run the chezmoi commands directly.
 
 Use the shared body only when the text remains correct for all three clients.
 `chezmoi edit ~/.claude/CLAUDE.md` opens the Claude wrapper, not the included shared body.
@@ -290,7 +308,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
-| Direct user MCP | Chrome DevTools | the manifest and hand-run installer |
+| Direct user MCP | Chrome DevTools, GitLab, GitHub | the manifest and hand-run installer |
 | Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
@@ -306,6 +324,45 @@ only when `~/.codex/config.toml` does not exist. For an existing live config, co
 desired blocks and merge only what is missing; do nothing when those declarations are already
 present. Never replace the complete live file, because Codex also writes marketplace metadata,
 runtime paths, project trust, and other machine state there. Complete authentication locally.
+
+### GitLab, on every client
+
+The self-managed instance at `gitlab.dtdi.com.tw` exposes GitLab's built-in MCP server over
+HTTP at `/api/v4/mcp`, so every client uses the remote endpoint and none runs a local server
+process. Authentication is OAuth, so no token appears in this repository and none is needed in
+the environment either: the instance publishes `registration_endpoint` in
+`/.well-known/oauth-authorization-server`, meaning dynamic client registration is enabled and
+each client registers itself on first connection.
+
+The scope is `mcp`, which is an OAuth scope rather than a personal access token scope, so it
+does not appear on GitLab's token page. A personal access token is the fallback if an
+administrator turns dynamic client registration off; it would need `read_api` and
+`ai_features`, passed as an `Authorization` header.
+
+Complete authentication locally, once per client. In Claude Code a newly added server is not
+visible until a new session starts, because MCP configuration is read at session start.
+Codex's declaration reaches only a machine without `~/.codex/config.toml`; add it by hand or
+with `codex mcp add` on a machine that already has one.
+
+### GitHub, on every client
+
+GitHub's hosted MCP server at `https://api.githubcopilot.com/mcp/` covers pull requests,
+issues and reviews on github.com. It authenticates with a personal access token rather than
+OAuth: its protected-resource metadata names `https://github.com/login/oauth` as the
+authorization server but publishes no registration endpoint, and Claude Code rejects the
+server outright with `Incompatible auth server: does not support dynamic client registration`.
+This is the opposite of the GitLab instance, which does support registration and needs no
+token at all.
+
+No token is stored here. The command-line clients read `GITHUB_MCP_TOKEN` from the
+environment, and VS Code prompts for `${input:github-pat}` and keeps it in its own secret
+storage. Set the variable per machine with a token scoped to `repo`, adding `read:org` for
+organization repositories; the server's metadata lists every scope it accepts, and the rest
+are worth reading before granting more.
+
+The `gh` command-line interface remains the simpler route for ordinary pull request work and
+needs no MCP server or token at all. Prefer it when a session only has to open or review a
+pull request, and keep this server for work that genuinely needs tool calls.
 
 ### GitHub Copilot
 
@@ -351,7 +408,7 @@ runtime state into `home/`.
 ## Verify after applying
 
 - Claude Code: run `claude mcp get chrome-devtools`, then inspect `/agents`, `/skills`, and
-  `/plugins` in a new session as relevant to the change.
+  `/plugin` in a new session as relevant to the change.
 - Codex: start a new session and inspect its agents, skills, plugins, or MCP tools. Existing
   `~/.codex/config.toml` files need the documented comparison; merge only when the desired
   declaration is missing.
@@ -362,9 +419,9 @@ runtime state into `home/`.
 ## Official references
 
 - [Claude Code configuration directory](https://code.claude.com/docs/en/claude-directory)
-- [Claude Code skills](https://code.claude.com/docs/en/slash-commands)
+- [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [Claude Code Desktop and shared configuration](https://code.claude.com/docs/en/desktop)
-- [Claude Code IDE integrations](https://code.claude.com/docs/en/ide-integrations)
+- [Claude Code in VS Code](https://code.claude.com/docs/en/vs-code)
 - [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)
 - [Claude Code MCP sources](https://code.claude.com/docs/en/mcp)
 - [Claude Code with Chrome](https://code.claude.com/docs/en/chrome)

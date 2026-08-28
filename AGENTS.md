@@ -1,9 +1,11 @@
 # Working in this repository
 
-Always-on constraints for coding agents. This file is loaded into your context
-automatically, so it stays short: it lists only what you could get **wrong**, not how to do
-things. Procedures live in [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it
-before adding, changing or removing anything.
+Constraints for coding agents. A session working here loads this file automatically; a
+session working from elsewhere is sent here by the shared core instructions before it changes
+anything in this repository. Either way it stays short: it lists only what you could get
+**wrong**, not how to do things. Procedures live in
+[docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it before adding, changing or
+removing anything.
 
 This is a general user-level dotfiles repository. It manages editor, shell, tool, and AI
 configuration; the AI files are especially sensitive because a mistake can silently change
@@ -54,7 +56,12 @@ Copilot model invocation in `SKILL.md`, keep Codex implicit invocation enabled i
 `agents/openai.yaml`, and make the skill stop if GitHub Copilot invokes it explicitly.
 
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
-because Codex writes machine state into it. Keep it that way.
+because Codex writes trust, marketplace and runtime state into it. The cost is that a source
+edit never reaches a machine that already has the file, so a durable Codex setting is applied
+by Codex's own command from `scripts/bootstrap-*` instead, the way Claude plugins are. Before
+proposing `modify_` here, note that a TOML round-trip reformats the whole file, so
+`chezmoi status` would report it dirty after almost every Codex session; that trade needs an
+ADR, not an edit.
 
 **`/statusline` output never reaches this repository.** It writes `statusLine`, a key
 `home/.chezmoitemplates/claude/settings-durable.json` owns, so the next `chezmoi apply`
@@ -65,33 +72,37 @@ scripts and the `statusLine` block instead.
 `chezmoi apply`, so a routine apply — or a test render — installs software. That happened
 once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 
+**Do not work on this repository from a worktree.** `chezmoi source-path` resolves to the
+main checkout wherever the session runs, so a source edited in a worktree is not the source
+chezmoi reads: `chezmoi diff` renders the main checkout instead, and the pre-commit identity
+check refuses the commit with `default chezmoi source is outside this repository`. The
+`SessionStart` hook offers a worktree whenever sessions share this tree, and here that offer
+should be declined without asking, because this file has already answered it. Report that the
+tree is shared and that you are staying in it, staging explicit paths rather than `-A` or `.`,
+then get on with the work. Worktrees remain correct for ordinary repositories and for subagents
+editing in parallel.
+
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish
 
 ```bash
-chezmoi source-path  # MUST identify this repository; otherwise stop
-chezmoi diff         # ALWAYS preview before apply; apply can replace live configuration
-chezmoi status       # empty after apply
+chezmoi source-path                                        # where chezmoi reads from
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # MUST be this repository, else stop
+chezmoi diff                                               # ALWAYS preview; apply replaces live config
+chezmoi status                                             # empty after apply
 ```
 
-Never run `chezmoi apply` until the source-path check and diff both succeed. A plain chezmoi
-command uses its configured source directory regardless of the current working directory. A
-symlink or Windows junction is valid when its resolved target is this repository; verify the
-filesystem or Git identity instead of comparing displayed path strings alone.
+Never run `chezmoi apply` until the identity check and the diff both succeed. A plain chezmoi
+command uses its configured source directory regardless of the current working directory, and
+that path may resolve through a symlink or Windows junction, so it will not look like this
+repository. Compare Git identity as above rather than the displayed string.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
-filenames, so real names are transformed silently and files can vanish. This has caused
-real loss here twice — four skills dropped in one refactor, and empty `__init__.py` package
-markers omitted in another.
-
-```bash
-chezmoi apply --destination="$(mktemp -d)" --exclude=scripts
-# compare file counts against the source tree
-```
-
-Always pass `--exclude=scripts` when test-rendering. This excludes chezmoi-managed script
-entry types; it does not refer to the repository's top-level `scripts/` directory.
+filenames, so real names are transformed silently and files can vanish. This has caused real
+loss here twice — four skills dropped in one refactor, and empty `__init__.py` package markers
+omitted in another. Test-render and compare counts before you finish; the workflow guide has
+the command.
 
 ## Verify against docs, not memory
 

@@ -5,7 +5,8 @@
 # touches the home directory. It catches template failures and chezmoi filename-attribute
 # collisions that are not obvious in a normal Git diff.
 #
-# Enable it once per clone: git config core.hooksPath scripts/git-hooks
+# Enabled once per clone by scripts/bootstrap-*, or by hand:
+#   git config core.hooksPath scripts/git-hooks
 set -euo pipefail
 
 repo="$(git rev-parse --show-toplevel)"
@@ -23,6 +24,37 @@ frontmatter_has() {
     in_frontmatter { print }
   ' "$file" | grep -Eq "$pattern"
 }
+
+# Concurrent-session guard. Claude Code takes no lock on a directory, and git only refuses a
+# duplicate checkout across worktrees, not across processes, so sessions in one folder share
+# this index -- and git commits the index, not the paths a session meant to stage. The
+# SessionStart hook warns at launch; this warns at the operation that actually loses work.
+# It runs before the chezmoi lookup below, which exits 0 when chezmoi is missing.
+if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  sessions="$(timeout 5 claude agents --json 2>/dev/null || true)"
+  if [[ -n "$sessions" ]]; then
+    # Drive-letter case and separator style vary between the agent listing and git's path on
+    # Windows, so compare normalised paths. A session in a subdirectory shares the same index,
+    # so match the repository prefix rather than an exact directory.
+    sharing="$(printf '%s' "$sessions" | jq -r --arg repo "$repo" '
+      def norm: ascii_downcase | gsub("\\\\"; "/") | sub("/$"; "");
+      [ .[]
+        | select(.kind == "interactive")
+        | select(((((.cwd // "") | norm) + "/") | startswith(($repo | norm) + "/")))
+      ] | length
+    ' 2>/dev/null || printf '0')"
+
+    # A git hook receives no session identity, so the committing session counts itself here.
+    # Two or more means the index is genuinely shared.
+    if [[ "$sharing" =~ ^[0-9]+$ ]] && (( sharing > 1 )); then
+      printf 'pre-commit: %s interactive Claude Code sessions share this working tree.\n' \
+        "$sharing" >&2
+      printf '    git commits the index, so this commit takes every staged path below,\n' >&2
+      printf '    whoever staged it. Unstage what is not yours: git restore --staged <path>\n' >&2
+      git diff --cached --name-only | sed 's/^/      /' >&2
+    fi
+  fi
+fi
 
 # Chezmoi may not yet be on Git Bash's PATH after a Winget installation.
 chezmoi_bin="$(command -v chezmoi || true)"
@@ -194,6 +226,32 @@ if [[ "$statusline_changed" == true ]]; then
     done
 
     printf 'pre-commit: status line copies agree (%s comparisons).\n' "$comparisons"
+  fi
+fi
+
+# 7. Every markdown link with a #fragment must resolve to a real heading, whether it points
+#    into another file or at a heading in the same one. Anchor rot
+#    is silent: the link still renders and only fails when a reader clicks it. The guides and
+#    the decision records cross-reference each other this way, so one renamed heading can
+#    break several files at once. Only run when markdown is staged.
+docs_changed=false
+while IFS= read -r changed; do
+  case "$changed" in *.md) docs_changed=true ;; esac
+done < <(git diff --cached --name-only)
+
+if [[ "$docs_changed" == true ]]; then
+  anchor_awk="$staged/scripts/git-hooks/markdown-anchors.awk"
+  if [[ ! -f "$anchor_awk" ]]; then
+    printf 'pre-commit: markdown-anchors.awk is missing; skipping the anchor check.\n' >&2
+  else
+    mapfile -t md_files < <(cd "$staged" && find . -type f -name '*.md' | sed 's|^\./||')
+    if anchor_out="$(cd "$staged" && awk -f "$anchor_awk" "${md_files[@]}" 2>&1)"; then
+      printf 'pre-commit: markdown anchors OK (%s links).\n' "$anchor_out"
+    else
+      printf 'pre-commit: markdown links point at headings that do not exist.\n' >&2
+      printf '%s\n' "$anchor_out" >&2
+      fail "fix the links above, or restore the headings they name."
+    fi
   fi
 fi
 

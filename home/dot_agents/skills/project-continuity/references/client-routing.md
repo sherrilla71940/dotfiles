@@ -1,6 +1,6 @@
 # Client-specific private instruction routing
 
-Use this reference only when the user explicitly asks to promote a discovery into durable **private project instructions**. Routine continuity checkpoints remain in `.agent/continuity.md` and must not modify these files.
+Use this reference only when the user explicitly asks to promote a discovery into durable **private project instructions**. Routine continuity checkpoints remain in `.project-continuity/state.md` and must not modify these files.
 
 ## General routing rule
 
@@ -28,7 +28,9 @@ Do not use it for transient work progress such as "page layout is 80% complete";
 
 Use `AGENTS.override.md` for private project instructions when the user explicitly wants a Codex-specific durable override.
 
-Codex aggregates `AGENTS.override.md` / `AGENTS.md` instructions through the project directory hierarchy, with more-specific project instructions applied later. Inspect the current repository layout before creating an override.
+At each directory level Codex reads `AGENTS.override.md` if it exists and `AGENTS.md` otherwise, so an override **replaces** its sibling rather than adding to it. The files found from the project root down are then concatenated, with the ones closest to the working directory applied last. The same replacement rule governs the global scope in `~/.codex`.
+
+Creating `AGENTS.override.md` beside a committed `AGENTS.md` therefore silences that file for every Codex session, with no warning. Inspect the repository layout first, and prefer extending the existing instructions unless the user explicitly wants the committed ones bypassed.
 
 Examples appropriate for `AGENTS.override.md`:
 
@@ -40,7 +42,7 @@ Do not use it for transient work progress; that belongs in continuity.
 
 ## Native memory boundaries
 
-Claude Code auto memory and Codex memory are separate client-owned persistence mechanisms. They may retain useful learnings, preferences, corrections, or context, but they are not the source of truth for cross-client work-session continuity.
+Claude Code auto memory, Codex memories, and Copilot Memory are separate client-owned persistence mechanisms. They may retain useful learnings, preferences, corrections, or context, but they are not the source of truth for cross-client work-session continuity.
 
 These boundaries apply to the continuity workflow's own actions only. They do not pause, restrict, or override the client's independent memory system, which continues writing and using memory under its own standing rules whether or not continuity is active.
 
@@ -49,8 +51,12 @@ While performing continuity operations, do not:
 - copy native memory wholesale into continuity;
 - depend on native memory as the only record of unfinished work;
 - modify or delete native memory during checkpoint or cleanup;
-- assume one client's memory is visible to the other.
+- assume one client's memory is visible to another. None of the three are.
 
-## Unsupported client
+## GitHub Copilot
 
-GitHub Copilot is intentionally outside this skill's supported routing. Do not invent a private Copilot instruction filename or silently fall back to a different mechanism.
+Copilot participates in continuity, but it has **no private project-scoped instruction file** equivalent to `CLAUDE.local.md` or `AGENTS.override.md`. Its repository-level instructions (`.github/copilot-instructions.md`, `AGENTS.md`) are tracked and shared with the team, and `~/.copilot/instructions/**/*.instructions.md` is user-level and applies to every repository.
+
+So there is nowhere to put a private, project-specific, untracked Copilot instruction. Do not invent a filename, and do not silently fall back to a different client's mechanism. Tell the user the gap exists and offer the two real options: a user-level Copilot instruction that applies everywhere, or a tracked repository instruction the team also gets.
+
+Copilot Memory is also different in kind from the other two: it is repository-scoped and shared with everyone who has access to that repository, where Claude and Codex memory are machine-local and private. Never route anything private there.

@@ -2,7 +2,7 @@
        introducing new habits: lazy NVM, Git completion, and the same navigation aliases.
        Windows has no zsh, so the whole file renders empty there. */ -}}
 {{ if ne .chezmoi.os "windows" -}}
-# 延遲載入 NVM，避免每次啟動 shell 都付出初始化成本。
+# Load NVM lazily, so every shell start does not pay the initialisation cost.
 export NVM_DIR="$HOME/.nvm"
 
 _load_nvm() {
@@ -15,18 +15,20 @@ node() { _load_nvm; node "$@"; }
 npm() { _load_nvm; npm "$@"; }
 npx() { _load_nvm; npx "$@"; }
 
-# zsh 自帶 Git 補全，透過 compinit 載入即可，不需要 bash 的 git-completion.bash。
+# zsh ships its own Git completion, loaded through compinit, so bash's git-completion.bash
+# is not needed.
 autoload -Uz compinit
 compinit -u
 
-# 使用 HOME，讓捷徑與 dot_bashrc 保持一致。
+# Use HOME so these shortcuts stay identical to the ones in dot_bashrc.
 alias work='cd "$HOME/Documents/work"'
 alias personal='cd "$HOME/Documents"'
 
-# zsh 會自行處理終端尺寸變化，因此不需要 bash 的 shopt -s checkwinsize。
+# zsh handles terminal resizing itself, so bash's shopt -s checkwinsize is not needed.
 
-# dotfiles 編輯捷徑。共用工作準則同時供 Claude、Codex、Copilot 讀取，
-# 所以不放在任何單一工具的檔案裡；只有 Claude 專屬規則在 CLAUDE.md.tmpl。
+# Dotfiles editing shortcuts. The shared working agreement is read by Claude, Codex and
+# Copilot alike, so it lives in no single tool's file; only Claude-specific rules sit in
+# CLAUDE.md.tmpl.
 alias dotf='chezmoi cd'
 alias dotf-core='"${EDITOR:-code}" "$(chezmoi source-path)/.chezmoitemplates/core.md"'
 alias dotf-claude='chezmoi edit ~/.claude/CLAUDE.md'

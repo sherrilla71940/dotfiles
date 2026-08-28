@@ -4,12 +4,14 @@
 
 - Apply rules in this order when conflicts occur: explicit in-conversation user instruction > language/framework-specific > file-type-specific > general.
 - Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Regenerate output only when the requested change or proportionate verification requires it.
-- Your own user-level configuration on this machine is rendered by chezmoi from a dotfiles repository, so a live file under an AI or editor tool's own directory — its instructions, skills, agents, hooks, prompts, or settings — is generated output rather than source. Before creating or changing one, run `chezmoi source-path <file>`. If it resolves, edit the file it names and leave the live file alone; `chezmoi edit <file>` opens the correct source directly. If it does not resolve, or chezmoi is not installed, the file is unmanaged and safe to edit in place.
+- Your own user-level configuration on this machine is rendered by chezmoi from a dotfiles repository, so a live configuration file in your home directory — a shell profile, editor settings, or an AI client's instructions, skills, agents, hooks, prompts, or settings — is generated output rather than source. Before creating or changing one, run `chezmoi source-path <file>`. If it resolves, edit the file it names and leave the live file alone; `chezmoi edit <file>` opens the correct source directly. If it does not resolve, or chezmoi is not installed, the file is unmanaged and safe to edit in place.
 - A partially managed file's source states which keys it owns; leave the rest to the application. Preview with `chezmoi diff`, and ask before running `chezmoi apply`, which can replace live configuration.
+- That repository sets its own conventions for how its sources may be changed. Read the `AGENTS.md` at its root — the repository root, not the source directory — before editing anything there, because a session started outside it does not load that file automatically.
 
 ## Response behavior
 
 - Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
+- When producing, translating into, or substantially revising Traditional Chinese for Taiwan (zh-TW), load and follow the `natural-zhtw` skill.
 - Be concise and actionable.
 - **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
   commit messages, docs, messages to others — do not write that something was asked,
@@ -33,7 +35,8 @@
 
 ## Session workflow
 
-- When a response leaves unresolved work, end with a short list grouped as **Ready now**, **Blocked** (name what it waits on), or **Watching**. Omit the list when nothing remains.
+- When a response commits anything, list each commit's short hash and subject line in that response. A hash can be checked against `git log`; a prose summary of your own work cannot.
+- When a response leaves unresolved work, end with a short list grouped as **Next**, **Blocked** (name what it waits on), or **Watching**. Every item is outstanding work, never a completed one; report what you finished in the response itself. Put each group on its own bullet, one line per item, and name the owner of an item when the list mixes your own next actions with the user's. Omit the list when nothing remains.
 
 ## Engineering principles
 
@@ -52,7 +55,8 @@
 - Handle errors explicitly — no silent catches; either handle meaningfully or propagate with context. Validate inputs at trust boundaries, and don't leak internals (stack traces, internal messages) in user-facing errors.
 - Flag any change that breaks a public API, wire format, config schema, or persisted-data shape, and describe the migration/compatibility path. Prefer additive, backward-compatible changes; make schema migrations reversible.
 - When git hooks report issues, fix the reported issues instead of bypassing the hooks.
-- Don't commit unless asked. When asked, keep commits atomic — one logical change each — and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately (never blind `git add -A`); when the tree holds several logical changes, state the proposed grouping before committing. The `/git-commit-action` skill executes this (batch grouping by default).
+- Before substantial Git work, confirm the tree the command will act on is the one this session is working in. A sibling worktree or a nearby checkout carries its own instructions and settings, which were never loaded here, so work done there runs under the wrong ones. If they differ, say so rather than working around it with `cd` or absolute paths.
+- Keep commits atomic — one logical change each — and follow Conventional Commits (see the git-commit-reference skill). Stage deliberately (never blind `git add -A`); when the tree holds several logical changes, state the proposed grouping before committing. The `/git-commit-action` skill executes this (batch grouping by default).
 
 ## Security
 
@@ -69,21 +73,22 @@
 - Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
 - In application and project repositories, code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — comments are written in English. Chat responses stay English in either case.
 
-## Reference documents
+## Project material
 
-- Store non-text project references in `~/Documents/reference-docs/{projectName}/`, using the repository or working-directory name for `{projectName}`. Keep one location per project. Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and an ordinary file read for standalone or already-extracted images.
-
-## Project continuity
-
-Claude Code and Codex only: if the current repository contains
-`.agent/continuity.md`, use the `project-continuity` skill before substantive
-project work. If the current client cannot resolve the skill by name (for
-example, skill discovery fails or the skill does not appear available), read
-and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead.
-
-If no continuity file exists but the work is clearly likely to span multiple
-sessions and would materially benefit from cross-session handoff, ask once
-whether the user wants project continuity enabled. Do not initialize it
-without user consent.
-
-GitHub Copilot: ignore this rule and do not use `project-continuity`.
+- When a non-code file outside the repository materially informs project work, classify it
+  before finishing the first turn that relies on it: authoritative source, durable reference,
+  reusable manual test input, or disposable attachment. Keep using an authoritative file's
+  existing location when that location is stable, and take no filing action for a disposable
+  attachment. Otherwise, propose copying a durable reference to
+  `~/Documents/reference-docs/{repo}/`, or a bulky or cross-worktree manual test input to
+  `~/Documents/test-files/{repo}/`. Leave the original untouched and wait for the user's
+  confirmation before copying or moving anything.
+- Derive `{repo}` from the Git remote's repository name, never the working-directory name,
+  which differs per worktree. Prefix it with `{owner}-` only when needed to distinguish two
+  repositories with the same name. Keep each folder flat until retrieval is genuinely harder
+  without structure.
+- Do not retain client-confidential material unless asked. Neither folder is version-controlled
+  or backed up, so nothing should exist there uniquely. A test input that belongs to the
+  automated suite goes in the repository, following its existing test structure.
+- Use the dedicated office skills (`xlsx`, `docx`, `pdf`, `pptx`) for container documents and
+  an ordinary file read for standalone or already-extracted images.

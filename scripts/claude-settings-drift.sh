@@ -65,6 +65,16 @@ section(
      for k, l, d in overridden],
 )
 
-print("To keep any of the above on every machine, copy it into")
+print("Everything above is yours, and most of it is meant to stay that way. Before")
+print("promoting one into the repository, check it against the admission criterion in")
+print("docs/decisions/0005-merge-durable-claude-settings-as-json.md: needed on every")
+print("machine, stable enough not to change mid-session, and not written by the")
+print("application. theme, verbose, tui, permissions and enabledPlugins were released")
+print("deliberately, so re-pinning one reverses that decision.")
+print()
+print("Plugins are the exception that does not belong here at all: add them to the")
+print("claude plugin install list in scripts/bootstrap-* instead.")
+print()
+print("Otherwise copy the value into")
 print("home/.chezmoitemplates/claude/settings-durable.json, then run chezmoi apply.")
 PYCODE

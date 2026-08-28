@@ -26,7 +26,19 @@ Use these rules to choose a command:
 - **Changed a source file under `home/`:** Run `chezmoi diff`, then `chezmoi apply`.
 - **Changed a plain live target:** Run `chezmoi re-add <target>` to copy it into the source.
 - **Changed a templated live target:** Edit its source template; `re-add` skips templates.
+- **Changed a target whose source carries an attribute** (`create_`, `modify_`, `symlink_`):
+  Edit the source. `re-add` silently skips these, so it looks like it worked and changes
+  nothing. Never run `chezmoi add` on one — see the warning below.
 - **Created a new live file:** Run `chezmoi add <target>` to start managing it.
+
+Check which case applies by reading the whole source filename, not only its suffix:
+
+```bash
+basename "$(chezmoi source-path ~/.some-config)"
+```
+
+A plain target has a bare `dot_` name. Anything else — a `.tmpl` suffix, or a `create_`,
+`modify_`, or `symlink_` prefix — means `re-add` is the wrong command.
 
 `chezmoi add` takes a target path, never a source path. Use `chezmoi add ~/.bashrc`, not
 `chezmoi add home/dot_bashrc`.
@@ -59,15 +71,23 @@ First, identify its source:
 chezmoi source-path ~/.bashrc
 ```
 
-A source filename ending in `.tmpl` identifies a template. Use the matching workflow:
+The suffix alone does not classify a source: `modify_settings.json` has no `.tmpl` and is
+not a plain file. Read the whole filename, then use the matching workflow:
 
 | Source type | Preserve a live edit | Preferred direct edit |
 | --- | --- | --- |
-| Plain file | `chezmoi re-add <target>` | `chezmoi edit <target>` |
-| Template | Copy the desired values into the source; `re-add` skips it | `chezmoi edit <target>` |
+| Plain file (`dot_name`) | `chezmoi re-add <target>` | `chezmoi edit <target>` |
+| Template (`.tmpl`) | Copy the desired values into the source; `re-add` skips it | `chezmoi edit <target>` |
+| Modify template (`modify_`) | Copy the value into the body the script includes; `re-add` skips it silently | Edit the body, not the script |
+| Create-once (`create_`) | Merge only the missing durable declarations; the application owns the rest | Edit the source directly |
 
-`chezmoi add` on an existing template can remove the template attribute and flatten the
-rendered target into a literal source file. Do not use it to preserve a template-backed edit.
+`chezmoi add` is the destructive command here, not `re-add`. On a template it asks first
+(`adding … would remove template attribute, continue?`). On a `modify_` or `create_` source it
+does **not** ask: it deletes the source entry and writes a plain file holding the live
+contents. Running `chezmoi add ~/.claude/settings.json` therefore destroys
+`home/dot_claude/modify_settings.json`, unmanages the durable keys, and commits the
+application-owned ones. Never run `add` against a target that is already managed; if the
+source exists, edit it.
 
 After changing the source, review and apply:
 
@@ -89,11 +109,24 @@ according to the file's ownership policy:
 | Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/claude/settings-durable.json` for durable keys; use `/config`, `/model` or `/effort` for app-owned choices |
 | Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
+| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys and for any keybinding; use its settings UI for everything else |
+
+Windows Terminal is the one entry where the repository owns arrays rather than single
+keys. It supplies `actions` and `keybindings` in full, so a keybinding added through the
+Actions page of the settings UI is reverted on the next apply; add it to the durable file
+instead. `profiles.list` stays with the application, because its GUIDs are generated per
+machine. See [ADR-0009](./decisions/0009-own-windows-terminal-actions-and-keybindings.md).
 
 The repository owns `env`, `hooks`, `statusLine`, and `autoUpdatesChannel`. Claude Code and
 project settings own everything else, including `model`, `effortLevel`, `theme`, `verbose`,
 `tui`, `permissions`, `enabledPlugins`, and unknown future keys, so those survive
 `chezmoi apply` without entering Git.
+
+Releasing `theme` releases the *choice*, not the palette. Custom theme definitions are
+separate files in `~/.claude/themes/`, and those are managed: `home/dot_claude/themes/` holds
+one JSON file per theme, named for its slug, so every machine offers the same palettes in
+`/theme`. Selecting one writes `theme: "custom:<slug>"` into the live settings, which the
+repository does not own, so each machine can pick a different one.
 
 A key earns a place in the durable set by being needed on every machine, stable enough that
 you would not change it mid-session, and not written by the application. `permissions` fails
@@ -129,8 +162,16 @@ changed locally and now want on every machine does not appear there. List the ca
 ./scripts/claude-settings-drift.sh
 ```
 
-Copy the value into `home/.chezmoitemplates/claude/settings-durable.json`, then apply and
-commit:
+Most of what it lists is meant to stay local. Before promoting a key, check it against the
+admission criterion in
+[ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md): needed on every machine,
+stable enough not to change mid-session, and not written by the application. `theme`,
+`verbose`, `tui`, `permissions`, and `enabledPlugins` were released deliberately, so re-pinning
+one reverses that decision. Plugins do not belong in the settings at all — add them to the
+`claude plugin install` list in `scripts/bootstrap-*`.
+
+For a key that does qualify, copy the value into
+`home/.chezmoitemplates/claude/settings-durable.json`, then apply and commit:
 
 ```bash
 chezmoi diff ~/.claude/settings.json   # confirm only the promoted key changes
@@ -138,8 +179,10 @@ chezmoi apply
 git add home/.chezmoitemplates/claude/settings-durable.json && git commit
 ```
 
-Promotion stays manual on purpose. Capturing the live file automatically would sweep up
-machine-local state and overwrite the template expressions that render per-machine paths.
+Promotion stays manual on purpose. `chezmoi re-add` is not an option here: it skips modify
+templates silently, so it reports success and changes nothing. Capturing the live file
+automatically would also sweep up machine-local state and overwrite the template expressions
+that render per-machine paths.
 
 ## Remove a managed file
 
@@ -157,13 +200,17 @@ Then remove the cleanup entries in a later commit.
 
 ### Example: remove a VS Code Copilot prompt
 
-A VS Code prompt has one body and two operating-system-specific wrappers:
+A VS Code prompt named `<name>` has one body and two operating-system-specific wrappers:
 
 | Source file | Purpose |
 | --- | --- |
-| `home/.chezmoitemplates/vscode/git-commit.prompt.md` | Shared prompt body |
-| `home/AppData/Roaming/Code/User/prompts/git-commit.prompt.md.tmpl` | Windows wrapper |
-| `home/Library/Application Support/Code/User/prompts/git-commit.prompt.md.tmpl` | macOS wrapper |
+| `home/.chezmoitemplates/vscode/<name>.prompt.md` | Shared prompt body |
+| `home/AppData/Roaming/Code/User/prompts/<name>.prompt.md.tmpl` | Windows wrapper |
+| `home/Library/Application Support/Code/User/prompts/<name>.prompt.md.tmpl` | macOS wrapper |
+
+Delete all three together. Each wrapper pulls the body in with `includeTemplate`, so deleting
+the body on its own leaves the wrappers pointing at a template that no longer exists, and the
+next `chezmoi apply` fails instead of removing anything.
 
 Only one live target exists on each machine. To remove the prompt everywhere:
 
@@ -172,9 +219,9 @@ Only one live target exists on each machine. To remove the prompt everywhere:
 
    ```gotemplate
    {{ if eq .chezmoi.os "windows" -}}
-   AppData/Roaming/Code/User/prompts/git-commit.prompt.md
+   AppData/Roaming/Code/User/prompts/<name>.prompt.md
    {{ else if eq .chezmoi.os "darwin" -}}
-   Library/Application Support/Code/User/prompts/git-commit.prompt.md
+   Library/Application Support/Code/User/prompts/<name>.prompt.md
    {{ end -}}
    ```
 
@@ -184,8 +231,8 @@ Only one live target exists on each machine. To remove the prompt everywhere:
 6. Remove the cleanup block after every machine has applied it. Delete `.chezmoiremove` if
    the file is then empty.
 
-Replace `git-commit` with the actual prompt name. `.chezmoiremove` is a template, so the
-conditional removes only the current operating system's target.
+`.chezmoiremove` is a template, so the conditional removes only the current operating
+system's target.
 
 ### Example: retire a shared instruction
 
@@ -197,6 +244,11 @@ conditional removes only the current operating system's target.
 
 ## Daily commands
 
+Before `chezmoi apply`, run the identity check in
+[`AGENTS.md`](../AGENTS.md#before-you-finish). Every chezmoi command reports its configured
+source directory, which may reach this repository through a symlink or Windows junction, so
+the displayed path is not proof.
+
 ```bash
 chezmoi source-path                 # identify the source behind a live target
 chezmoi edit ~/.bashrc              # edit a source by target path
@@ -204,7 +256,7 @@ chezmoi diff                        # preview live changes
 chezmoi apply -v                    # write reviewed changes
 chezmoi re-add ~/.bashrc            # preserve a plain live edit
 chezmoi update -v                   # pull and apply on another machine
-chezmoi cd                          # open the source repository
+chezmoi cd                          # launch a shell in the working tree; exit to leave
 chezmoi status                      # empty means fully applied
 ```
 
@@ -222,6 +274,7 @@ Chezmoi reads attributes from the start of source filenames. These names are sig
 | Empty file must exist | `empty___init__.py` | Chezmoi omits an ordinary empty file |
 | Application owns an existing file | `create_config.toml.tmpl` | Removing `create_` can overwrite application state |
 | File needs template rendering | `name.tmpl` | Removing `.tmpl` writes template syntax literally |
+| Target directory also holds unmanaged files | `dot_config`, never `exact_config` | Adding `exact_` makes apply delete every entry in the directory that the source does not contain |
 
 Files beginning with `.` in the source state are ignored. This behavior keeps
 `home/.README.md` as repository documentation instead of deploying it.

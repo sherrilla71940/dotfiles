@@ -1,3 +1,3 @@
-# 登入 shell 先載入一般環境，再載入互動式 Bash 設定。
+# A login shell loads the general environment first, then the interactive Bash configuration.
 [ -f "$HOME/.profile" ] && . "$HOME/.profile"
 [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"

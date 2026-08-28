@@ -8,3 +8,6 @@ Desktop.ini
 
 # Backups left by the retired symlink installers
 .dotfiles-backups/
+
+# Worktrees Claude Code creates in this repository
+.claude/worktrees/

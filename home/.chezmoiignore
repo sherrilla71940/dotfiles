@@ -1,8 +1,13 @@
 {{- /* VS Code keeps its user files in a different place on each OS. Both trees exist in the
        source state and the wrong one is ignored here, so the file bodies stay in
-       .chezmoitemplates/vscode and are never duplicated. */ -}}
+       .chezmoitemplates/vscode and are never duplicated. Worktree helpers are also rendered
+       only on the platform whose Git aliases invoke them. */ -}}
 {{ if ne .chezmoi.os "windows" }}
 AppData
+.local/share/git-worktree-provision.ps1
+{{ end }}
+{{ if ne .chezmoi.os "darwin" }}
+.local/share/git-worktree-provision.sh
 {{ end }}
 {{ if ne .chezmoi.os "darwin" }}
 Library

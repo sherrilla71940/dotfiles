@@ -19,7 +19,7 @@
   "editor.insertSpaces": true,
   "editor.fontSize": 12.5,
   // "editor.fontSize": 13,
-  "editor.fontFamily": "JetBrains Mono, Cascadia Mono, Fantasque Sans Mono, Fira Code Q",
+  "editor.fontFamily": "JetBrains Mono, Cascadia Mono, Fantasque Sans Mono, Consolas, monospace",
   "editor.mouseWheelZoom": true,
   "editor.renderWhitespace": "all",
   "editor.renderControlCharacters": true,
@@ -58,7 +58,6 @@
   },
   // Source control
   "scm.inputFontFamily": "JetBrains Mono, Cascadia Code, Consolas, monospace",
-  // "scm.inputFontFamily": "Cascadia Mono, Fantasque Sans Mono, Fira Code Q",
   "scm.inputMinLineCount": 3,
   "scm.inputMaxLineCount": 10,
   "[scminput]": {
@@ -97,7 +96,12 @@
     "typescript"
   ],
   // Terminal
-  "terminal.integrated.fontFamily": "MesloLGS NF",
+  // MesloLGS NF carries the Nerd Font glyphs terminal output draws; plain JetBrains
+  // Mono does not, so it sits behind it as a fallback rather than replacing it.
+  // The commented line is the one-font-everywhere option, and needs JetBrainsMono
+  // Nerd Font installed first - the plain family is not a substitute for it.
+  "terminal.integrated.fontFamily": "MesloLGS NF, JetBrains Mono, Consolas, monospace",
+  // "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font, MesloLGS NF, monospace",
   "terminal.integrated.defaultProfile.windows": "Git Bash",
   "terminal.integrated.cursorStyle": "line",
   "terminal.integrated.cursorWidth": 4,
@@ -111,6 +115,20 @@
   "git.allowForcePush": false,
   "git.confirmForcePush": true,
   "git.suggestSmartCommit": false,
+  "git.detectWorktrees": true,
+  "git.worktreeIncludeFiles": [
+    "**/CLAUDE.local.md",
+    "**/AGENTS.override.md",
+    "**/.env",
+    "**/.env.local",
+    "**/.env.development",
+    "**/.env.development.local",
+    "**/.env.test",
+    "**/.env.test.local",
+    "**/connections.config",
+    "**/appsettings.secret.config",
+    "**/appsettings.Development.json",
+  ],
   // Copilot
   "github.copilot.selectedCompletionModel": "",
   "github.copilot.nextEditSuggestions.enabled": true,
@@ -172,7 +190,9 @@
   // shared rule is listed twice, and Copilot also ingests ~/.claude/CLAUDE.md, whose lower
   // half is Claude Code-only (Agent calls, claude-code-guide, the Bash/PowerShell tools).
   // Copilot gets its own copies from ~/.copilot/instructions instead.
-  // This affects VS Code only; Claude Code still reads ~/.claude/rules itself.
+  // This affects VS Code only. Claude Code still reads ~/.claude/rules itself, and Copilot CLI
+  // is unaffected either way: it reads ~/.copilot/instructions plus the repository's own
+  // AGENTS.md and CLAUDE.md, never ~/.claude/rules, so it has no duplicate to suppress.
   "chat.instructionsFilesLocations": {
     ".github/instructions": true,
     ".claude/rules": true,

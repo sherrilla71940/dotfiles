@@ -1,15 +1,9 @@
 # Continuity state format
 
-Use this as the default shape for `.agent/continuity.md`. Keep sections concise and omit empty optional sections when that improves readability.
+Use this as the default shape for `.project-continuity/state.md`. Keep sections concise and omit empty optional sections when that improves readability.
 
 ```markdown
 # Project Continuity
-
-## Continuity metadata
-
-- Privacy protection: `<pre-existing ignore / local exclude managed by workflow / non-Git>`
-- Managed exclude entry: `</.agent/continuity.md / none>`
-- Containing directory: `<created by workflow / pre-existing>`
 
 ## Objective
 
@@ -53,20 +47,30 @@ The phase another session should resume from.
 
 - Optional. Facts or rules that may deserve promotion to permanent/private project instructions, but have not been promoted yet.
 
+<!-- claude-compaction-recovery:start -->
+## Emergency recovery
+
+Temporary unverified Claude compact summary. This entire section, including its delimiter
+comments, is removed after the Resume workflow merges useful facts into normal state.
+<!-- claude-compaction-recovery:end -->
+
 ## Verification
 
+- Working tree: `<absolute path of this working directory>`
 - Branch: `<branch or unknown>`
 - HEAD: `<commit or unknown>`
-- Working tree: `<clean / modified / concise description>`
+- Started from: `<commit this task began at, when known>`
+- Status: `<clean / modified / concise description>`
 - Last reconciled: `<ISO date/time when practical>`
 ```
 
 ## Maintenance rules
 
-- Treat the continuity file's existence as the opt-in marker for active continuity.
-- Preserve whether privacy protection was pre-existing or added by this workflow so final cleanup can reverse only workflow-owned setup.
-- Preserve whether `.agent/` was created by this workflow or pre-existed. Never infer ownership later from whether the directory happens to be empty.
-- Ignore only `.agent/continuity.md` for this workflow; never broaden privacy protection to the entire `.agent/` directory solely for continuity.
+- Treat the continuity file's existence as the marker that continuity is active here.
+- Treat `Emergency recovery` as a temporary exception to the normalized format. Reconcile it
+  immediately, merge only current facts, then remove it rather than preserving summary history.
+- `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
+- Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
 - Prefer current state over historical narrative.

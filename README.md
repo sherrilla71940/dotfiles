@@ -196,6 +196,23 @@ scripts/vscode-extensions.txt    extension manifest (installed by bootstrap, or 
 docs/decisions/                  architecture decisions and reconsideration triggers
 ```
 
+## Maintainer regression tests
+
+The scripts below are durable regression suites. Keep each suite while the behavior it protects
+remains supported; repeated passing runs do not make a regression test obsolete. Remove a suite
+only when its feature is retired or equivalent coverage replaces it.
+
+| Change | Run |
+| --- | --- |
+| Windows worktree provisioning implementation | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-git-worktree-provision.ps1` |
+| macOS worktree provisioning implementation | `bash scripts/test-git-worktree-provision.sh` |
+| Shared worktree provisioning contract or safety boundary | Both worktree provisioning suites |
+| Project-continuity lifecycle hooks or recovery contract | `bash scripts/test-project-continuity-hook.sh` |
+
+These suites create disposable repositories and run manually when their implementation or
+contract changes. The pre-commit hook remains focused on fast source rendering and structural
+checks.
+
 ## Where to go next
 
 | I want to… | Read |

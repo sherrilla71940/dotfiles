@@ -182,7 +182,11 @@ Checkpoint when the cost of losing what is not yet recorded becomes material. Fa
 
 Before the first substantive action of a turn, checkpoint when the current user instruction materially changes the objective, requirements, decisions, blockers or next action. Record normalized task state, not prompt text. During a long-running turn, checkpoint again at meaningful phase boundaries when losing the new state would be materially expensive.
 
-Concretely: before sending a response that leaves unresolved TODOs, blockers, an incomplete phase, or a defined next step, check whether continuity changed and update it if so. Outside that case, ask whether a future session would need something from this work that is not already durable in the repository.
+At each checkpoint and before ending a response with unfinished work, apply this resumability test:
+if this session ended now, could another supported client identify the objective, current phase,
+first unfinished action, blockers, required external materials, and unverified assumptions without
+guessing? If not, update continuity. Skip the update when every fact needed to resume is already
+durable in the repository or current state.
 
 Do not checkpoint when nothing meaningful changed, when the information is already obvious in code or tests, when the update would repeat conversation text, or when the change is trivial and cheap to redo.
 
@@ -197,7 +201,10 @@ When checkpointing:
 
 ## Handoff
 
-Only when the user says they are stopping, switching client, or asks for one: checkpoint fully, make the next action concrete and executable, label blockers and unverified assumptions, record branch and HEAD, and report a short summary rather than the whole file. A handoff does not imply cleanup.
+Only when the user says they are stopping, switching client, or asks for one: checkpoint fully,
+apply the resumability test, make the next action concrete and executable, label blockers and
+unverified assumptions, record branch and HEAD, and report a short summary rather than the whole
+file. A handoff does not imply cleanup.
 
 ## Cleanup
 

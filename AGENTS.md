@@ -54,7 +54,9 @@ against `project_doc_max_bytes` (32 KiB). Never add a per-language rule for Code
 Codex-targeted skill cannot rely on its directory to stay private. Follow the gates in
 [docs/customization-support.md](./docs/customization-support.md#add-a-codex-targeted-skill).
 The pre-commit hook checks them only once the `.codex-only` marker exists, so nothing warns you
-that a new skill needed the marker in the first place.
+that a new skill needed the marker in the first place. Do not use Codex's generic
+`quick_validate.py` as this repository's completion gate: its single-host schema rejects required
+cross-host frontmatter. Use the repository pre-commit hook.
 
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
 because Codex writes trust, marketplace and runtime state into it. The cost is that a source

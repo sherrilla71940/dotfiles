@@ -37,6 +37,14 @@ can state a status code that contradicts the real one. Report the request made a
 back. When the app cannot be started at all, say so and label the handed-over steps unverified
 instead of implying the app ran.
 
+When that request fails, rule out two causes that recur in compiled web projects before
+debugging the change itself. A first build in a fresh worktree can restore dependencies without
+running the targets that copy them into place, leaving a tree that compiles cleanly and serves
+nothing; building a second time settles it. And a development server port is usually pinned per
+project rather than per worktree, so another worktree of the same repository may already hold the
+port and be serving a different build under the URL being tested. Establish which directory the
+running server was started from before trusting what it returns.
+
 `agent-test=true` requests proportionate checks that can catch defects in this change: typecheck,
 lint, focused tests, a meaningful build, and a targeted browser or runtime pass for visual work
 when available. `agent-test=false` skips optional verification, but still requires cheap minimum

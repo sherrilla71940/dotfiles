@@ -14,6 +14,14 @@ outside it and the manual-test gate can span sessions.
 Install dependencies according to the lockfile when the fresh worktree needs them. Keep the
 implementation within the resolved task.
 
+Confirm the ignored local configuration this app needs to run is actually present in the
+worktree, because a fresh checkout carries no ignored file. Provisioning can report a skip such
+as `[skipped] .worktreeinclude: manifest not found in source worktree`, which means nothing was
+copied. Do not treat a skip as harmless: say which files were expected, and whether the missing
+ones are needed to run the manual test. Resolve a real gap with `git wt-copy` from a worktree
+that has them, or name exactly what the user must place and where. A skip that genuinely does
+not matter, because the settings the app reads are tracked, is worth one sentence saying so.
+
 `agent-test=true` requests proportionate checks that can catch defects in this change: typecheck,
 lint, focused tests, a meaningful build, and a targeted browser or runtime pass for visual work
 when available. `agent-test=false` skips optional verification, but still requires cheap minimum
@@ -31,8 +39,12 @@ Agent verification never replaces the user's manual test.
 
 ## Stop at the manual-test gate
 
-Give exact manual steps when user-facing behavior remains: startup command, route or screen,
-preconditions and test data, ordered actions, and expected results. Then stop and wait.
+Give exact manual steps when user-facing behavior remains. Open with the absolute path of the
+task worktree and say plainly that the user's editor, terminal and running dev server are
+probably still in the main checkout on the previous branch, so the change is invisible until
+they open that directory. Repeat the path here even though isolation already reported it; this
+gate can span sessions. Then give the startup command, route or screen, preconditions and test
+data, ordered actions, and expected results. Then stop and wait.
 
 Do not commit, push, or open a pull or merge request until the user explicitly reports that the
 manual test passed. Plan approval, approval of a diff, or green automated checks do not open this

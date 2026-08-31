@@ -98,6 +98,15 @@ For a new task, HEAD must equal the recorded `origin/<base>` commit and the bran
 resolved task branch. Keep every file operation and command rooted in this worktree. Do not reach
 back into the primary checkout with absolute paths, `git -C`, `--git-dir`, or `GIT_DIR`.
 
+Report the worktree's absolute path, branch, and base commit in the response, not only in a tool
+call. The chat's workspace is not where the user is working, so an unreported path leaves them
+looking at the primary checkout with no sign of the change.
+
+Also report what ignored local configuration this worktree actually has. An app-created Codex
+worktree and one made with `git wt-add` can both arrive without it, and a provisioning skip such
+as `[skipped] .worktreeinclude: manifest not found in source worktree` is silent until the app
+fails to run.
+
 ## 5. Implement through publishing
 
 Read [references/lifecycle.md](references/lifecycle.md) and follow it through the manual-test gate

@@ -14,6 +14,12 @@ outside it and the manual-test gate can span sessions.
 Install dependencies according to the lockfile when the fresh worktree needs them. Keep the
 implementation within the resolved task.
 
+Work from the worktree using repository-relative paths. Re-anchoring each command with `cd` and
+the absolute worktree path defeats the isolation check, because such a command succeeds
+identically whether or not the session actually moved, so a failed switch stays invisible for the
+rest of the task. A relative path fails loudly instead, and it keeps the transcript evidence that
+the work happened in the worktree.
+
 Confirm the ignored local configuration this app needs to run is actually present in the
 worktree, because a fresh checkout carries no ignored file. Provisioning can report a skip such
 as `[skipped] .worktreeinclude: manifest not found in source worktree`, which means nothing was

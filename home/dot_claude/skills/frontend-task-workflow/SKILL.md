@@ -99,6 +99,12 @@ Report the worktree's absolute path, branch, and base commit in the response, no
 call. The session has moved and the user's editor has not, so an unreported path leaves them
 looking at the old branch in the main checkout with no sign of the change.
 
+Do not treat the status line as evidence either way. After `EnterWorktree` moves the session by
+path, Claude Code has been observed still sending the main checkout as `workspace.current_dir`,
+so a status line built on that documented field keeps showing the old directory and branch for
+the rest of the session. Verify with `git rev-parse` from the worktree instead, and say so if the
+user reports a contradiction.
+
 ## 6. Implement through publishing
 
 Read [references/lifecycle.md](references/lifecycle.md) and follow it through the manual-test gate

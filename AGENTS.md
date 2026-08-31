@@ -50,10 +50,11 @@ failure this structure exists to prevent.
 file with no YAML frontmatter — Codex renders frontmatter as visible text and it counts
 against `project_doc_max_bytes` (32 KiB). Never add a per-language rule for Codex.
 
-**Host-gate Codex-targeted skills.** Codex and Copilot both discover `~/.agents/skills`.
-Mark a Codex-targeted source skill with `.codex-only`, omit its Claude symlink, disable
-Copilot model invocation in `SKILL.md`, keep Codex implicit invocation enabled in
-`agents/openai.yaml`, and make the skill stop if GitHub Copilot invokes it explicitly.
+**Host-gate Codex-targeted skills.** Codex and Copilot both discover `~/.agents/skills`, so a
+Codex-targeted skill cannot rely on its directory to stay private. Follow the gates in
+[docs/customization-support.md](./docs/customization-support.md#add-a-codex-targeted-skill).
+The pre-commit hook checks them only once the `.codex-only` marker exists, so nothing warns you
+that a new skill needed the marker in the first place.
 
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
 because Codex writes trust, marketplace and runtime state into it. The cost is that a source

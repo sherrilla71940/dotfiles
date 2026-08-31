@@ -46,9 +46,9 @@ directories exist only where a client requires the directory before a session st
 VS Code lists every shared skill twice. Claude Code reads personal skills only from
 `~/.claude/skills`, so this repository links each shared skill there, and VS Code scans both
 that directory and `~/.agents/skills`. Both entries resolve to the same file, so the effect is
-cosmetic. It cannot be configured away: VS Code exposes `chat.instructionsFilesLocations` and
-`chat.promptFilesLocations`, which is how the same duplication is suppressed for rules in
-`home/.chezmoitemplates/vscode/settings.json`, but no equivalent setting for skills.
+cosmetic. It cannot be configured away: `home/.chezmoitemplates/vscode/settings.json` suppresses
+the same duplication for rules with `chat.instructionsFilesLocations`, and VS Code exposes
+`chat.promptFilesLocations` for prompt files, but there is no equivalent setting for skills.
 
 ### Surfaces outside this table
 

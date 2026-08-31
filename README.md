@@ -46,7 +46,11 @@ carry meaning too: `dot_` becomes a leading dot, and a `.tmpl` file is rendered 
 which is how one source supports both Windows and macOS.
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
 
-`chezmoi init` fetches this repository for you, so no separate `git clone` is required.
+`chezmoi init` clones this repository for you, into a source directory of its own choosing.
+Decide before that whether you want the working tree somewhere plain `git` and the repository's
+scripts are convenient — this setup keeps it at `~/dotfiles`, which means cloning there yourself
+first. [docs/setup.md](./docs/setup.md) has the ordering; the reason is in
+[ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md).
 
 ## Shared AI configuration
 
@@ -98,6 +102,12 @@ Do not apply until you have adopted — copied into the repository — the value
 [existing-configuration guide](./docs/setup.md#existing-configuration) explains how to
 preserve a complete plain file or selected settings from a template-backed file. If you use
 a fork, replace `sherrilla71940` with the fork's URL.
+
+Either path is one step of seven. What remains — the bootstrap helper that links the source
+directory and enables the validation hook, installing and signing in to the applications, then
+**running bootstrap a second time** so its plugin, extension and MCP steps find the CLIs they
+depend on — is in [docs/setup.md](./docs/setup.md). Stopping here leaves a machine with the
+files but none of the tooling.
 
 ## After setup
 

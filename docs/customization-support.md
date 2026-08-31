@@ -244,10 +244,12 @@ there as one that was ignored.
 
 ### Add a Codex-targeted skill
 
-Use this exception only when Codex needs an on-demand workflow that Claude and Copilot
-already receive through native configuration, such as path-scoped instructions. Both Codex
-and Copilot discover personal skills under `~/.agents/skills`, so the skill cannot rely on
-its directory to stay private.
+Use this exception when Codex needs an on-demand workflow that must not become a portable skill.
+Two cases qualify: Claude and Copilot already receive equivalent native configuration, such as
+path-scoped instructions; or the same workflow has a separate Claude adapter because the clients'
+tools and lifecycle differ, while Copilot is deliberately unsupported. Both Codex and Copilot
+discover personal skills under `~/.agents/skills`, so the skill cannot rely on its directory to
+stay private.
 
 Create the skill with all of these gates:
 
@@ -265,12 +267,12 @@ Create the skill with all of these gates:
      allow_implicit_invocation: true
    ```
 
-5. Start the skill body with a host guard that tells GitHub Copilot to stop because its
-   equivalent path-scoped instructions are already active. This also protects against an
-   explicit Copilot invocation.
+5. Start the skill body with a host guard that tells GitHub Copilot to stop and states whether
+   equivalent native instructions are already active or the workflow is unsupported there. This
+   also protects against an explicit Copilot invocation.
 
-Keep the skill's detailed references as thin templates that include the existing shared rule
-bodies. Do not copy those bodies into the skill.
+When another host adapter shares workflow guidance, keep detailed references as thin templates
+that include one existing shared body. Do not copy that body into each skill.
 
 ## Add an agent definition
 

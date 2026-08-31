@@ -67,9 +67,11 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-Skills go the other way, because nothing about them needs to differ per client. One real copy
-lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code looks only in
-`~/.claude/skills`, so a symlink bridges it there. Nothing is rendered and nothing is copied.
+Portable skills go the other way, because their instructions do not differ per client. One real
+copy lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code looks only in
+`~/.claude/skills`, so a symlink bridges it there. A Codex-targeted exception can also live in
+`~/.agents/skills`, but repository host gates keep Claude and Copilot from invoking it as a shared
+workflow.
 
 A skill or instruction meant for one tool alone is a plain file in that tool's own folder —
 `~/.copilot/skills`, for instance — with no templating and no link. Nothing is ever reworded
@@ -163,9 +165,9 @@ omits the frontmatter each client requires; the Claude durable-settings body doe
 without `home/dot_claude/modify_settings.json` to merge it. Take the wrapper as well, or read
 it to see what it supplies.
 
-Skills under `home/dot_agents/skills/` are real files rather than bodies, so they copy
-directly, but they assume Claude Code, Codex, and Copilot all read them. Check those
-assumptions before dropping one into a single-client setup.
+Skills under `home/dot_agents/skills/` are real files rather than bodies, so they copy directly.
+Most are portable; a source-only `.codex-only` marker identifies the host-gated exceptions.
+Check that distinction before dropping one into a single-client setup.
 
 ## Layout
 
@@ -177,7 +179,7 @@ home/                            chezmoi source state
                                  skills (Claude-only ones, plus links to the shared set)
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
-  dot_agents/skills/             SHARED skills -> ~/.agents/skills, read by all three
+  dot_agents/skills/             portable and host-gated Codex skills -> ~/.agents/skills
   .README.md                     how to read this tree (repo-only, never deployed)
   dot_bashrc  dot_zshrc.tmpl  dot_bash_profile   shells
   AppData/ · Library/            VS Code, one per OS

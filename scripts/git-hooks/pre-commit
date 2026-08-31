@@ -25,11 +25,28 @@ frontmatter_has() {
   ' "$file" | grep -Eq "$pattern"
 }
 
-# Concurrent-session guard. Claude Code takes no lock on a directory, and git only refuses a
-# duplicate checkout across worktrees, not across processes, so sessions in one folder share
-# this index -- and git commits the index, not the paths a session meant to stage. The
-# SessionStart hook warns at launch; this warns at the operation that actually loses work.
-# It runs before the chezmoi lookup below, which exits 0 when chezmoi is missing.
+# Shared-index guard. Git commits the index, not the paths a session meant to stage, and this
+# folder's index is shared by every process working in it -- git only refuses a duplicate
+# checkout across worktrees, never across processes. A staged change also outlives the session
+# that made it, so detecting live sessions cannot catch the case that actually loses work: a
+# session stages a path, exits, and the next commit here absorbs it under an unrelated message.
+# The listing below is therefore unconditional. It needs no provenance, which git does not
+# record, and makes a mixed commit visible at the moment it is made.
+staged_paths="$(git diff --cached --name-only)"
+staged_count="$(printf '%s' "$staged_paths" | grep -c . || true)"
+if [[ "$staged_count" -gt 0 ]]; then
+  printf 'pre-commit: committing %s staged path(s):
+' "$staged_count" >&2
+  printf '%s
+' "$staged_paths" | sed 's/^/      /' >&2
+  printf '    Not all yours? Cancel, then commit only what you meant:
+' >&2
+  printf '      git commit --only -m "<message>" -- <path>...
+' >&2
+fi
+
+# Escalate when another session is live in this tree, because then the index can gain a path
+# between staging and committing, not merely hold one from earlier.
 if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
   sessions="$(timeout 5 claude agents --json 2>/dev/null || true)"
   if [[ -n "$sessions" ]]; then
@@ -45,13 +62,12 @@ if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     ' 2>/dev/null || printf '0')"
 
     # A git hook receives no session identity, so the committing session counts itself here.
-    # Two or more means the index is genuinely shared.
+    # Two or more means another session is working in this index right now.
     if [[ "$sharing" =~ ^[0-9]+$ ]] && (( sharing > 1 )); then
-      printf 'pre-commit: %s interactive Claude Code sessions share this working tree.\n' \
-        "$sharing" >&2
-      printf '    git commits the index, so this commit takes every staged path below,\n' >&2
-      printf '    whoever staged it. Unstage what is not yours: git restore --staged <path>\n' >&2
-      git diff --cached --name-only | sed 's/^/      /' >&2
+      printf 'pre-commit: %s interactive Claude Code sessions share this working tree,
+'         "$sharing" >&2
+      printf '    so the staged set above can change under you. Prefer --only here.
+' >&2
     fi
   fi
 fi

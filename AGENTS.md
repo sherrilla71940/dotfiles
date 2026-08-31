@@ -85,6 +85,18 @@ tree is shared and that you are staying in it, staging explicit paths rather tha
 then get on with the work. Worktrees remain correct for ordinary repositories and for subagents
 editing in parallel.
 
+Because sessions share this folder they also share its index, and **git commits the index, not
+the paths you staged**. Staging deliberately does not protect you: another session's staged path
+rides along in your commit, and it outlives the session that staged it, so nothing warns you.
+Commit by pathspec instead, which builds its own index and ignores everything else:
+
+```bash
+git commit --only -m "<message>" -- <path>...   # commits exactly these paths
+```
+
+The pre-commit hook lists every staged path on each commit so a mixed one is visible as it
+happens; `--only` is what stops it happening.
+
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish

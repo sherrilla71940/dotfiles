@@ -1,22 +1,28 @@
 ---
 name: browser-collab-testing
-description: 'Rapid collaborative browser testing protocol where agent and user share interaction duties. Use when Chrome DevTools MCP cannot automate certain interactions (canvas clicks, map overlays, drag gestures, WebGL elements), when many sequential user actions are needed, when user offers to help click or interact, or when running E2E flows that mix automatable and non-automatable steps. Triggers: "help me test", "I can click for you", "test together", "collaborative testing", "speed up testing", "let me do it".'
+description: 'Collaborative browser testing where the agent and the user split the interactions. Use when the browser driver cannot reach a target — canvas clicks, map overlays, WebGL, drag gestures — when a flow needs several user actions in a row, or when the user offers to click. Triggers: "help me test", "I can click for you", "test together", "let me do it".'
 ---
 
 # Browser Collaborative Testing Protocol
 
-A workflow for fast human-agent collaborative browser testing. The agent handles setup, scripting, and verification. The user handles interactions that MCP tools cannot automate. The goal is **speed** — minimize round-trips, batch instructions, verify in bulk.
+A workflow for fast human-agent collaborative browser testing. The agent handles setup, scripting, and verification. The user handles interactions no browser driver can automate. The goal is **speed** — minimize round-trips, batch instructions, verify in bulk.
+
+## Any browser driver
+
+This protocol is about who performs an interaction, not about which tool drives the browser. Whichever driver is connected — the Chrome DevTools MCP server, the Playwright MCP server, or Claude in Chrome — the same three capabilities carry the whole workflow: **evaluate a script in the page**, **click or fill by element reference**, and **take a screenshot**. Use whichever is available and read its tool schemas for exact names rather than expecting a list here.
+
+Where this file says *evaluate a script* or *click by reference*, substitute the connected driver's equivalent.
 
 ## When to Use
 
-- Chrome DevTools MCP `click(uid)` cannot reach the target (canvas, WebGL, SVG hit regions, map overlays)
+- The driver's click-by-reference cannot reach the target (canvas, WebGL, SVG hit regions, map overlays)
 - A test flow requires **3+ sequential user interactions** — batching saves significant time
 - User explicitly offers to help with physical interactions
 - Complex gesture-based interactions (drag-and-drop on canvas, multi-touch, hover-then-click sequences)
 
 ## When NOT to Use
 
-- All elements are in the DOM and clickable via MCP `click(uid)` or `evaluate_script`
+- All elements are in the DOM and reachable by clicking by reference or evaluating a script
 - Single one-off click — just ask inline, no protocol needed
 
 ## The Speed Protocol
@@ -27,10 +33,10 @@ Before involving the user, the agent MUST exhaust all automatable options:
 
 | Action | Agent handles | User handles |
 |---|---|---|
-| Button/link/checkbox clicks | `evaluate_script` or MCP `click(uid)` | Never |
-| Text input | MCP `fill(uid)` or `evaluate_script` | Never |
-| Zoom, scroll, pan | `evaluate_script` (e.g. `map.setZoom()`) | Never |
-| Page state queries | `evaluate_script` returning JSON | Never |
+| Button/link/checkbox clicks | evaluate a script, or click by reference | Never |
+| Text input | fill by reference, or evaluate a script | Never |
+| Zoom, scroll, pan | evaluate a script (e.g. `map.setZoom()`) | Never |
+| Page state queries | evaluate a script returning JSON | Never |
 | Canvas element clicks | Cannot automate | Yes |
 | Map polyline/overlay clicks | Cannot automate reliably | Yes |
 | Drag on canvas/WebGL | Cannot automate | Yes |
@@ -38,7 +44,7 @@ Before involving the user, the agent MUST exhaust all automatable options:
 
 ### Phase 1: Agent Sets Up
 
-Prepare ALL preconditions in a single `evaluate_script` call before involving the user:
+Prepare ALL preconditions in a single script evaluation before involving the user:
 
 ```javascript
 // GOOD: One call sets up everything
@@ -75,7 +81,7 @@ User performs all requested actions and responds with "done", "clicked", or desc
 
 ### Phase 4: Agent Verifies (Bulk)
 
-Check ALL expected outcomes in one `evaluate_script`:
+Check ALL expected outcomes in one script evaluation:
 
 ```javascript
 // GOOD: Verify everything at once
@@ -102,13 +108,13 @@ Then take a screenshot for visual confirmation.
 2. **Batch user instructions** — 3-5 actions per round-trip, not one at a time
 3. **Always screenshot before asking** — user needs to see what they're clicking
 4. **Always verify after user acts** — don't assume the click landed
-5. **One `evaluate_script` per verification** — return a JSON object with all checks
+5. **One script evaluation per verification** — return a JSON object with all checks
 6. **Describe targets by visible label, not by coordinates** — "the line between N07-1 and N08-1" not "click at pixel 429, 522"
 7. **State the expected result** — "a new node should appear on the line" so the user can also confirm visually
 
 ## Examples of Non-Automatable Elements
 
-| Technology | What MCP Can't Click | Why |
+| Technology | What no driver clicks reliably | Why |
 |---|---|---|
 | Google Maps Polylines | Canvas-rendered lines | No DOM target, Google Maps internal hit-testing |
 | Google Maps custom overlays | Some OverlayView subclasses | May render on canvas layer |
@@ -124,8 +130,8 @@ Then take a screenshot for visual confirmation.
 
 | Problem | Solution |
 |---|---|
-| User click didn't register | Ask user to click more precisely on the element; zoom in first via `evaluate_script` |
+| User click didn't register | Ask user to click more precisely on the element; zoom in first by evaluating a script |
 | Wrong element clicked | Take screenshot, annotate with a description of exact target, retry |
-| State didn't change after click | Check via `evaluate_script` whether the app's mode/state is correct; the click may have landed on the wrong layer |
+| State didn't change after click | Check by evaluating a script whether the app's mode/state is correct; the click may have landed on the wrong layer |
 | Too many round-trips | Batch more actions per turn; group related steps together |
 | User unsure what to click | Zoom in closer, center the target element, take screenshot, describe with landmarks ("the orange circle just below the '竣工' label") |

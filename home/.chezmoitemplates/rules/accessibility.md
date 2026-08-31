@@ -5,6 +5,7 @@
 - Verify that every ARIA ID reference (`aria-labelledby`, `aria-describedby`, `aria-controls`) resolves to the intended element. A broken `aria-labelledby` reference can remove an accessible name; broken `aria-describedby` and `aria-controls` references sever their intended relationships.
 - Do not put click handlers on non-interactive elements. If a custom widget is unavoidable, provide role, state, `tabindex`, Enter/Space behavior, and documented focus management.
 - Dialogs and blocking overlays must move focus inside, keep focus contained, close with Escape unless unsafe, prevent background interaction, and restore focus to the trigger.
+- Dismissal differs by overlay type: a modal dialog needs Escape and an explicit close control, and should not rely on outside-click unless accidental dismissal is acceptable, while an informational popover should accept both Escape and outside-click.
 - Forms need visible labels, helpful instructions, `autocomplete` where relevant, linked error text, and preserved user input after recoverable failures.
 - Announce important async updates with an appropriate live region when the change is not otherwise obvious.
 - Do not rely on color, shape, position, hover, drag, or gesture alone to communicate or operate important functionality.

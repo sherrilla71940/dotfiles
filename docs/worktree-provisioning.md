@@ -163,7 +163,7 @@ specific way: both create a Git worktree and provision ignored files approved by
 Use `claude --worktree` when starting an isolated Claude Code session. Use `git wt-add` when
 the worktree itself is the goal and a terminal, VS Code, Codex, or another tool will use it.
 
-### Using both in one session
+### Claude frontend workflow
 
 The Claude-only `frontend-task-workflow` skill combines them, because neither alone gives an
 isolated session on a branch taken from an arbitrary remote base. Claude Code's own worktree
@@ -183,6 +183,22 @@ Removing a worktree is not retiring a branch. `git worktree remove` deletes no r
 skill deletes none either: the task branch stays for the open request, its reviews and its CI.
 `ExitWorktree` with `action: "remove"` is the one operation here that *would* delete the branch
 along with the directory, which is why that path is never used.
+
+### Codex frontend workflow
+
+The Codex adapter of `frontend-task-workflow` starts only after the chat is already in a linked
+worktree. In the Codex app, choose Worktree when starting the chat or use Handoff from Local. In
+the CLI or IDE extension, start Codex in a worktree created with `git wt-add`; changing only a
+shell's directory does not move an existing chat's workspace.
+
+Codex-managed worktrees begin detached. After fetching, the skill creates the task branch from
+the requested `origin/<base>` inside that clean worktree, so the selected starting branch does not
+silently replace the workflow's explicit base. It keeps every operation in that directory and
+uses project continuity so another client can resume there.
+
+The running skill never removes its active Codex worktree. After the branch is clean, pushed, and
+attached to an open request, the user can keep it for review or dispose of it through the app's
+worktree lifecycle. Neither choice deletes the task branch.
 
 ## Safety boundaries
 

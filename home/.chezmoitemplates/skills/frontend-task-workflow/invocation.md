@@ -1,0 +1,128 @@
+# Invocation, normalization and validation
+
+Read this before touching Git. Interpret the text accompanying the skill invocation as the
+arguments described below, then echo the resolved result before creating or changing anything.
+
+## Task identity
+
+`base` is always required. Task identity must come from exactly one source:
+
+- a non-empty explicit `task`; or
+- `--infer-task` / `infer-task=true` plus at least one readable material.
+
+Inference makes an explicit task unnecessary; it does not make an empty `task=` valid. Omit the
+`task` option entirely when asking for inference. Reject `task=` or `task=""` as an empty value,
+including when inference is enabled.
+
+## 1. Tokenize
+
+Split the invocation arguments on whitespace except inside quotes. A double-quoted span is one
+token with the quotes removed, and a quote may open partway through a token, so
+`task="two words"` is one token. Single quotes work the same way; prefer double quotes.
+
+Values containing spaces must be quoted. Reject an unclosed quote rather than guessing where a
+value ends.
+
+## 2. Classify each token
+
+In order, the first matching rule wins:
+
+| Token shape | Class |
+| --- | --- |
+| `--infer-task` | flag, equivalent to `infer-task=true` |
+| `--no-agent-test` | flag, equivalent to `agent-test=false` |
+| any other `--...` token | error: unknown flag |
+| `<key>=<value>` with a known key | option |
+| `<key>=<value>` with an unknown key | error: never reinterpret it as a material |
+| anything else | bare token |
+
+The accepted keys are:
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `base` | branch on `origin`, with or without `origin/` | required |
+| `task` | non-empty task description | required unless inference is on |
+| `infer-task` | `true` or `false` | `false` |
+| `materials` | one path; repeatable | none |
+| `type` | Conventional Commit type for the branch | inferred |
+| `slug` | ASCII kebab-case branch slug | inferred |
+| `branch` | whole branch name, overriding `type`/`slug`/`suffix` | `{type}/{slug}/{suffix}` |
+| `suffix` | final branch segment | `frontend` |
+| `lang` | `en` or `zhtw`, for commit and request text only | `zhtw` |
+| `mode` | `commit` or `draft` | `commit` |
+| `group` | `batch` or `single` | `batch` |
+| `agent-test` | `true` or `false` | `true` |
+| `cleanup` | {{ .cleanupValues }} | `{{ .cleanupDefault }}` |
+
+`infer-task` and `agent-test` accept exactly `true` and `false`, case-insensitively. Reject empty
+values and alternate boolean spellings. `test=` is deliberately not a key: manual testing is
+never optional, while `agent-test` controls only the agent's optional verification.
+
+## 3. Fill positional slots
+
+Named options bind to their keys in any order. Bare tokens fill these slots in order:
+
+1. `base`, when `base=` was not supplied;
+2. `task`, when `task=` was not supplied and inference is off;
+3. materials, appended after any `materials=` values.
+
+When inference is on, the task slot is closed, so every bare token after `base` is a material.
+
+```text
+{{ .invoke }} feat/CCTVPipiCons "inspect the CCTV pipe record" "handoff.md"
+{{ .invoke }} base=feat/CCTVPipiCons task="inspect the CCTV pipe record" materials="handoff.md"
+{{ .invoke }} feat/CCTVPipiCons --infer-task "handoff.md" "screens.pptx"
+```
+
+## 4. Reject structural ambiguity
+
+Stop and create nothing for any of these:
+
+| Condition | Reason |
+| --- | --- |
+| no `base` | the base is also the request target and has no safe default |
+| neither a non-empty task nor inference | task identity is missing |
+| both a non-empty task and inference | two task sources were supplied |
+| inference without a readable material | there is nothing from which to infer |
+| any empty option, including `task=` | an empty value is a slip, not an instruction |
+| an unknown option, flag, enum, or boolean spelling | falling back would silently change behavior |
+| the same option repeated with different values | intent is unknowable; `materials` alone is repeatable |
+| an unclosed quote | the value boundary is unknown |
+| a missing or unreadable material | planning would rely on material that was not read |
+| the positional task token resolves to a file | the task was probably omitted; ask for a task or inference |
+| the positional base resolves to a file or contains whitespace | it is in the wrong slot |
+| `branch=` together with `type=`, `slug=`, or `suffix=` | two branch names were described |
+
+Strip an `origin/` prefix from `base` after parsing. Check material paths before Git. Check
+`origin/<base>` after fetching; when it is absent, show near matches and create nothing.
+
+## 5. Resolve from materials
+
+Read every supplied material before planning, using the dedicated document skill for PDF,
+PowerPoint, spreadsheet, or Word containers and an ordinary read for text and images. Classify
+external project material under the global project-material rule. State what was read and what
+could only be partly extracted.
+
+With inference, derive one concise task in the materials' language. Ask when the materials contain
+multiple tasks, conflict, or do not support one confident task. Mark the resolved task as inferred.
+
+With an explicit task, cross-check it against the materials. Stop only for a material conflict in
+subject, screen, feature, or module; wording and added detail are not conflicts.
+
+## 6. Echo the resolved interpretation
+
+Show one block after all materials are read and before any Git command:
+
+```text
+base       feat/CCTVPipiCons
+task       inspect the CCTV pipe record            (explicit)
+materials  handoff.md, screens.pptx
+branch     feat/cctv-pipe-inspection-record/frontend   (type and slug inferred)
+worktree   {{ .worktreeExample }}
+commit     commit | batch | zhtw
+agent-test true        cleanup  {{ .cleanupDefault }}
+```
+
+For rejection, show unresolved fields, the exact problem, and a corrected invocation when clear.
+End with `Nothing was created.` Normalize only whitespace, quote removal, boolean case, the
+`origin/` prefix, and trailing path separators; reject anything that could change meaning.

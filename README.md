@@ -46,7 +46,11 @@ carry meaning too: `dot_` becomes a leading dot, and a `.tmpl` file is rendered 
 which is how one source supports both Windows and macOS.
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the day-to-day commands.
 
-`chezmoi init` fetches this repository for you, so no separate `git clone` is required.
+`chezmoi init` clones this repository for you, into a source directory of its own choosing.
+Decide before that whether you want the working tree somewhere plain `git` and the repository's
+scripts are convenient — this setup keeps it at `~/dotfiles`, which means cloning there yourself
+first. [docs/setup.md](./docs/setup.md) has the ordering; the reason is in
+[ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md).
 
 ## Shared AI configuration
 
@@ -63,9 +67,11 @@ home/.chezmoidata.yaml                       <-- the glob, written once
   -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
 ```
 
-Skills go the other way, because nothing about them needs to differ per client. One real copy
-lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code looks only in
-`~/.claude/skills`, so a symlink bridges it there. Nothing is rendered and nothing is copied.
+Portable skills go the other way, because their instructions do not differ per client. One real
+copy lives in `~/.agents/skills`, which Codex and Copilot read directly; Claude Code looks only in
+`~/.claude/skills`, so a symlink bridges it there. A Codex-targeted exception can also live in
+`~/.agents/skills`, but repository host gates keep Claude and Copilot from invoking it as a shared
+workflow.
 
 A skill or instruction meant for one tool alone is a plain file in that tool's own folder —
 `~/.copilot/skills`, for instance — with no templating and no link. Nothing is ever reworded
@@ -98,6 +104,12 @@ Do not apply until you have adopted — copied into the repository — the value
 [existing-configuration guide](./docs/setup.md#existing-configuration) explains how to
 preserve a complete plain file or selected settings from a template-backed file. If you use
 a fork, replace `sherrilla71940` with the fork's URL.
+
+Either path is one step of seven. What remains — the bootstrap helper that links the source
+directory and enables the validation hook, installing and signing in to the applications, then
+**running bootstrap a second time** so its plugin, extension and MCP steps find the CLIs they
+depend on — is in [docs/setup.md](./docs/setup.md). Stopping here leaves a machine with the
+files but none of the tooling.
 
 ## After setup
 
@@ -153,9 +165,9 @@ omits the frontmatter each client requires; the Claude durable-settings body doe
 without `home/dot_claude/modify_settings.json` to merge it. Take the wrapper as well, or read
 it to see what it supplies.
 
-Skills under `home/dot_agents/skills/` are real files rather than bodies, so they copy
-directly, but they assume Claude Code, Codex, and Copilot all read them. Check those
-assumptions before dropping one into a single-client setup.
+Skills under `home/dot_agents/skills/` are real files rather than bodies, so they copy directly.
+Most are portable; a source-only `.codex-only` marker identifies the host-gated exceptions.
+Check that distinction before dropping one into a single-client setup.
 
 ## Layout
 
@@ -167,7 +179,7 @@ home/                            chezmoi source state
                                  skills (Claude-only ones, plus links to the shared set)
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
-  dot_agents/skills/             SHARED skills -> ~/.agents/skills, read by all three
+  dot_agents/skills/             portable and host-gated Codex skills -> ~/.agents/skills
   .README.md                     how to read this tree (repo-only, never deployed)
   dot_bashrc  dot_zshrc.tmpl  dot_bash_profile   shells
   AppData/ · Library/            VS Code, one per OS
@@ -176,6 +188,8 @@ scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup: links the chezmoi s
 scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude
 scripts/claude-user-mcp-servers.json  the MCP manifest those installers read
 scripts/claude-settings-drift.sh lists Claude settings changed locally but not in the repo
+scripts/claude-config-usage.sh   reads local session transcripts to report which managed
+                                 skills and commands actually get invoked, and which never do
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/git-hooks/markdown-anchors.awk  resolves documentation cross-references
 scripts/vscode-extensions.txt    extension manifest (installed by bootstrap, or on request)

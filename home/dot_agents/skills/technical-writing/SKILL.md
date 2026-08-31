@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: Google Technical Writing style rules for technical prose: READMEs, design docs, PR descriptions, commit messages, doc comments, and code comments. Load when writing or editing any technical documentation or substantial prose so the wording follows the checklist below.
+description: "Google Technical Writing style rules for READMEs, design documents, PR and MR descriptions, commit message bodies, doc comments, and code comments. Load when drafting or substantially rewriting one of those, not for ordinary chat replies or short inline notes."
 ---
 
 # Technical Writing Rules

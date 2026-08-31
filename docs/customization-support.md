@@ -46,9 +46,9 @@ directories exist only where a client requires the directory before a session st
 VS Code lists every shared skill twice. Claude Code reads personal skills only from
 `~/.claude/skills`, so this repository links each shared skill there, and VS Code scans both
 that directory and `~/.agents/skills`. Both entries resolve to the same file, so the effect is
-cosmetic. It cannot be configured away: VS Code exposes `chat.instructionsFilesLocations` and
-`chat.promptFilesLocations`, which is how the same duplication is suppressed for rules in
-`home/.chezmoitemplates/vscode/settings.json`, but no equivalent setting for skills.
+cosmetic. It cannot be configured away: `home/.chezmoitemplates/vscode/settings.json` suppresses
+the same duplication for rules with `chat.instructionsFilesLocations`, and VS Code exposes
+`chat.promptFilesLocations` for prompt files, but there is no equivalent setting for skills.
 
 ### Surfaces outside this table
 
@@ -225,12 +225,31 @@ skills to coexist in `~/.claude/skills/`.
 Check a portable skill for client-specific tool names before sharing it. Because these are
 source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmoi add`.
 
+### Give the skill a way to be reached
+
+A skill that nothing points at is unlikely to be used. Across 161 local sessions, every skill
+that had ever been invoked was named explicitly in always-on context — a rule body, `core.md`, or
+the continuity bootstrap — and no skill without such a reference had ever run. Description
+quality was not what separated them; routing was.
+
+So name a new skill from the instruction that covers its topic, the way
+`home/.chezmoitemplates/rules/accessibility.md` ends by pointing at `accessibility-review`.
+Without that, expect it to sit unused however good its description is, and prefer folding its
+content into an existing rule to adding a skill nothing reaches.
+
+`scripts/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
+is worth re-measuring rather than assuming. Read a zero as a lower bound: a skill marked
+`user-invocable: false`, or one whose guidance was followed without a tool call, looks the same
+there as one that was ignored.
+
 ### Add a Codex-targeted skill
 
-Use this exception only when Codex needs an on-demand workflow that Claude and Copilot
-already receive through native configuration, such as path-scoped instructions. Both Codex
-and Copilot discover personal skills under `~/.agents/skills`, so the skill cannot rely on
-its directory to stay private.
+Use this exception when Codex needs an on-demand workflow that must not become a portable skill.
+Two cases qualify: Claude and Copilot already receive equivalent native configuration, such as
+path-scoped instructions; or the same workflow has a separate Claude adapter because the clients'
+tools and lifecycle differ, while Copilot is deliberately unsupported. Both Codex and Copilot
+discover personal skills under `~/.agents/skills`, so the skill cannot rely on its directory to
+stay private.
 
 Create the skill with all of these gates:
 
@@ -248,12 +267,12 @@ Create the skill with all of these gates:
      allow_implicit_invocation: true
    ```
 
-5. Start the skill body with a host guard that tells GitHub Copilot to stop because its
-   equivalent path-scoped instructions are already active. This also protects against an
-   explicit Copilot invocation.
+5. Start the skill body with a host guard that tells GitHub Copilot to stop and states whether
+   equivalent native instructions are already active or the workflow is unsupported there. This
+   also protects against an explicit Copilot invocation.
 
-Keep the skill's detailed references as thin templates that include the existing shared rule
-bodies. Do not copy those bodies into the skill.
+When another host adapter shares workflow guidance, keep detailed references as thin templates
+that include one existing shared body. Do not copy that body into each skill.
 
 ## Add an agent definition
 

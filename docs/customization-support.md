@@ -225,6 +225,23 @@ skills to coexist in `~/.claude/skills/`.
 Check a portable skill for client-specific tool names before sharing it. Because these are
 source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmoi add`.
 
+### Give the skill a way to be reached
+
+A skill that nothing points at is unlikely to be used. Across 161 local sessions, every skill
+that had ever been invoked was named explicitly in always-on context — a rule body, `core.md`, or
+the continuity bootstrap — and no skill without such a reference had ever run. Description
+quality was not what separated them; routing was.
+
+So name a new skill from the instruction that covers its topic, the way
+`home/.chezmoitemplates/rules/accessibility.md` ends by pointing at `accessibility-review`.
+Without that, expect it to sit unused however good its description is, and prefer folding its
+content into an existing rule to adding a skill nothing reaches.
+
+`scripts/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
+is worth re-measuring rather than assuming. Read a zero as a lower bound: a skill marked
+`user-invocable: false`, or one whose guidance was followed without a tool call, looks the same
+there as one that was ignored.
+
 ### Add a Codex-targeted skill
 
 Use this exception only when Codex needs an on-demand workflow that Claude and Copilot

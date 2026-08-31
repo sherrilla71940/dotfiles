@@ -78,8 +78,11 @@ If Claude starts outside a git checkout while the launch directory merely contai
 4. If behavior still differs from expectations, check:
    - `autoMemoryEnabled`
    - `CLAUDE_CODE_DISABLE_AUTO_MEMORY`
-   - `CLAUDE_CODE_DISABLE_CLAUDE_MDS`
    - `autoMemoryDirectory`
+   - `claudeMdExcludes`, which skips a `CLAUDE.md` by path or glob and is the documented way
+     instruction files go missing on purpose
+   - `CLAUDE_CODE_PROJECT_DIR_NAME`, which renames the project directory that auto memory is
+     keyed by, so two repositories can deliberately share one memory directory
    - settings scope and precedence
    - workspace trust
    - whether the sessions are actually using linked worktrees rather than separate clones

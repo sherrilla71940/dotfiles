@@ -22,6 +22,15 @@ ones are needed to run the manual test. Resolve a real gap with `git wt-copy` fr
 that has them, or name exactly what the user must place and where. A skip that genuinely does
 not matter, because the settings the app reads are tracked, is worth one sentence saying so.
 
+When the manual test needs a running app, start it and request one real route before writing
+the steps. A fresh worktree can fail at startup for reasons the build output does not reveal:
+a first build that restores dependencies but never runs their copy targets is the common one,
+and it leaves a tree that compiles cleanly and serves nothing. Treat a redirect to the app's
+own error page as failure rather than success, because a custom error page can return 200 and
+can state a status code that contradicts the real one. Report the request made and what came
+back. When the app cannot be started at all, say so and label the handed-over steps unverified
+instead of implying the app ran.
+
 `agent-test=true` requests proportionate checks that can catch defects in this change: typecheck,
 lint, focused tests, a meaningful build, and a targeted browser or runtime pass for visual work
 when available. `agent-test=false` skips optional verification, but still requires cheap minimum

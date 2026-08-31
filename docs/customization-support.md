@@ -271,6 +271,13 @@ Create the skill with all of these gates:
    equivalent native instructions are already active or the workflow is unsupported there. This
    also protects against an explicit Copilot invocation.
 
+Validate these skills with `scripts/git-hooks/pre-commit`, not Codex's generic
+`skill-creator/scripts/quick_validate.py`. The generic validator accepts only its single-host
+frontmatter schema, so it rejects client-specific fields used in this repository, including
+`disable-model-invocation`, `argument-hint`, and `user-invocable`. Do not remove a required field
+or install PyYAML only to make that validator pass. The repository hook renders the staged source
+and checks the `.codex-only` host gates.
+
 When another host adapter shares workflow guidance, keep detailed references as thin templates
 that include one existing shared body. Do not copy that body into each skill.
 

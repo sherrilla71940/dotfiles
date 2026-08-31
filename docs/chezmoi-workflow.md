@@ -198,41 +198,44 @@ disk. Choose the intended behavior:
 Keep `.chezmoiremove` entries until every managed machine has pulled and applied the change.
 Then remove the cleanup entries in a later commit.
 
-### Example: remove a VS Code Copilot prompt
+### Example: retire a shared skill
 
-A VS Code prompt named `<name>` has one body and two operating-system-specific wrappers:
+A shared skill named `<name>` has two source entries:
 
 | Source file | Purpose |
 | --- | --- |
-| `home/.chezmoitemplates/vscode/<name>.prompt.md` | Shared prompt body |
-| `home/AppData/Roaming/Code/User/prompts/<name>.prompt.md.tmpl` | Windows wrapper |
-| `home/Library/Application Support/Code/User/prompts/<name>.prompt.md.tmpl` | macOS wrapper |
+| `home/dot_agents/skills/<name>/` | The skill itself, which Codex and Copilot read directly |
+| `home/dot_claude/skills/symlink_<name>.tmpl` | The link that lets Claude Code find it |
 
-Delete all three together. Each wrapper pulls the body in with `includeTemplate`, so deleting
-the body on its own leaves the wrappers pointing at a template that no longer exists, and the
-next `chezmoi apply` fails instead of removing anything.
+Delete both together. The pre-commit hook iterates over source skills, so an orphaned symlink
+template passes its checks and then renders a link to a directory that no longer exists.
 
-Only one live target exists on each machine. To remove the prompt everywhere:
+Deleting the source only stops the skill being managed. It does not remove the skill from a
+machine that already applied it, because chezmoi does not delete a target merely because its
+source entry is gone. Naming the live targets in `home/.chezmoiremove` is what removes them:
 
-1. Delete the shared body and both wrappers.
-2. Create `home/.chezmoiremove` if needed and add:
+```text
+.agents/skills/<name>
+.claude/skills/<name>
+```
 
-   ```gotemplate
-   {{ if eq .chezmoi.os "windows" -}}
-   AppData/Roaming/Code/User/prompts/<name>.prompt.md
-   {{ else if eq .chezmoi.os "darwin" -}}
-   Library/Application Support/Code/User/prompts/<name>.prompt.md
-   {{ end -}}
-   ```
+To retire the skill everywhere:
 
-3. Run `chezmoi diff` and confirm that only the prompt is removed.
-4. Run `chezmoi apply -v`, then confirm that `chezmoi status` is empty.
-5. Commit and push the three source deletions with `.chezmoiremove`.
-6. Remove the cleanup block after every machine has applied it. Delete `.chezmoiremove` if
-   the file is then empty.
+1. Move anything worth keeping into a rule body or another skill **before** deleting, and check
+   that it is not already there.
+2. Delete the skill directory and its symlink template.
+3. Add both target paths to `home/.chezmoiremove`.
+4. Run `chezmoi diff` and confirm that the deletions listed are the intended ones and nothing
+   else.
+5. Run `chezmoi apply -v`, then confirm that `chezmoi status` is empty.
+6. Compare file counts against a test render, as under
+   [Source filename rules](#source-filename-rules).
+7. Commit the source deletions together with the `.chezmoiremove` change.
+8. Remove the cleanup entries once every machine has applied them, and delete
+   `home/.chezmoiremove` if it is then empty.
 
-`.chezmoiremove` is a template, so the conditional removes only the current operating
-system's target.
+`.chezmoiremove` is a template, so an entry can be wrapped in a conditional when the target
+exists on only one operating system.
 
 ### Example: retire a shared instruction
 

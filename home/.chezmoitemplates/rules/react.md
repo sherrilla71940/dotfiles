@@ -6,9 +6,12 @@
 - Use `useLayoutEffect` instead of `useEffect` only when the effect measures or mutates the DOM (e.g. reading layout, adjusting scroll/focus/position) before paint to prevent visible flicker; default to `useEffect` otherwise since `useLayoutEffect` blocks paint.
 - Keep hook declarations together at the top level of the component (after any required constants), then helpers, then JSX. Never call hooks conditionally or inside loops, nested functions, or helper functions.
 - Prefer composition over passing props through multiple intermediate components solely to reach a distant child. When intermediary components don't use the values themselves, prefer composition or context over prop drilling.
+- Never define a component inside another component's body. Each render creates a new component type, so React unmounts and remounts the subtree — the usual symptom is an input losing focus on every keystroke and state resetting for no visible reason.
 - Avoid deriving state that can be computed from props.
+- When the initial state is expensive to compute, pass a function to `useState(() => ...)` so it runs once instead of on every render.
 - When the next state depends on the previous state, use the functional updater (`setState(prev => ...)`) instead of reading captured state.
 - Avoid premature memoization; use `useMemo` or `useCallback` only when they meaningfully improve performance. Do not memoize trivial components, cheap calculations, or already-stable props or handlers.
+- When boolean props accumulate to select a variant (`<Card isCompact isFeatured>`), prefer one explicit variant prop or separate composed components over combinations that multiply with each new flag.
 - Split out a component when a chunk of JSX represents a distinct, nameable concern (e.g. a list item, a header, a form section) or is reused or likely to be reused elsewhere — don't wait for the file to become hard to read. Keep trivial, single-use markup inline rather than extracting it solely to shorten the parent.
 
 ## TanStack Query (React Query) Guidelines

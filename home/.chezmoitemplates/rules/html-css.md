@@ -25,12 +25,15 @@
 - For images that must fill a container without distorting, use `width: 100%` + `aspect-ratio` + `object-fit: cover`, with `object-position` set explicitly when the subject isn't centered.
 - Avoid setting fixed `height`, especially on text-containing elements — prefer `min-height`, and let the layout system (`align-items`, grid row sizing, etc.) handle alignment instead of a hardcoded value.
 - For sticky headers, use an explicit background and appropriate `z-index` so scrolling content does not bleed through.
+- Wrap wide tables in a scroll container with `overflow: auto`. When horizontal scrolling alone is not enough, collapse less critical columns or reflow into a more readable format.
+- When a sticky table header needs reliable borders, shadows, or layered backgrounds, use `border-collapse: separate` with `border-spacing: 0`; collapsed borders render inconsistently under sticky positioning.
 
 ## Layout Stability
 
 - Avoid layout shift between loading and loaded states; reserve space when the final geometry is predictable.
 - When using skeletons, size them to approximate the final content.
 - When dialogs or overlays lock page scrolling, preserve scrollbar space with `scrollbar-gutter: stable` or an equivalent fallback.
+- Reset the scroll position of a dialog or overlay when it reopens, unless preserving the previous position is intentionally part of the workflow.
 - For animations and transitions, prefer compositor-friendly properties (transform, opacity) when appropriate; avoid animating layout-affecting properties (top, left, width, height) when an equivalent transform-based approach is available.
 - When both state changes should animate, declare `transition` on the element's base state. A transition declared only in `:hover` or `:focus` applies on entry but not on exit.
 

@@ -122,6 +122,20 @@ project settings own everything else, including `model`, `effortLevel`, `theme`,
 `tui`, `permissions`, `enabledPlugins`, and unknown future keys, so those survive
 `chezmoi apply` without entering Git.
 
+Expect `~/.claude/settings.json` to sit at `MM` in `chezmoi status` more or less permanently,
+and do not read that as the repository threatening an app-owned key. The modify template writes
+the merged file with its keys normalized, while Claude Code appends each new key wherever it
+lands, so choosing a model or an effort level leaves the same values in a different order. One
+command separates a reordering from a real change:
+
+```bash
+diff <(chezmoi cat ~/.claude/settings.json | jq -S .) <(jq -S . ~/.claude/settings.json)
+```
+
+No output means every value already agrees and only the ordering differs, so the apply is safe
+and changes nothing you chose in the app. Output names the keys that genuinely differ; check
+those against the ownership table above before applying.
+
 Releasing `theme` releases the *choice*, not the palette. Custom theme definitions are
 separate files in `~/.claude/themes/`, and those are managed: `home/dot_claude/themes/` holds
 one JSON file per theme, named for its slug, so every machine offers the same palettes in

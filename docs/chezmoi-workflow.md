@@ -303,3 +303,25 @@ The source supports operating-system differences in three ways:
 
 Derive home paths from `{{ .chezmoi.homeDir }}` inside templates. Never hardcode a user
 directory.
+
+### Line endings and `chezmoi diff` noise
+
+[`.gitattributes`](../.gitattributes) pins `eol=lf` only where LF matters at runtime: shell
+scripts and shell profiles. Markdown is left to Git's `core.autocrlf`, which on Windows commits
+LF and checks out CRLF.
+
+chezmoi copies source bytes verbatim, so an applied target keeps whatever endings the source
+working copy had at apply time. A target applied from a working copy with mixed endings, then
+compared against a freshly checked-out and uniformly CRLF source, therefore shows EOL-only
+hunks in `chezmoi diff` for paragraphs nobody edited.
+
+That churn is expected and is not evidence of a mistake:
+
+- Trust `git diff` for whether content changed. `core.autocrlf` normalizes on staging, so a
+  pure line-ending difference does not reach a commit.
+- Do not hand-edit endings to quiet `chezmoi diff`. Git converts them back on the next
+  checkout, and the next contributor sees the same churn.
+- Read `chezmoi diff` for the hunks that change words, and let the EOL-only hunks apply.
+
+Adding `*.md text eol=lf` would settle it repository-wide, but it rewrites every markdown target
+on the next apply. That is a decision for [an ADR](./decisions), not an incidental edit.

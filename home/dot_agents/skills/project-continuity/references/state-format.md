@@ -75,6 +75,7 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 - Record in `Status` whether a branch switch stashed or carried this task's uncommitted changes. Without that, a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
+- Write every section in English, quoting a foreign-language string verbatim only where its exact wording matters.
 - Prefer current state over historical narrative.
 - Replace superseded information instead of keeping both versions.
 - Remove resolved blockers and completed TODOs from active sections.

@@ -123,6 +123,14 @@ Continuity always lives at one canonical path, relative to the working tree root
 
 The directory belongs to this workflow. Never put anything else in it.
 
+**Always write the file in English.** It is working state handed between agent sessions and
+clients, not a project artifact, so neither a repository's comment-language convention nor the
+language of the current conversation reaches it. A reconciling session should never have to
+translate before it can establish where the work stopped. This does not change the language of
+your replies, and it does not apply to quoted material: keep an error message, a UI string, or a
+user's own wording verbatim when the exact text matters, and write the surrounding state in
+English.
+
 In a Git repository, ensure it is ignored before relying on it as private:
 
 1. Check whether `.project-continuity/` is already ignored, and stop if it is.

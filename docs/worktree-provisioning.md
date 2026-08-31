@@ -163,6 +163,27 @@ specific way: both create a Git worktree and provision ignored files approved by
 Use `claude --worktree` when starting an isolated Claude Code session. Use `git wt-add` when
 the worktree itself is the goal and a terminal, VS Code, Codex, or another tool will use it.
 
+### Using both in one session
+
+The Claude-only `frontend-task-workflow` skill combines them, because neither alone gives an
+isolated session on a branch taken from an arbitrary remote base. Claude Code's own worktree
+creation branches only from the remote default branch or from local `HEAD`; its
+`worktree.baseRef` setting accepts no branch name. So the skill creates the worktree with
+`git wt-add` from `origin/<base>`, places it at `<repo>/.claude/worktrees/<slug>` where entering
+it raises no approval prompt, and then moves the running session into it with the
+`EnterWorktree` tool's `path` argument. From that point Claude Code enforces the isolation
+itself, refusing edits and commands that resolve back into the main checkout.
+
+Cleanup splits the same way. `ExitWorktree` declines to remove a worktree that was entered by
+path, and Claude's periodic sweep leaves every worktree it did not create alone, so the skill
+exits with `keep` and then runs `git worktree remove` from the main checkout — never with
+`--force`, so git's own refusal on uncommitted or untracked files remains the safety net.
+
+Removing a worktree is not retiring a branch. `git worktree remove` deletes no refs, and the
+skill deletes none either: the task branch stays for the open request, its reviews and its CI.
+`ExitWorktree` with `action: "remove"` is the one operation here that *would* delete the branch
+along with the directory, which is why that path is never used.
+
 ## Safety boundaries
 
 The terminal workflow never copies:

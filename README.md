@@ -163,7 +163,8 @@ assumptions before dropping one into a single-client setup.
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
   .chezmoitemplates/             SHARED bodies (core.md, rules/, vscode/, claude/)
-  dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents
+  dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents,
+                                 skills (Claude-only ones, plus links to the shared set)
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
   dot_copilot/                   instructions, agents, skills (Copilot-only ones)
   dot_agents/skills/             SHARED skills -> ~/.agents/skills, read by all three

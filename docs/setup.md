@@ -416,5 +416,6 @@ before importing a live application file.
 | --- | --- | --- |
 | Chezmoi source attributes and special files | Filename transformations affect rendered names | [Source attributes](https://www.chezmoi.io/reference/source-state-attributes/) and [special files](https://www.chezmoi.io/reference/special-files/) |
 | Claude rules, skills, agents, and settings | Discovery paths and accepted fields evolve | [Claude Code documentation](https://code.claude.com/docs/en/overview) |
+| Claude Code worktree creation and cleanup | Sweep eligibility, ignored-file provisioning, and entry rules change by patch release, and `frontend-task-workflow` depends on all three | [Worktrees](https://code.claude.com/docs/en/worktrees) and [worktree provisioning](./worktree-provisioning.md) |
 | Codex prompts, agents, config, and skills | Customization surfaces and deprecations evolve | [Codex customization](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
 | VS Code and Copilot customization | User folders and instruction discovery evolve | [VS Code agent customization](https://code.visualstudio.com/docs/agent-customization/overview) and [Copilot customization](https://docs.github.com/en/copilot/customizing-copilot) |

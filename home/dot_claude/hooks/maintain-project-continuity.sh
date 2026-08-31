@@ -4,10 +4,11 @@
 set -euo pipefail
 
 input="$(cat)"
-common_fields="$(printf '%s' "$input" | jq -r '[.hook_event_name // "", .session_id // ""] | @tsv' 2>/dev/null || true)"
+common_fields="$(printf '%s' "$input" | jq -r '[.hook_event_name // "", .session_id // "", .cwd // ""] | @tsv' 2>/dev/null || true)"
 event_name=""
 session_id=""
-IFS=$'\t' read -r event_name session_id <<< "$common_fields" || true
+working_directory=""
+IFS=$'\t' read -r event_name session_id working_directory <<< "$common_fields" || true
 safe_session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9._-')"
 
 if [[ -z "$event_name" || -z "$safe_session_id" ]]; then
@@ -20,12 +21,76 @@ recovery_start='<!-- claude-compaction-recovery:start -->'
 recovery_end='<!-- claude-compaction-recovery:end -->'
 
 get_working_tree_root() {
-  local working_directory
-  working_directory="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
   if [[ -z "$working_directory" || ! -d "$working_directory" ]]; then
     return 1
   fi
   git -C "$working_directory" rev-parse --show-toplevel 2>/dev/null
+}
+
+# Locate continuity state without paying for git when the session is already at the working
+# tree root, which is the ordinary case. Stop runs after every response, so the path taken
+# when no continuity exists must stay a shell builtin.
+find_state_file() {
+  local root
+
+  if [[ -z "$working_directory" || ! -d "$working_directory" ]]; then
+    return 1
+  fi
+  if [[ -f "$working_directory/.project-continuity/state.md" ]]; then
+    printf '%s\n' "$working_directory/.project-continuity/state.md"
+    return 0
+  fi
+  root="$(git -C "$working_directory" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -n "$root" && -f "$root/.project-continuity/state.md" ]]; then
+    printf '%s\n' "$root/.project-continuity/state.md"
+    return 0
+  fi
+  return 1
+}
+
+# Read one `- Field: `value`` line out of the Verification block.
+recorded_field() {
+  local state_file="$1" field="$2" line
+  line="$(grep -m1 -E "^- $field:" "$state_file" 2>/dev/null || true)"
+  printf '%s' "$line" | sed -n 's/.*`\(.*\)`.*/\1/p'
+}
+
+# The Verification block records a branch and a HEAD, and git can answer both. Leaving that to
+# discipline is what lets a state file quietly describe a commit that is no longer current, so
+# the divergence is reported instead of waited for. Everything else in the file - the objective,
+# the decisions, whether a TODO is really done - has no such oracle and is left to the skill.
+report_stale_verification() {
+  local state_file="$1" directory="$2"
+  local recorded_head actual_head recorded_branch actual_branch drift=""
+
+  recorded_head="$(recorded_field "$state_file" "HEAD")"
+  recorded_branch="$(recorded_field "$state_file" "Branch")"
+  if [[ -z "$recorded_head" && -z "$recorded_branch" ]]; then
+    return 0
+  fi
+
+  actual_head="$(git -C "$directory" rev-parse --short HEAD 2>/dev/null || true)"
+  actual_branch="$(git -C "$directory" branch --show-current 2>/dev/null || true)"
+
+  if [[ -n "$recorded_head" && "$recorded_head" != "unknown" && -n "$actual_head" \
+        && "$recorded_head" != "$actual_head" ]]; then
+    drift="continuity records HEAD $recorded_head, but HEAD is $actual_head"
+  fi
+  if [[ -n "$recorded_branch" && "$recorded_branch" != "unknown" && -n "$actual_branch" \
+        && "$recorded_branch" != "$actual_branch" ]]; then
+    drift="${drift:+$drift; }continuity records branch $recorded_branch,"
+    drift="$drift but the branch is $actual_branch"
+  fi
+
+  if [[ -z "$drift" ]]; then
+    return 0
+  fi
+
+  local message="Project continuity is out of date: $drift."
+  message="$message Reconcile .project-continuity/state.md against Git before the next"
+  message="$message checkpoint, and prune anything in it that the repository can already answer."
+
+  jq -cn --arg message "$message" '{systemMessage:$message}'
 }
 
 ensure_private_state_path() {
@@ -197,7 +262,12 @@ case "$event_name" in
     fi
     ;;
   Stop)
+    # Compaction recovery outranks the staleness notice: it blocks the stop, and emitting both
+    # would put two messages on one response.
     if [[ ! -f "$marker_file" ]]; then
+      if state_file="$(find_state_file)"; then
+        report_stale_verification "$state_file" "$(dirname "$(dirname "$state_file")")"
+      fi
       exit 0
     fi
 
@@ -205,6 +275,9 @@ case "$event_name" in
     state_file="$root/.project-continuity/state.md"
     if [[ -z "$root" || ! -f "$state_file" ]] || ! grep -qxF "$recovery_start" "$state_file"; then
       rm -f "$marker_file"
+      if state_file="$(find_state_file)"; then
+        report_stale_verification "$state_file" "$(dirname "$(dirname "$state_file")")"
+      fi
       exit 0
     fi
 

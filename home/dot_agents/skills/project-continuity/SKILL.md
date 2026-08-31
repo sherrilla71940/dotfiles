@@ -91,6 +91,8 @@ Continuity belongs to **one working directory**, and each working tree has at mo
 - The same working tree is reused over time: finish task 1, clean up, start task 2 there.
 - Same repository does not imply same continuity. Neither does same branch.
 - **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, use a separate worktree.
+- **A branch switch is not a reconciliation trigger.** Claude's Stop hook reports a recorded branch that no longer matches the checkout, and that report is a warning not to merge rather than an instruction to update. Do not fold the new branch's work into state describing the old task, and do not rewrite the recorded branch just to silence the notice. Reconcile only once the task is established to be the same one. Do not key state files by branch name to avoid this decision either: a detached HEAD has no branch to key on, which is how the Codex app runs its managed worktrees, and uncommitted work belongs to the directory rather than to any branch.
+- **Uncommitted work does not follow a branch.** If a branch switch stashed or carried the task's changes, record that in `Status`; otherwise a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - A new worktree starts with no continuity and must not inherit another task's state. Claude Code and the Codex app both read `.worktreeinclude` at the repository root to decide which ignored files to copy into a new worktree, so a pattern there matching `.project-continuity/` would leak one task's state into every new worktree of both clients. Never add one.
 
 Client worktree support differs, and that affects only how a directory is *created*, never who may work in it:
@@ -188,6 +190,14 @@ first unfinished action, blockers, required external materials, and unverified a
 guessing? If not, update continuity. Skip the update when every fact needed to resume is already
 durable in the repository or current state.
 
+Before ending a response, apply the complementary check for the finished case: if continuity
+state exists and no unfinished action, blocker, or deferred item remains, say continuity looks
+unnecessary and offer cleanup in that response. This trigger is deliberately independent of
+checkpointing, because a finished task removes the reason to checkpoint — an offer reachable
+only from inside a checkpoint therefore never fires at all, which is why completed state used
+to linger. Offer once per task, and if the user declines, record `Cleanup: declined` in the
+Verification block rather than raising it again.
+
 Do not checkpoint when nothing meaningful changed, when the information is already obvious in code or tests, when the update would repeat conversation text, or when the change is trivial and cheap to redo.
 
 When checkpointing:
@@ -209,6 +219,9 @@ file. A handoff does not imply cleanup.
 ## Cleanup
 
 Clean up when the user asks, or when the task is complete, nothing continuity-worthy remains, and the user confirms.
+
+The end-of-response completion check in Checkpoint is what raises the second case. Do not wait
+for a checkpoint to raise it, and do not treat a quiet final turn as a reason to skip it.
 
 1. Reconcile once more and verify no unfinished work, blocker, deferred item, or useful handoff state remains.
 2. If something belongs in durable documentation or private instructions, say so before deleting; never promote it silently.

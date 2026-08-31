@@ -61,7 +61,8 @@ recorded_field() {
 # the decisions, whether a TODO is really done - has no such oracle and is left to the skill.
 report_stale_verification() {
   local state_file="$1" directory="$2"
-  local recorded_head actual_head recorded_branch actual_branch drift=""
+  local recorded_head actual_head recorded_branch actual_branch
+  local head_drift="" branch_drift="" message=""
 
   recorded_head="$(recorded_field "$state_file" "HEAD")"
   recorded_branch="$(recorded_field "$state_file" "Branch")"
@@ -74,24 +75,109 @@ report_stale_verification() {
 
   if [[ -n "$recorded_head" && "$recorded_head" != "unknown" && -n "$actual_head" \
         && "$recorded_head" != "$actual_head" ]]; then
-    drift="continuity records HEAD $recorded_head, but HEAD is $actual_head"
+    head_drift="continuity records HEAD $recorded_head, but HEAD is $actual_head"
   fi
+  # An empty actual_branch means a detached HEAD, which is how the Codex app runs its managed
+  # worktrees. That is not branch drift, so the -n guard keeps it out of the warning below.
   if [[ -n "$recorded_branch" && "$recorded_branch" != "unknown" && -n "$actual_branch" \
         && "$recorded_branch" != "$actual_branch" ]]; then
-    drift="${drift:+$drift; }continuity records branch $recorded_branch,"
-    drift="$drift but the branch is $actual_branch"
+    branch_drift="continuity records branch $recorded_branch, but the branch is $actual_branch"
   fi
 
-  if [[ -z "$drift" ]]; then
+  if [[ -z "$head_drift" && -z "$branch_drift" ]]; then
     return 0
   fi
 
-  local message="Project continuity is out of date: $drift."
-  message="$message Reconcile .project-continuity/state.md against Git before the next"
-  message="$message checkpoint, and prune anything in it that the repository can already answer."
+  # The two kinds of drift call for opposite actions, so they must not share one message. A moved
+  # HEAD means the recorded commit is merely stale and should be refreshed at the next checkpoint.
+  # A different branch may mean a different task, and there the damaging move is folding the new
+  # branch's work into state that belongs to the old one - so that message says leave it alone.
+  if [[ -n "$branch_drift" ]]; then
+    message="Project continuity: $branch_drift."
+    message="$message A branch switch is not by itself a new task, and branch is supporting"
+    message="$message evidence rather than task identity. Do not merge work from"
+    message="$message $actual_branch into .project-continuity/state.md, and do not replace that"
+    message="$message state while it still holds useful unfinished work. If this is the same task,"
+    message="$message reconcile at the next checkpoint. If it is a separate substantive task that"
+    message="$message must stay resumable, leave that state untouched and use a separate worktree."
+    if [[ -n "$head_drift" ]]; then
+      message="$message Separately, $head_drift."
+    fi
+  else
+    message="Project continuity is out of date: $head_drift."
+    message="$message Reconcile .project-continuity/state.md against Git before the next"
+    message="$message checkpoint, and prune anything in it that the repository can already answer."
+  fi
 
   jq -cn --arg message "$message" '{systemMessage:$message}'
 }
+
+# The skill's trigger for offering cleanup sat inside its checkpoint step, and a finished task
+# removes the reason to checkpoint, so a completed task's state file could sit in the tree
+# indefinitely. Whether these four sections hold any open item is the one part of that judgment a
+# hook can decide, so it is checked here and the semantic call is left to the skill.
+report_finished_state() {
+  local state_file="$1"
+  local open_items message
+
+  # Emergency recovery state is unverified by definition and always carries work to do.
+  if grep -qxF "$recovery_start" "$state_file" 2>/dev/null; then
+    return 0
+  fi
+  # A user who declined cleanup should not be asked again for the rest of the task.
+  if [[ "$(recorded_field "$state_file" "Cleanup")" == "declined" ]]; then
+    return 0
+  fi
+
+  open_items="$(awk '
+    BEGIN {
+      tracked["In progress"] = 1
+      tracked["Next actions"] = 1
+      tracked["Blockers"] = 1
+      tracked["TODO / deferred"] = 1
+    }
+    /^## / {
+      section = substr($0, 4)
+      sub(/[[:space:]]+$/, "", section)
+      tracking = (section in tracked)
+      next
+    }
+    tracking && /^[[:space:]]*([-*]|[0-9]+[.])[[:space:]]+[^[:space:]]/ { count++ }
+    END { print count + 0 }
+  ' "$state_file" 2>/dev/null || printf '1')"
+
+  if [[ "$open_items" != "0" ]]; then
+    return 0
+  fi
+
+  message="Project continuity at .project-continuity/state.md records no unfinished work:"
+  message="$message In progress, Next actions, Blockers and TODO / deferred are all empty or"
+  message="$message absent. If the tracked task is genuinely complete, do not invent a next"
+  message="$message action - say continuity looks unnecessary and offer cleanup in this response,"
+  message="$message naming anything that belongs in durable documentation first. If work does"
+  message="$message remain, record it. If the user declines cleanup, record Cleanup: \`declined\`"
+  message="$message in the Verification block so this is not raised again."
+
+  jq -cn --arg message "$message" '{systemMessage:$message}'
+}
+
+# A response carries at most one system message, so the notices are ranked. Drift comes first,
+# because a state file describing the wrong commit or branch actively misleads the next reader,
+# where an unretired finished file only wastes a cleanup.
+report_continuity_notice() {
+  local state_file="$1"
+  local directory notice
+
+  directory="$(dirname "$(dirname "$state_file")")"
+  notice="$(report_stale_verification "$state_file" "$directory")"
+  if [[ -z "$notice" ]]; then
+    notice="$(report_finished_state "$state_file")"
+  fi
+  if [[ -n "$notice" ]]; then
+    printf '%s\n' "$notice"
+  fi
+}
+
 
 ensure_private_state_path() {
   local root="$1"
@@ -266,7 +352,7 @@ case "$event_name" in
     # would put two messages on one response.
     if [[ ! -f "$marker_file" ]]; then
       if state_file="$(find_state_file)"; then
-        report_stale_verification "$state_file" "$(dirname "$(dirname "$state_file")")"
+        report_continuity_notice "$state_file"
       fi
       exit 0
     fi
@@ -276,7 +362,7 @@ case "$event_name" in
     if [[ -z "$root" || ! -f "$state_file" ]] || ! grep -qxF "$recovery_start" "$state_file"; then
       rm -f "$marker_file"
       if state_file="$(find_state_file)"; then
-        report_stale_verification "$state_file" "$(dirname "$(dirname "$state_file")")"
+        report_continuity_notice "$state_file"
       fi
       exit 0
     fi

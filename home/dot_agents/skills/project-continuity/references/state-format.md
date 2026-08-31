@@ -62,6 +62,7 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 - Started from: `<commit this task began at, when known>`
 - Status: `<clean / modified / concise description>`
 - Last reconciled: `<ISO date/time when practical>`
+- Cleanup: `<omit normally; set to declined once the user has refused cleanup for this task>`
 ```
 
 ## Maintenance rules
@@ -70,7 +71,8 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 - Treat `Emergency recovery` as a temporary exception to the normalized format. Reconcile it
   immediately, merge only current facts, then remove it rather than preserving summary history.
 - `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
-- Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task.
+- Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task. Update the recorded branch when reconciling the same task, never merely to silence a drift notice.
+- Record in `Status` whether a branch switch stashed or carried this task's uncommitted changes. Without that, a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
 - Prefer current state over historical narrative.
@@ -81,4 +83,6 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 - Never use `Completed` for work that has not been checked against repository evidence.
 - Keep implementation details in the repository rather than copying large code snippets here.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
+- `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.
+- Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
 - Do not store secrets or credentials.

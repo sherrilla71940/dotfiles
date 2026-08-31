@@ -12,6 +12,7 @@ use the `project-continuity` skill and reconcile the state before substantive wo
 is absent and losing the conversation would cost materially more than re-reading the diff, use
 the skill and initialize continuity before proceeding. If the client cannot resolve the skill
 by name, read and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead.
+Write that file in English whatever language this conversation uses.
 
 Skip initializing continuity, and the visible decision, for explanation-only questions, small
 self-contained edits, formatting, and work the diff already explains. That exemption covers

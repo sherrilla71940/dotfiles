@@ -9,59 +9,6 @@ Continuity does not try to remember everything. It minimizes the cost of suddenl
 
 Treat it as **where the work stopped and why**, not as project documentation, native client memory, or a transcript.
 
-## For humans
-
-**What it is.** One markdown file, `.project-continuity/state.md`, private to one working directory. Any of Claude Code, Codex or Copilot can read it and continue.
-
-**The move it exists for.**
-
-```text
-Claude working
-  → quota hits
-  → open Codex in the same worktree
-  → "Continue from project continuity"
-  → Codex reads state.md and checks Git
-  → continues
-```
-
-It picks up the objective, the blockers, and the reasoning behind decisions the diff alone cannot explain. The reverse, Codex to Claude, works the same way, as does either to Copilot.
-
-**The one rule that matters:** same interrupted task → reopen the same directory. New independent task → a new worktree, if isolation helps.
-
-Opening a *different* directory gives you a different working tree, without that one's uncommitted changes, untracked files, or continuity.
-
-**You do not need worktrees.** The repository's ordinary checkout is a working tree like any other, and continuity works there with no setup. Worktrees only matter when you want independent tasks side by side.
-
-**Where each answer comes from:**
-
-| Question | Preferred evidence |
-| --- | --- |
-| What do I want now? | Your current instruction |
-| What code actually exists? | The repository and Git |
-| Where did unfinished work stop, and why? | Reconciled continuity |
-| What rules always apply? | Project instructions |
-| What reusable client-specific knowledge exists? | That client's native memory |
-
-**What to expect:**
-
-| Situation | Behavior |
-| --- | --- |
-| Quick or self-contained task | No continuity |
-| Substantive work | Continuity enabled without asking each time |
-| A discovery or decision worth keeping | Checkpoint |
-| Client hits its limit | Open another client in the same directory |
-| New independent task | New worktree when isolation helps |
-| New task, same directory, old unfinished state | You are asked before it is replaced |
-| Task genuinely complete | Continuity deleted |
-
-Lost the directory? `git worktree list` shows every working tree of the repository. [references/worktree-handoff.md](references/worktree-handoff.md) covers switching clients in practice.
-
-**What it feels like.** Not conversation teleportation — the receiving client does not get the old conversation. On its first task turn in the same working tree, it detects the state, performs a short reconciliation against the diff, then keeps working. "Continue from project continuity" is still a useful explicit instruction, but should not be required when the global bootstrap loaded correctly. The goal is not re-explaining the task from scratch.
-
-The friction that remains is operational, not architectural: opening a different directory than the one that holds the state, a cutoff arriving before the last important reasoning was checkpointed, or a managed worktree being archived while still needed. [references/worktree-handoff.md](references/worktree-handoff.md) exists to reduce exactly those.
-
-**A caution about memory.** All three clients keep memory of their own, and it may hold stale claims about this task. Memory can inform reasoning, but continuity reconciled against Git is what establishes where the work actually stands.
-
 ## Operating principles
 
 1. Repository and Git reality are authoritative for what exists. Continuity is context and last-known state, never proof.
@@ -73,7 +20,7 @@ The friction that remains is operational, not architectural: opening a different
 7. Once enabled for a task, maintain it without asking permission to checkpoint again.
 8. Re-read before overwriting; another client may be in the same working tree.
 
-Read [references/state-format.md](references/state-format.md) when creating or restructuring the file, and [references/client-routing.md](references/client-routing.md) before promoting anything into private client-specific instructions.
+Read [references/state-format.md](references/state-format.md) when creating or restructuring the file.
 
 ## Supported clients
 
@@ -228,7 +175,14 @@ created worktrees in place.
 
 - **Transient unfinished work** → continuity.
 - **Durable project or team rule** → shared project instructions or documentation, but only when the user asks to make it durable.
-- **Durable private personal instruction** → the client's private mechanism, only when asked; see [references/client-routing.md](references/client-routing.md).
+- **Durable private personal instruction** → the client's private mechanism, only when asked:
+  `CLAUDE.local.md` for Claude Code, `AGENTS.override.md` for Codex. Two cautions before writing
+  either. Codex reads `AGENTS.override.md` *instead of* its sibling `AGENTS.md` rather than in
+  addition to it, so creating one beside a committed `AGENTS.md` silences that file for every
+  Codex session with no warning. And Copilot has no private project-scoped equivalent at all —
+  its repository instructions are tracked and shared, and `~/.copilot/instructions/` applies to
+  every repository — so say the gap exists rather than inventing a filename or falling back to
+  another client's mechanism.
 - **Client-learned preference** → leave to that client's native memory.
 
 Routine continuity work must not modify `CLAUDE.local.md` or `AGENTS.override.md`. If a discovery looks worth promoting but the user has not asked, record a short `Candidate durable knowledge` item instead of editing instruction files.

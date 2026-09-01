@@ -139,7 +139,7 @@ git -C "$fixture" checkout -q "$fixture_branch"
 
 # A state file with no unfinished work anywhere should raise the cleanup offer.
 write_state "$fixture_branch" "$fixture_head"
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 cleanup_message="$(notice_message "$(stop_notice)")"
 case "$cleanup_message" in
   *"records no unfinished work"*"offer cleanup"*) ;;
@@ -166,13 +166,13 @@ done
 
 # A declined offer is not raised again for the rest of the task.
 write_state "$fixture_branch" "$fixture_head" '- Cleanup: `declined`'
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 test -z "$(stop_notice)"
 
 # Drift outranks the cleanup offer, because one response carries one system message and wrong
 # recorded state misleads the next reader more than an unretired file does.
 write_state "$fixture_branch" deadbee
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 notice_message "$(stop_notice)" | grep -q 'is out of date'
 
 # With no Verification block there is nothing to compare against, so drift stays silent -

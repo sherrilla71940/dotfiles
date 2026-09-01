@@ -13,10 +13,6 @@ One or two sentences describing the tracked outcome.
 
 The phase another session should resume from.
 
-## Completed
-
-- Only verified work relevant to the current objective.
-
 ## In progress
 
 - Work that has started but is not verified complete.
@@ -38,14 +34,6 @@ The phase another session should resume from.
 ## Decisions still in force
 
 - Decisions that continue to constrain implementation and would be costly to rediscover.
-
-## Relevant files
-
-- `path/to/file` - why it matters to the next session.
-
-## Candidate durable knowledge
-
-- Optional. Facts or rules that may deserve promotion to permanent/private project instructions, but have not been promoted yet.
 
 ## Verification
 
@@ -70,9 +58,8 @@ The phase another session should resume from.
 - Prefer current state over historical narrative.
 - Replace superseded information instead of keeping both versions.
 - Remove resolved blockers and completed TODOs from active sections.
-- Keep completed items only while they help explain the current objective or prevent rediscovery; prune them when they no longer help.
+- Record a completed step only inside `Current phase` or a decision that still constrains the work; there is no `Completed` section, because finished work belongs to Git.
 - Label assumptions and unverified claims explicitly.
-- Never use `Completed` for work that has not been checked against repository evidence.
 - Keep implementation details in the repository rather than copying large code snippets here.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
 - `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.

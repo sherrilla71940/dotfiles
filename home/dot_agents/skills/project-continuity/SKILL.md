@@ -185,7 +185,7 @@ created worktrees in place.
   another client's mechanism.
 - **Client-learned preference** → leave to that client's native memory.
 
-Routine continuity work must not modify `CLAUDE.local.md` or `AGENTS.override.md`. If a discovery looks worth promoting but the user has not asked, record a short `Candidate durable knowledge` item instead of editing instruction files.
+Routine continuity work must not modify `CLAUDE.local.md` or `AGENTS.override.md`. If a discovery looks worth promoting but the user has not asked, say so in your reply instead of editing instruction files.
 
 ## Failure and ambiguity
 

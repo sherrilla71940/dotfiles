@@ -111,7 +111,13 @@ try {
 # Windows offers for it all cost more than they return: see New-ToastXml. Being away from the
 # desk is the case this cannot serve at all, whatever the banner does, and that belongs to a
 # notification that reaches a phone rather than to a longer toast.
+# Codex sends no notification_type - it has no Notification event, only lifecycle ones - so
+# its SessionEnd is mapped to a type here. Without this the switch falls to default and the
+# toast is silently dropped, which is how the previous Codex hook failed unnoticed.
 $notificationType = [string]$payload.notification_type
+if (-not $notificationType -and [string]$payload.hook_event_name -eq "SessionEnd") {
+    $notificationType = "session_end"
+}
 switch ($notificationType) {
     "permission_prompt" {
         $title = "Claude needs permission"
@@ -142,6 +148,10 @@ switch ($notificationType) {
     "agent_completed" {
         $title = "Agent finished"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
+    }
+    "session_end" {
+        $title = "Codex finished"
+        $message = "The Codex session ended."
     }
     default {
         exit 0

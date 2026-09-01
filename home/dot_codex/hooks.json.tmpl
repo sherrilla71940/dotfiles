@@ -1,0 +1,49 @@
+{{- /* Codex lifecycle hooks. Codex CLI supports the same events, payload fields and output
+       contract as Claude Code, so the continuity hook is the same script for both clients:
+       it names no client machinery and reads only hook_event_name, cwd and source.
+
+       This file is user-authored configuration. Codex records hook *trust* separately, in
+       config.toml under [hooks.state] keyed by this path plus a sha256, so managing this file
+       does not fight the app for ownership - but each entry needs one `/hooks` approval per
+       machine, and editing an entry invalidates its approval.
+
+       Claude's equivalent wiring lives in home/.chezmoitemplates/claude/settings-durable.json. */ -}}
+
+{{- $isWindows := eq .chezmoi.os "windows" -}}
+{{- $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
+{{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
+
+{{- $continuityCommand := "bash \"$HOME/.local/share/maintain-project-continuity.sh\"" -}}
+{{- $notifyCommand := "" -}}
+{{- if $isWindows -}}
+{{-   $continuityCommand = printf "\"%s\" \"$HOME/.local/share/maintain-project-continuity.sh\"" $gitBash -}}
+{{-   $notifyCommand = printf "%s \"$HOME/.claude/hooks/show-claude-notification.ps1\"" $pwsh -}}
+{{- else -}}
+{{-   $notifyCommand = "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{- end -}}
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 5 }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 20 }
+        ]
+      }
+    ]
+  }
+}

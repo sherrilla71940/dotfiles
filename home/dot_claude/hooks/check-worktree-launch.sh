@@ -78,11 +78,7 @@ if [[ "$inside_work_tree" == true ]]; then
   if [[ -n "$working_tree_root" ]]; then
     continuity_state="$working_tree_root/.project-continuity/state.md"
     if [[ -f "$continuity_state" ]]; then
-      if grep -qxF '<!-- claude-compaction-recovery:start -->' "$continuity_state"; then
-        messages+=("Claude compaction recovery is pending in '$continuity_state'. Invoke the project-continuity skill now, reconcile the Emergency recovery section against Git and the current request, merge useful facts into normal state, remove that temporary section, and continue the task. State 'Continuity: enabled' in the first progress update.")
-      else
-        messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
-      fi
+      messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
     elif [[ "$source" == "compact" ]]; then
       messages+=("This conversation was compacted without active project continuity in '$working_tree_root'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update.")
     else

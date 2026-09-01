@@ -70,11 +70,14 @@ absence of `.project-continuity/state.md` otherwise leaves no observable event f
 to react to. A task can grow through investigation until it is expensive to reconstruct while
 the agent remains focused on its immediate implementation steps.
 
-Claude's compaction lifecycle is the one reliable point where a deterministic backstop can act.
-`PreCompact` creates an ignored emergency state when proactive activation was missed;
-`PostCompact` stores the native compact summary without copying the transcript; and a one-retry
-`Stop` guard asks the shared skill to reconcile and remove that temporary section. This remains
-a backstop rather than the primary workflow: it cannot protect every crash or hard cutoff, and
+Claude's hooks add only what Git can prove. A `Stop` hook reports a recorded branch or HEAD that
+no longer matches the checkout, and offers cleanup once every tracking section is empty; a
+`SessionStart` hook keeps the state file excluded from Git. Compaction gets no dedicated
+backstop, because neither `PreCompact` nor `PostCompact` can put anything back into the model's
+context - a hook there could write unverified state but never ask for it to be reconciled, so
+what it produced had to be cleaned up by the next turn anyway. The ordinary `SessionStart`
+notice that continuity is active covers the post-compaction case instead. This remains a
+backstop rather than the primary workflow: it cannot protect every crash or hard cutoff, and
 only skill-driven checkpoints can preserve important reasoning before those failures. Codex and
 Copilot need no matching Claude hook because they consume the same working-tree-local state.
 

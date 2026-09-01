@@ -47,13 +47,6 @@ The phase another session should resume from.
 
 - Optional. Facts or rules that may deserve promotion to permanent/private project instructions, but have not been promoted yet.
 
-<!-- claude-compaction-recovery:start -->
-## Emergency recovery
-
-Temporary unverified Claude compact summary. This entire section, including its delimiter
-comments, is removed after the Resume workflow merges useful facts into normal state.
-<!-- claude-compaction-recovery:end -->
-
 ## Verification
 
 - Working tree: `<absolute path of this working directory>`
@@ -68,8 +61,6 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 ## Maintenance rules
 
 - Treat the continuity file's existence as the marker that continuity is active here.
-- Treat `Emergency recovery` as a temporary exception to the normalized format. Reconcile it
-  immediately, merge only current facts, then remove it rather than preserving summary history.
 - `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
 - Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task. Update the recorded branch when reconciling the same task, never merely to silence a drift notice.
 - Record in `Status` whether a branch switch stashed or carried this task's uncommitted changes. Without that, a later reconciliation sees a clean tree and may conclude the work was finished or lost.

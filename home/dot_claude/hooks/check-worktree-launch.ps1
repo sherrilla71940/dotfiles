@@ -85,12 +85,7 @@ if ($isInsideWorkTree) {
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($workingTreeRoot)) {
         $continuityState = Join-Path $workingTreeRoot ".project-continuity\state.md"
         if (Test-Path -LiteralPath $continuityState -PathType Leaf) {
-            $continuityContent = Get-Content -LiteralPath $continuityState -Raw
-            if ($continuityContent.Contains("<!-- claude-compaction-recovery:start -->")) {
-                $messages += "Claude compaction recovery is pending in '$continuityState'. Invoke the project-continuity skill now, reconcile the Emergency recovery section against Git and the current request, merge useful facts into normal state, remove that temporary section, and continue the task. State 'Continuity: enabled' in the first progress update."
-            } else {
-                $messages += "Project continuity is active in '$workingTreeRoot'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update."
-            }
+            $messages += "Project continuity is active in '$workingTreeRoot'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update."
         } elseif ($source -eq "compact") {
             $messages += "This conversation was compacted without active project continuity in '$workingTreeRoot'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update."
         } else {

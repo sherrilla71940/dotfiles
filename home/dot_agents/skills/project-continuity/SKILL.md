@@ -155,27 +155,6 @@ Never store secrets, credentials, personal data unrelated to the work, or large 
 
 Where repository evidence and continuity disagree, the repository wins and continuity is corrected. Where the user's current instruction and continuity disagree about intent, the user wins.
 
-### Claude compaction recovery
-
-Claude Code may add a temporary `## Emergency recovery` section delimited by
-`claude-compaction-recovery` comments. This is a deterministic lifecycle backstop, not normal
-continuity state and not verified truth.
-
-When the section is present:
-
-1. Perform the ordinary Resume workflow immediately.
-2. Treat the compact summary as unverified evidence. Resolve its objective, progress, decisions,
-   blockers and next action against Git and the current user instruction.
-3. Merge only useful, current facts into the normal sections. Replace an automatically created
-   generic objective and phase when the real task can be established.
-4. Remove the complete emergency section and both delimiter comments in the same checkpoint.
-5. Continue the first genuinely unfinished action. Do not leave the raw compact summary in state
-   after it has been absorbed.
-
-If the summary is insufficient, preserve only the uncertainty that matters and inspect the
-repository; do not invent missing conversation context. Claude's bounded Stop hook may request
-this reconciliation once, but the skill owns the result and another client can reconcile it too.
-
 ## Wrong-task continuity
 
 When the existing state clearly belongs to a different task, never merge it into the current one. Then:

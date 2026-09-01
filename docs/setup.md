@@ -325,18 +325,20 @@ The same hook supplies the timely part of project-continuity activation. At star
 clear and compaction, it reports whether the current working tree already has continuity and
 reminds Claude to make the activation decision visible before substantive work.
 
-Compaction has an additional deterministic backstop in
-`home/dot_claude/hooks/maintain-project-continuity.sh`. `PreCompact` creates private emergency
-state when none exists, `PostCompact` records Claude's native compact summary in a temporary
-section, and `SessionStart compact` directs Claude to reconcile it through the shared skill. A
-`Stop` hook allows one extra response when the section was not reconciled. The script never reads
-or copies the transcript, and normal semantic checkpoints still belong to the
-`project-continuity` skill. On Windows these lifecycle hooks use Git Bash to avoid paying
-PowerShell startup cost after every response.
+`home/dot_claude/hooks/maintain-project-continuity.sh` adds the deterministic reporting that the
+skill cannot do for itself. On `Stop` it compares the recorded branch and HEAD against the
+checkout and reports drift, and it offers cleanup once every tracking section is empty. On
+`SessionStart` it silently ensures `.project-continuity/` is excluded from Git. It emits no
+SessionStart message, because `check-worktree-launch.sh` owns those. Neither `PreCompact` nor
+`PostCompact` is wired: neither can inject context into the model, so a compaction backstop
+built on them could only write state, never ask for it to be reconciled. After a compaction,
+`SessionStart` reports that continuity is active and asks for reconciliation through the shared
+skill. The script never reads or copies the transcript. On Windows it uses Git Bash to avoid
+paying PowerShell startup cost after every response.
 
 Claude Code, Codex and Copilot can all resume the resulting
 `.project-continuity/state.md` when started in the same physical working tree. Claude's hooks
-automate its compaction boundary; the global instructions and shared skill provide the receiving
+report drift and cleanup; the global instructions and shared skill provide the receiving
 client's entry path.
 
 ## Working tree at `~/dotfiles`

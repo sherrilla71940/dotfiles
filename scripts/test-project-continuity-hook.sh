@@ -27,60 +27,38 @@ state_file="$fixture/.project-continuity/state.md"
 
 printf 'not-json' | bash "$lifecycle_hook"
 
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PreCompact",trigger:"auto",custom_instructions:""}' \
-  | bash "$lifecycle_hook"
-
-test -f "$state_file"
+# SessionStart is a silent backstop: it adds the Git exclude entry when continuity exists, and
+# emits nothing, because check-worktree-launch.sh owns every SessionStart message.
+mkdir -p "$fixture/.project-continuity"
+printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+session_start_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
+  | bash "$lifecycle_hook")"
+test -z "$session_start_output"
 git -C "$fixture" check-ignore -q .project-continuity/state.md
-grep -q 'Emergency recovery state was created automatically' "$state_file"
 
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  --arg summary $'Implemented one part.\nNext: verify the bridge.' \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PostCompact",trigger:"auto",compact_summary:$summary}' \
-  | bash "$lifecycle_hook"
-
-grep -qxF '<!-- claude-compaction-recovery:start -->' "$state_file"
-grep -q '> Next: verify the bridge.' "$state_file"
-
-# A later compact replaces temporary recovery context without losing normalized state.
-printf '\n## Decisions still in force\n\n- Preserve this authored fact.\n' >> "$state_file"
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  --arg summary 'Replacement compact summary.' \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PostCompact",trigger:"manual",compact_summary:$summary}' \
-  | bash "$lifecycle_hook"
-
-test "$(grep -cFx '<!-- claude-compaction-recovery:start -->' "$state_file")" -eq 1
-grep -q '> Replacement compact summary.' "$state_file"
-grep -q -- '- Preserve this authored fact.' "$state_file"
-
-session_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
-    | bash "$session_start_hook"
-})"
-printf '%s' "$session_output" \
-  | jq -e '.hookSpecificOutput.additionalContext | contains("Claude compaction recovery is pending")' \
+# The launch hook asks for reconciliation whenever continuity exists, which is what covers the
+# post-compaction case now that no emergency section is written.
+launch_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
+  | bash "$session_start_hook")"
+printf '%s' "$launch_output" \
+  | jq -e '.hookSpecificOutput.additionalContext | contains("Project continuity is active")' \
   >/dev/null
 
-stop_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
-    | bash "$lifecycle_hook"
-})"
-printf '%s' "$stop_output" | jq -e '.decision == "block"' >/dev/null
-
-second_stop_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:true}' \
-    | bash "$lifecycle_hook"
-})"
-test -z "$second_stop_output"
+# Nothing blocks a Stop any more; the hook only ever reports.
+stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
+  | bash "$lifecycle_hook")"
+if printf '%s' "$stop_output" | jq -e 'has("decision")' >/dev/null 2>&1; then
+  printf 'Stop must never block\n' >&2
+  exit 1
+fi
 
 printf 'project continuity hook lifecycle OK\n'
 
 # --- Drift notices and the cleanup offer -------------------------------------------------------
-# No marker remains, so Stop takes the notice path rather than the compaction-recovery path.
+# Stop only ever reports; these exercise the two notices it can produce.
 fixture_branch="$(git -C "$fixture" branch --show-current)"
 fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
 
@@ -196,11 +174,6 @@ test -z "$(stop_notice)"
 write_state "$fixture_branch" deadbee
 append_section 'Completed' '- Verified work only.'
 notice_message "$(stop_notice)" | grep -q 'is out of date'
-
-# An unreconciled emergency section always has work to do, so no cleanup offer.
-write_state "$fixture_branch" "$fixture_head"
-printf '\n<!-- claude-compaction-recovery:start -->\n## Emergency recovery\n\n> summary\n<!-- claude-compaction-recovery:end -->\n' >> "$state_file"
-test -z "$(stop_notice)"
 
 # With no Verification block there is nothing to compare against, so drift stays silent -
 # but the file still records no unfinished work, so the cleanup offer is the right notice.

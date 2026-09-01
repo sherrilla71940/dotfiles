@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# SessionStart hook. Three independent checks may add context:
+# SessionStart hook. Two independent checks may add context:
 #   1. Another interactive session is already in this working directory, so both share one
 #      working tree, one index and one HEAD. Claude Code takes no lock on a directory, and
 #      git only refuses a duplicate checkout across worktrees, not across processes.
 #   2. Claude started in a directory that merely contains worktrees, so repository auto
 #      memory may not have loaded.
-#   3. Project continuity is active, or its activation decision is due before substantive work.
-# Checks 1 and 2 apply only at launch; check 3 also refreshes after clear or compaction.
+# Both checks apply at launch. Project continuity reporting is deliberately not here: it names
+# no Claude machinery, so it lives in maintain-project-continuity.sh, which Codex runs too.
 set -euo pipefail
 
 input="$(cat)"
@@ -70,37 +70,6 @@ if [[ "$is_launch" == true && "$inside_work_tree" == false ]]; then
       names="${names:+$names, }$name"
     done
     messages+=("Claude Code started in '$working_directory', which is not a git checkout but contains linked worktrees ($names). Repository auto memory may not have loaded for this session. At the beginning of your first response, briefly tell the user and recommend restarting Claude inside the intended worktree.")
-  fi
-fi
-
-if [[ "$inside_work_tree" == true ]]; then
-  working_tree_root="$(git -C "$working_directory" rev-parse --show-toplevel 2>/dev/null || true)"
-  if [[ -n "$working_tree_root" ]]; then
-    continuity_state="$working_tree_root/.project-continuity/state.md"
-    if [[ -f "$continuity_state" ]]; then
-      # Naming the tracked objective turns "is this the same task?" from something the model has
-      # to remember to ask into a fact it has already been shown. Replacing an unfinished task's
-      # state with an unrelated one is the failure this is here to prevent.
-      continuity_objective="$(awk '
-        /^## Objective/ { collecting = 1; next }
-        /^## / { if (collecting) exit }
-        collecting && NF { paragraph = paragraph (paragraph ? " " : "") $0; next }
-        collecting && paragraph { exit }
-        END { print paragraph }
-      ' "$continuity_state" 2>/dev/null || true)"
-      if [[ -n "$continuity_objective" ]]; then
-        if (( ${#continuity_objective} > 200 )); then
-          continuity_objective="${continuity_objective:0:200}..."
-        fi
-        messages+=("Project continuity is active in '$working_tree_root' and tracks this objective: \"$continuity_objective\". If that is the task you were just asked to do, invoke the project-continuity skill and reconcile its state against Git before substantive work. If it is not, leave the file untouched, answer the new request, and say the other task is still parked there. State 'Continuity: enabled' in the first progress update.")
-      else
-        messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
-      fi
-    elif [[ "$source" == "compact" ]]; then
-      messages+=("This conversation was compacted without active project continuity in '$working_tree_root'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update.")
-    else
-      messages+=("Project continuity is not active in '$working_tree_root'. Before the first substantive repository action, apply the global continuity rule and make the activation decision visible in the first progress update. Skip this reminder for explanation-only or small self-contained work.")
-    fi
   fi
 fi
 

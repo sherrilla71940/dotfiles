@@ -4,10 +4,12 @@
        retired skill would keep working on every machine that already applied it. These
        lines are the removal.
 
-       Added 2026-08-31 when the never-invoked skills were retired, and 2026-09-01 for the
-       two project-continuity references that no longer have a load trigger. Keep them until
-       every managed machine has pulled and applied, then delete this file in a later commit -
-       see docs/chezmoi-workflow.md, "Remove a managed file". */ -}}
+       Added 2026-08-31 when the never-invoked skills were retired. Added 2026-09-01 for the
+       two project-continuity references that no longer have a load trigger, the lifecycle hook
+       that moved out of ~/.claude now that Codex runs it too, and the Claude-only worktree
+       memory skill that moved out of the shared ~/.agents store. Keep them until every managed
+       machine has pulled and applied, then delete this file in a later commit - see
+       docs/chezmoi-workflow.md, "Remove a managed file". */ -}}
 .agents/skills/chrome-devtools
 .agents/skills/clean-code-reviewer
 .agents/skills/frontend-uiux-patterns
@@ -28,3 +30,5 @@
 .copilot/instructions/prompt-creation.instructions.md
 .agents/skills/project-continuity/references/client-routing.md
 .agents/skills/project-continuity/references/worktree-handoff.md
+.claude/hooks/maintain-project-continuity.sh
+.agents/skills/claude-worktree-memory

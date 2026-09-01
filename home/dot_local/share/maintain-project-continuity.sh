@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
-# Report the deterministic facts about continuity state that Git can prove: recorded branch or
-# HEAD that no longer matches the checkout, and a task whose tracking sections hold nothing.
-# Semantic state belongs to the project-continuity skill, and check-worktree-launch.sh owns
-# every SessionStart message, so this script emits none.
+# Report what a hook can establish about continuity state without interpreting it: whether state
+# exists and what task it says it tracks, a recorded branch or HEAD that no longer matches the
+# checkout, and a task whose tracking sections hold nothing. Semantic state belongs to the
+# project-continuity skill.
+#
+# Deliberately client-neutral. Claude Code and Codex send the same fields and accept the same
+# output, so both run this one script; anything naming a specific client belongs in that
+# client's own hook instead.
 set -euo pipefail
 
 input="$(cat)"
-# Keep this to a single @tsv line: jq on Windows writes CRLF, and command substitution strips
-# only a trailing newline, so a multi-line form would leave a stray CR on every field but the
-# last. Neither field is ever empty, so tab-collapsing cannot shift the split.
-common_fields="$(printf '%s' "$input" | jq -r '[.hook_event_name // "", .cwd // ""] | @tsv' 2>/dev/null || true)"
+
+# `source` is read last on purpose. Tab is an IFS whitespace character, so a run of tabs collapses
+# into one delimiter and shifts later fields left; that corrupts the split only when an empty
+# field sits in the middle, and `source` is the one that is empty (on Stop). Keep this to a single
+# @tsv line, because jq on Windows writes CRLF and command substitution strips only a trailing
+# newline, so a multi-line form would leave a stray CR on every field but the last.
+common_fields="$(printf '%s' "$input" | jq -r '[.hook_event_name // "", .cwd // "", .source // ""] | @tsv' 2>/dev/null || true)"
 event_name=""
 working_directory=""
-IFS=$'\t' read -r event_name working_directory <<< "$common_fields" || true
+session_source=""
+IFS=$'\t' read -r event_name working_directory session_source <<< "$common_fields" || true
 
 if [[ -z "$event_name" ]]; then
   exit 0
@@ -187,13 +195,65 @@ ensure_private_state_path() {
   git -C "$root" check-ignore -q -- .project-continuity/state.md 2>/dev/null
 }
 
+# SessionStart reporting. This lives here rather than in a client's own launch hook because it
+# names no client machinery: the same message is what a Claude Code session and a Codex session
+# both need before touching a working tree that already has continuity. Both clients send the
+# same fields and accept the same additionalContext, so one script serves both.
+report_session_start() {
+  local root="$1" state_file="$2"
+  local objective message
+
+  if [[ -f "$state_file" ]]; then
+    # Naming the tracked objective turns "is this the same task?" from something the model has to
+    # remember to ask into a fact it has already been shown. Replacing an unfinished task's state
+    # with an unrelated one is the failure this is here to prevent.
+    objective="$(awk '
+      /^## Objective/ { collecting = 1; next }
+      /^## / { if (collecting) exit }
+      collecting && NF { paragraph = paragraph (paragraph ? " " : "") $0; next }
+      collecting && paragraph { exit }
+      END { print paragraph }
+    ' "$state_file" 2>/dev/null || true)"
+
+    if [[ -n "$objective" ]]; then
+      if (( ${#objective} > 200 )); then
+        objective="${objective:0:200}..."
+      fi
+      message="Project continuity is active in '$root' and tracks this objective:"
+      message="$message \"$objective\". If that is the task you were just asked to do, invoke the"
+      message="$message project-continuity skill and reconcile its state against Git before"
+      message="$message substantive work. If it is not, leave the file untouched, answer the new"
+      message="$message request, and say the other task is still parked there."
+    else
+      message="Project continuity is active in '$root'. Before substantive work, invoke the"
+      message="$message project-continuity skill and reconcile its state against Git."
+    fi
+    message="$message State 'Continuity: enabled' in the first progress update."
+  elif [[ "$session_source" == "compact" ]]; then
+    message="This conversation was compacted without active project continuity in '$root'."
+    message="$message Before resuming substantive work, reassess continuity under the global rule"
+    message="$message and make the decision visible in the next progress update."
+  else
+    message="Project continuity is not active in '$root'. Before the first substantive repository"
+    message="$message action, apply the global continuity rule and make the activation decision"
+    message="$message visible in the first progress update. Skip this reminder for explanation-only"
+    message="$message or small self-contained work."
+  fi
+
+  message="$message Do not repeat this reminder in later responses."
+  jq -cn --arg context "$message" \
+    '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$context}}'
+}
+
 case "$event_name" in
   SessionStart)
-    # Silent backstop only. The skill instructs the model to add the exclude entry itself, and
-    # check-worktree-launch.sh owns every SessionStart message, including the one that asks for
-    # reconciliation after a compaction. Emitting a second message here would compete with it.
-    if state_file="$(find_state_file)"; then
-      ensure_private_state_path "$(dirname "$(dirname "$state_file")")" || true
+    root="$(git -C "$working_directory" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$root" ]]; then
+      state_file="$root/.project-continuity/state.md"
+      if [[ -f "$state_file" ]]; then
+        ensure_private_state_path "$root" || true
+      fi
+      report_session_start "$root" "$state_file"
     fi
     ;;
   Stop)

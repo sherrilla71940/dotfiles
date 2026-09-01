@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repository_root="$(git rev-parse --show-toplevel)"
-lifecycle_hook="$repository_root/home/dot_claude/hooks/maintain-project-continuity.sh"
+lifecycle_hook="$repository_root/home/dot_local/share/maintain-project-continuity.sh"
 session_start_hook="$repository_root/home/dot_claude/hooks/check-worktree-launch.sh"
 fixture="$(mktemp -d)"
 
@@ -25,42 +25,59 @@ git -C "$fixture" commit -qm initial
 session_id="continuity-hook-test-$$"
 state_file="$fixture/.project-continuity/state.md"
 
-printf 'not-json' | bash "$lifecycle_hook"
-
-# SessionStart is a silent backstop: it adds the Git exclude entry when continuity exists, and
-# emits nothing, because check-worktree-launch.sh owns every SessionStart message.
+# SessionStart reporting lives in the lifecycle hook, not in any one client's launch hook, so
+# that Codex gets it too. It must name the tracked objective: the same-task decision is what
+# stops an unrelated request overwriting an unfinished task's handoff state.
 mkdir -p "$fixture/.project-continuity"
-printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
-session_start_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
-  | bash "$lifecycle_hook")"
-test -z "$session_start_output"
+printf '# Project Continuity\n\n## Objective\n\nRepair the invoice export so totals match\nthe ledger for partial refunds.\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+session_start() {
+  jq -cn --arg sid "$session_id" --arg cwd "$fixture" --arg src "$1" \
+    '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:$src}' \
+    | bash "$lifecycle_hook" | jq -r '.hookSpecificOutput.additionalContext // ""'
+}
+
+active_output="$(session_start compact)"
+case "$active_output" in
+  *"Project continuity is active"*) ;;
+  *) printf 'expected the active notice, got: %s\n' "$active_output" >&2; exit 1 ;;
+esac
+# The whole first paragraph, joined onto one line - not just its first line.
+case "$active_output" in
+  *"Repair the invoice export so totals match the ledger for partial refunds."*) ;;
+  *) printf 'the objective must be named in full, got: %s\n' "$active_output" >&2; exit 1 ;;
+esac
+# Continuity existing is what makes the exclude entry appear.
 git -C "$fixture" check-ignore -q .project-continuity/state.md
 
-# The launch hook asks for reconciliation whenever continuity exists, which is what covers the
-# post-compaction case now that no emergency section is written. It must also name the tracked
-# objective, so the same-task decision is made against a shown fact rather than from recall.
-printf '# Project Continuity\n\n## Objective\n\nRepair the invoice export so totals match\nthe ledger for partial refunds.\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
-launch_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
-  | bash "$session_start_hook")"
-printf '%s' "$launch_output" \
-  | jq -e '.hookSpecificOutput.additionalContext | contains("Project continuity is active")' \
-  >/dev/null
-# The whole first paragraph, joined onto one line - not just its first line.
-printf '%s' "$launch_output" \
-  | jq -e '.hookSpecificOutput.additionalContext
-           | contains("Repair the invoice export so totals match the ledger for partial refunds.")' \
-  >/dev/null
-
-# With no Objective section there is nothing to name, so the plain notice is used instead.
+# With no Objective section there is nothing to name, so the plain notice is used.
 printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
-plain_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+case "$(session_start startup)" in
+  *"tracks this objective"*) printf 'must not claim an objective when there is none\n' >&2; exit 1 ;;
+  *"Project continuity is active"*) ;;
+  *) printf 'expected the plain active notice\n' >&2; exit 1 ;;
+esac
+
+# No continuity at all: the activation reminder, and a distinct one after compaction.
+rm -f "$state_file"
+case "$(session_start startup)" in
+  *"Project continuity is not active"*) ;;
+  *) printf 'expected the activation reminder\n' >&2; exit 1 ;;
+esac
+case "$(session_start compact)" in
+  *"compacted without active project continuity"*) ;;
+  *) printf 'expected the post-compaction reminder\n' >&2; exit 1 ;;
+esac
+
+# The Claude-only launch hook must no longer say anything about continuity.
+launch_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
   '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"startup"}' \
-  | bash "$session_start_hook")"
-printf '%s' "$plain_output" \
-  | jq -e '.hookSpecificOutput.additionalContext | contains("tracks this objective") | not' \
-  >/dev/null
+  | bash "$session_start_hook" || true)"
+case "$launch_output" in
+  *continuity*) printf 'continuity reporting must not be in the launch hook: %s\n' "$launch_output" >&2; exit 1 ;;
+esac
+
+printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+
 # Nothing blocks a Stop any more; the hook only ever reports.
 stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
   '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \

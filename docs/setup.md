@@ -325,7 +325,7 @@ The same hook supplies the timely part of project-continuity activation. At star
 clear and compaction, it reports whether the current working tree already has continuity and
 reminds Claude to make the activation decision visible before substantive work.
 
-`home/dot_claude/hooks/maintain-project-continuity.sh` adds the deterministic reporting that the
+`home/dot_local/share/maintain-project-continuity.sh` adds the deterministic reporting that the
 skill cannot do for itself. On `Stop` it compares the recorded branch and HEAD against the
 checkout and reports drift, and it offers cleanup once every tracking section is empty. On
 `SessionStart` it silently ensures `.project-continuity/` is excluded from Git. It emits no

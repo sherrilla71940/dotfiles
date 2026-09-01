@@ -61,6 +61,44 @@ BREAKING CHANGE: `extends` key behavior changed
 
 Use footers only for useful trailers such as `BREAKING CHANGE:`, `Refs:`, or `Closes:`.
 
+## Traditional Chinese (zh-TW) messages
+
+Keep the Conventional Commit type, the scope token and every trailer (`feat`, `fix`,
+`BREAKING CHANGE:`, `Refs:`) in English. Write the description and body in Traditional Chinese
+for Taiwan — never Simplified. A scope may be English or Chinese, whichever reads better.
+
+A commit message is exactly the register where over-formal phrasing creeps in. Prefer the plain
+word:
+
+| Prefer | Over |
+| --- | --- |
+| `是` / `是因為` | `屬` |
+| `這次` | `本次` |
+| `在` | `於` |
+| `如果` | `若` |
+| `都` | `皆` / `全數` |
+| `原本` / `現有` | `既有` |
+| `問題` / `錯誤` | `勘誤` |
+| a direct clause | a noun phrase ending in `者` |
+
+Watch for clustering of `屬 於 若 皆 全數 之 者 既有 勘誤`. Any one may be natural; several
+together make an ordinary commit read like a government report.
+
+Use Taiwan terminology — `程式` not `程序`, `專案` not `項目`, `元件` not `組件`, `設定` not
+`配置`, `回傳` not `返回` — and keep the English technical terms developers actually use
+(`rebase`, `API`, `DB`, `PM`, `BE`, `FE`). Never translate code identifiers, filenames, or
+branch names.
+
+```text
+fix(parser): 修正欄位不存在時的例外
+
+原本的檢核邏輯沒有處理缺欄位的情況，115 年範本會直接中斷。
+這次改成缺欄位就略過，其餘值域檢查維持不動。
+```
+
+That is the whole of it for a commit message. For longer zh-TW prose — a PR/MR description,
+documentation, an issue body — load the `natural-zhtw` skill instead.
+
 ## Message examples
 
 ```text

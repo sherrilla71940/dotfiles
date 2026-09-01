@@ -93,12 +93,16 @@ Never store secrets, credentials, personal data unrelated to the work, or large 
 
 ## Resume
 
-1. Read continuity.
-2. Confirm it plausibly belongs to the current task and working tree, using its objective and recorded starting point. If it clearly belongs to another task, follow the wrong-task rules instead of merging.
-3. Inspect enough repository state to establish reality: branch and HEAD, working-tree status and diffs, the files continuity names, and tests or build output when a claim depends on them.
-4. Reconcile — correct claims that are no longer true, drop resolved blockers and completed TODOs, replace superseded decisions, absorb work done after the last checkpoint, and deduplicate.
-5. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
-6. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
+Step 1 is a gate, not a formality. Everything after it assumes the answer was yes.
+
+1. **Read the `Objective` and `Started from`, and decide whether this state tracks the task you
+   were just asked to do.** If it does not, stop here and follow the wrong-task rules below.
+   Do not reconcile first and decide afterwards: reconciling rewrites the file to match what you
+   are doing now, which is exactly how another task's handoff state gets destroyed.
+2. Inspect enough repository state to establish reality: branch and HEAD, working-tree status and diffs, the files continuity names, and tests or build output when a claim depends on them.
+3. Reconcile — correct claims that are no longer true, drop resolved blockers and completed TODOs, replace superseded decisions, absorb work done after the last checkpoint, and deduplicate.
+4. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
+5. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
 
 Where repository evidence and continuity disagree, the repository wins and continuity is corrected. Where the user's current instruction and continuity disagree about intent, the user wins.
 

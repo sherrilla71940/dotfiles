@@ -14,12 +14,12 @@
 
 {{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
 
-{{- $notificationCommand := "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{- $notificationCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
 {{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
 {{- $continuityLifecycleCommand := "bash \"$HOME/.local/share/maintain-project-continuity.sh\"" -}}
 {{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
 {{- if $isWindows -}}
-{{-   $notificationCommand = printf "%s \"$HOME/.claude/hooks/show-claude-notification.ps1\"" $pwsh -}}
+{{-   $notificationCommand = printf "%s \"$HOME/.local/share/show-agent-notification.ps1\"" $pwsh -}}
 {{-   $sessionStartCommand = printf "%s \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" $pwsh -}}
 {{-   $continuityLifecycleCommand = printf "\"%s\" \"$HOME/.local/share/maintain-project-continuity.sh\"" $gitBash -}}
 {{-   $statusLineCommand = printf "%s \"$HOME/.claude/claude-session-statusline.ps1\"" $pwsh -}}

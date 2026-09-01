@@ -32,3 +32,5 @@
 .agents/skills/project-continuity/references/worktree-handoff.md
 .claude/hooks/maintain-project-continuity.sh
 .agents/skills/claude-worktree-memory
+.claude/hooks/show-claude-notification.ps1
+.claude/hooks/show-claude-notification-macos.sh

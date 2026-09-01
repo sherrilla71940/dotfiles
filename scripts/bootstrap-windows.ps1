@@ -138,7 +138,7 @@ if (Get-Command codex -ErrorAction SilentlyContinue) {
 
 # Windows attributes every toast to an Application User Model ID (AUMID). Given none, it
 # invents a per-process identity whose display name is empty, so a Claude Code notification
-# arrives anonymous. ~/.claude/hooks/show-claude-notification.ps1 asks for the AUMID below and
+# arrives anonymous. ~/.local/share/show-agent-notification.ps1 asks for the AUMID below and
 # falls back to the built-in Windows PowerShell identity until this registration exists.
 $claudeCodeAumid = "Anthropic.ClaudeCode"
 $claudeCodeDisplayName = "Claude Code"
@@ -356,5 +356,31 @@ if ($notificationIconPath -and (Test-Path -LiteralPath $notificationIconPath)) {
 }
 
 Write-Host "Claude Code notification identity registered as $claudeCodeAumid"
+
+# Codex raises its own session-end banner through the same script, and an AUMID is what puts a
+# sender's name on a toast. Without this the Codex banner would either be attributed to Claude
+# Code or fall back to the anonymous Windows PowerShell identity. There is no icon: Codex ships
+# no desktop application to borrow one from, and the identity is still worth registering for the
+# name alone.
+$codexAumid = "OpenAI.Codex"
+$codexDisplayName = "Codex"
+
+[ClaudeCodeBootstrap.ShortcutWriter]::Write(
+    (Join-Path $startMenuPrograms "$codexDisplayName.lnk"),
+    (Join-Path $env:SystemRoot "System32\WindowsPowerShell1.0\powershell.exe"),
+    "-NoExit -Command codex",
+    $env:USERPROFILE,
+    $codexDisplayName,
+    $codexAumid,
+    "")
+
+$codexIdentityKey = "HKCU:\SOFTWARE\Classes\AppUserModelId\$codexAumid"
+if (-not (Test-Path -LiteralPath $codexIdentityKey)) {
+    New-Item -Path $codexIdentityKey -Force | Out-Null
+}
+New-ItemProperty -Path $codexIdentityKey -Name "DisplayName" -Value $codexDisplayName `
+    -PropertyType String -Force | Out-Null
+
+Write-Host "Codex notification identity registered as $codexAumid"
 
 Write-Host 'Optional tools are ready.'

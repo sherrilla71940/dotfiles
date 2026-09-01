@@ -21,6 +21,13 @@ fi
 
 notification_type="$(printf '%s' "$input" | jq -r '.notification_type // empty')"
 
+# Codex sends no notification_type - it has no Notification event, only lifecycle ones - so its
+# SessionEnd is mapped to a type here. Without this the case below falls to its default and the
+# banner is silently dropped, which is how the previous Codex hook failed unnoticed.
+if [[ -z "$notification_type" ]]   && [[ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" == "SessionEnd" ]]; then
+  notification_type="session_end"
+fi
+
 # The Windows copy keeps a toast on screen until dismissed when a notification means work is
 # blocked. There is no equivalent here: how long a banner lingers is chosen by the user per
 # application in System Settings > Notifications, as Banner or Alert, and no argument to
@@ -59,6 +66,10 @@ case "$notification_type" in
   agent_completed)
     title="Agent finished"
     message="$(printf '%s' "$input" | jq -r '.message // "A background agent finished its task."')"
+    ;;
+  session_end)
+    title="Codex finished"
+    message="The Codex session ended."
     ;;
   *)
     exit 0

@@ -17,9 +17,9 @@
 {{- $notifyCommand := "" -}}
 {{- if $isWindows -}}
 {{-   $continuityCommand = printf "\"%s\" \"$HOME/.local/share/maintain-project-continuity.sh\"" $gitBash -}}
-{{-   $notifyCommand = printf "%s \"$HOME/.claude/hooks/show-claude-notification.ps1\"" $pwsh -}}
+{{-   $notifyCommand = printf "%s \"$HOME/.local/share/show-agent-notification.ps1\"" $pwsh -}}
 {{- else -}}
-{{-   $notifyCommand = "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{-   $notifyCommand = "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
 {{- end -}}
 {
   "hooks": {

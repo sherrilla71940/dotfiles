@@ -321,25 +321,37 @@ the main checkout wherever the session runs, so a worktree edit is not the sourc
 reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The concurrent
 session check needs `claude` and `jq` on `PATH` and is skipped without them.
 
-The same hook supplies the timely part of project-continuity activation. At startup, resume,
-clear and compaction, it reports whether the current working tree already has continuity and
-reminds Claude to make the activation decision visible before substantive work.
+That hook is Claude-only, because it shells out to `claude agents --json` and speaks in terms of
+`EnterWorktree`. Project-continuity reporting used to live in it too and no longer does; it is
+described next.
 
 `home/dot_local/share/maintain-project-continuity.sh` adds the deterministic reporting that the
-skill cannot do for itself. On `Stop` it compares the recorded branch and HEAD against the
-checkout and reports drift, and it offers cleanup once every tracking section is empty. On
-`SessionStart` it silently ensures `.project-continuity/` is excluded from Git. It emits no
-SessionStart message, because `check-worktree-launch.sh` owns those. Neither `PreCompact` nor
-`PostCompact` is wired: neither can inject context into the model, so a compaction backstop
-built on them could only write state, never ask for it to be reconciled. After a compaction,
-`SessionStart` reports that continuity is active and asks for reconciliation through the shared
-skill. The script never reads or copies the transcript. On Windows it uses Git Bash to avoid
-paying PowerShell startup cost after every response.
+skill cannot do for itself. On `SessionStart` it reports whether continuity exists and, when it
+does, names the objective it tracks, so the decision about whether this is the same task is made
+against a shown fact rather than from recall; it also ensures `.project-continuity/` is excluded
+from Git. On `Stop` it compares the recorded branch and HEAD against the checkout and reports
+drift, and it offers cleanup once every tracking section is empty. The script never reads or
+copies the transcript.
 
-Claude Code, Codex and Copilot can all resume the resulting
-`.project-continuity/state.md` when started in the same physical working tree. Claude's hooks
-report drift and cleanup; the global instructions and shared skill provide the receiving
-client's entry path.
+It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
+run it**. They share hook event names, stdin fields (`cwd`, `hook_event_name`, `session_id`,
+`source`) and output contract (`systemMessage`, `hookSpecificOutput.additionalContext`), so one
+script serves both: Claude through
+[`settings-durable.json`](../home/.chezmoitemplates/claude/settings-durable.json), Codex through
+[`hooks.json`](../home/dot_codex/hooks.json.tmpl). Codex records hook trust separately, in
+`config.toml` under `[hooks.state]`, so each entry needs one `/hooks` approval per machine.
+Anything naming one client's machinery stays in that client's own hook, which is why
+`check-worktree-launch.sh` keeps only its concurrent-session and worktree-container checks.
+
+Neither `PreCompact` nor `PostCompact` is wired in either client: neither can inject context into
+the model, so a backstop built on them could only write state, never ask for it to be reconciled.
+The ordinary `SessionStart` report covers the post-compaction case instead. On Windows the hook
+uses Git Bash to avoid paying PowerShell startup cost after every response.
+
+Claude Code, Codex and Copilot can all resume the resulting `.project-continuity/state.md` when
+started in the same physical working tree. Claude and Codex additionally get the hook reporting
+above; Copilot has no hook system, so its entry path is the global instructions and shared skill
+alone.
 
 ## Working tree at `~/dotfiles`
 
@@ -420,4 +432,5 @@ before importing a live application file.
 | Claude rules, skills, agents, and settings | Discovery paths and accepted fields evolve | [Claude Code documentation](https://code.claude.com/docs/en/overview) |
 | Claude Code worktree creation and cleanup | Sweep eligibility, ignored-file provisioning, and entry rules change by patch release, and `frontend-task-workflow` depends on all three | [Worktrees](https://code.claude.com/docs/en/worktrees) and [worktree provisioning](./worktree-provisioning.md) |
 | Codex prompts, agents, config, and skills | Customization surfaces and deprecations evolve | [Codex customization](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
+| Codex lifecycle hooks | Event names, payload fields and the trust model are newer than the rest of this setup, and `maintain-project-continuity.sh` assumes they stay aligned with Claude's | [Codex hooks](https://learn.chatgpt.com/docs/hooks) |
 | VS Code and Copilot customization | User folders and instruction discovery evolve | [VS Code agent customization](https://code.visualstudio.com/docs/agent-customization/overview) and [Copilot customization](https://docs.github.com/en/copilot/customizing-copilot) |

@@ -80,7 +80,9 @@ Continuity works in any Git worktree; it does not depend on this wrapper. A cros
 handoff does depend on both clients opening the same physical working-tree directory. After
 creating a worktree, `git wt-add` prints the exact path and the suggested continuation prompt
 as a non-blocking reminder. It also reminds you to use a separate worktree for another
-unfinished task.
+unfinished task — which is the right answer when the two tasks need separate uncommitted
+changes, and unnecessary when they do not. For a second task in the same directory, the
+`project-continuity` skill parks the first under `.project-continuity/parked/` instead.
 
 The wrapper options are:
 

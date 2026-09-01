@@ -37,7 +37,7 @@ Continuity belongs to **one working directory**, and each working tree has at mo
 - The repository's primary checkout is a working tree. Continuity does not require creating a worktree.
 - The same working tree is reused over time: finish task 1, clean up, start task 2 there.
 - Same repository does not imply same continuity. Neither does same branch.
-- **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, use a separate worktree.
+- **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, park one of them, or use a separate worktree when they also need separate uncommitted changes.
 - **A branch switch is not a reconciliation trigger.** Claude's Stop hook reports a recorded branch that no longer matches the checkout, and that report is a warning not to merge rather than an instruction to update. Do not fold the new branch's work into state describing the old task, and do not rewrite the recorded branch just to silence the notice. Reconcile only once the task is established to be the same one. Do not key state files by branch name to avoid this decision either: a detached HEAD has no branch to key on, which is how the Codex app runs its managed worktrees, and uncommitted work belongs to the directory rather than to any branch.
 - **Uncommitted work does not follow a branch.** If a branch switch stashed or carried the task's changes, record that in `Status`; otherwise a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - A new worktree starts with no continuity and must not inherit another task's state. Claude Code and the Codex app both read `.worktreeinclude` at the repository root to decide which ignored files to copy into a new worktree, so a pattern there matching `.project-continuity/` would leak one task's state into every new worktree of both clients. Never add one.
@@ -118,7 +118,26 @@ When the existing state clearly belongs to a different task, never merge it into
 - If it still represents useful unfinished work, preserve it and ask before replacing. The test is whether replacing would destroy recoverable handoff state, not whether the new request is ambiguous — a user saying "forget that for now, fix the navbar" may be switching tasks temporarily, not abandoning the old one.
 - If the user says to abandon the previous task, replace it.
 
-Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable, a separate worktree is the answer.
+Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable in the same directory, park the first one.
+
+## Parking a second task
+
+A worktree is the right answer when two tasks need separate working trees — separate uncommitted changes, separate HEAD. It is the wrong answer when they do not, and it is unavailable in a repository whose own instructions forbid worktrees. Parking covers that case:
+
+```text
+.project-continuity/
+  state.md                 the active task
+  parked/<short-slug>.md   tasks set aside, same format, not active
+```
+
+- **Park:** move `state.md` to `parked/<short-slug>.md`, where the slug comes from the objective. Add `Parked: <ISO date>` to its Verification block and change nothing else — a parked file is a handoff, not a summary.
+- **Resume:** move it back to `state.md`, then run the ordinary Resume workflow against it. Park whatever was active first; there is never more than one `state.md`.
+- **List:** read the directory. There is no index to maintain and nothing to keep in sync.
+- **Close:** delete the file when its task is done. Parked state is not an archive, and a finished task leaves nothing behind here — Git history and the pull request are where a decision's reasoning belongs.
+
+Park when the user turns to something substantial while unfinished state is still useful, and say that you did. Do not park to avoid asking: if the new request is small, answer it and leave `state.md` alone. If the old task is genuinely abandoned, replace it rather than parking it, so the directory does not fill with work nobody will return to.
+
+The Git exclude entry is `/.project-continuity/`, so it already covers `parked/`. The Stop hook only reads `state.md`, so parked tasks raise no drift or cleanup notices.
 
 ## Checkpoint
 
@@ -167,7 +186,9 @@ for a checkpoint to raise it, and do not treat a quiet final turn as a reason to
 
 1. Reconcile once more and verify no unfinished work, blocker, deferred item, or useful handoff state remains.
 2. If something belongs in durable documentation or private instructions, say so before deleting; never promote it silently.
-3. Delete `.project-continuity/`.
+3. Delete `state.md`. Remove the whole `.project-continuity/` directory only when `parked/`
+   is empty or absent; a parked task is somebody's unfinished work, and cleaning up the task
+   in front of you is not a reason to discard it. If parked files remain, say which.
 4. Leave the Git exclude entry. It is one anchored line covering every working tree of the repository, so removing it would strip protection from the others.
 5. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native memory, or unrelated files as part of cleanup.
 6. Say what was removed.

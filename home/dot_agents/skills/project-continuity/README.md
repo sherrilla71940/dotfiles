@@ -24,6 +24,11 @@ The receiving client detects the state on its first task turn, reconciles it aga
 resumes. Say "continue from project continuity" only to force that, or if the global bootstrap
 did not load.
 
+If you need to work on something else before finishing, the unfinished task is parked rather
+than overwritten — it moves to `.project-continuity/parked/<slug>.md` and moves back when you
+return. `ls .project-continuity/parked/` is the whole list command. A worktree is still the
+answer when the two tasks also need separate uncommitted changes.
+
 Two cautions. Every client's own memory is separate, invisible to the others, and may hold stale
 claims about the task — continuity reconciled against Git is what establishes where things stand.
 And a client-managed worktree can be deleted with its session: Claude sweeps eligible worktrees

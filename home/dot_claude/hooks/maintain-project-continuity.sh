@@ -90,7 +90,7 @@ report_stale_verification() {
     message="$message $actual_branch into .project-continuity/state.md, and do not replace that"
     message="$message state while it still holds useful unfinished work. If this is the same task,"
     message="$message reconcile at the next checkpoint. If it is a separate substantive task that"
-    message="$message must stay resumable, leave that state untouched and use a separate worktree."
+    message="$message must stay resumable, leave that state untouched and park it instead."
     if [[ -n "$head_drift" ]]; then
       message="$message Separately, $head_drift."
     fi

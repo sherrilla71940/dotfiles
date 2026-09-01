@@ -44,6 +44,7 @@ The phase another session should resume from.
 - Status: `<clean / modified / concise description>`
 - Last reconciled: `<ISO date/time when practical>`
 - Cleanup: `<omit normally; set to declined once the user has refused cleanup for this task>`
+- Parked: `<omit normally; set to the ISO date when this file is moved into parked/>`
 ```
 
 ## Maintenance rules
@@ -64,4 +65,6 @@ The phase another session should resume from.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
 - `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.
 - Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
+- A file in `parked/` keeps this same format. Add `Parked` and change nothing else; it is a
+  handoff that was set aside, not a summary of one.
 - Do not store secrets or credentials.

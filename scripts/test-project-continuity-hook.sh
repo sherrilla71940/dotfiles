@@ -127,7 +127,7 @@ write_state some-other-branch "$fixture_head"
 append_section 'Next actions' '1. Keep the task open.'
 branch_message="$(notice_message "$(stop_notice)")"
 case "$branch_message" in
-  *"not by itself a new task"*"separate worktree"*) ;;
+  *"not by itself a new task"*"park it instead"*) ;;
   *) printf 'expected branch-switch warning, got: %s\n' "$branch_message" >&2; exit 1 ;;
 esac
 case "$branch_message" in

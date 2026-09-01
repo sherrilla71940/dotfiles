@@ -38,14 +38,29 @@ test -z "$session_start_output"
 git -C "$fixture" check-ignore -q .project-continuity/state.md
 
 # The launch hook asks for reconciliation whenever continuity exists, which is what covers the
-# post-compaction case now that no emergency section is written.
+# post-compaction case now that no emergency section is written. It must also name the tracked
+# objective, so the same-task decision is made against a shown fact rather than from recall.
+printf '# Project Continuity\n\n## Objective\n\nRepair the invoice export so totals match\nthe ledger for partial refunds.\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
 launch_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
   '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
   | bash "$session_start_hook")"
 printf '%s' "$launch_output" \
   | jq -e '.hookSpecificOutput.additionalContext | contains("Project continuity is active")' \
   >/dev/null
+# The whole first paragraph, joined onto one line - not just its first line.
+printf '%s' "$launch_output" \
+  | jq -e '.hookSpecificOutput.additionalContext
+           | contains("Repair the invoice export so totals match the ledger for partial refunds.")' \
+  >/dev/null
 
+# With no Objective section there is nothing to name, so the plain notice is used instead.
+printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+plain_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"startup"}' \
+  | bash "$session_start_hook")"
+printf '%s' "$plain_output" \
+  | jq -e '.hookSpecificOutput.additionalContext | contains("tracks this objective") | not' \
+  >/dev/null
 # Nothing blocks a Stop any more; the hook only ever reports.
 stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
   '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \

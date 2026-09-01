@@ -78,7 +78,24 @@ if [[ "$inside_work_tree" == true ]]; then
   if [[ -n "$working_tree_root" ]]; then
     continuity_state="$working_tree_root/.project-continuity/state.md"
     if [[ -f "$continuity_state" ]]; then
-      messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
+      # Naming the tracked objective turns "is this the same task?" from something the model has
+      # to remember to ask into a fact it has already been shown. Replacing an unfinished task's
+      # state with an unrelated one is the failure this is here to prevent.
+      continuity_objective="$(awk '
+        /^## Objective/ { collecting = 1; next }
+        /^## / { if (collecting) exit }
+        collecting && NF { paragraph = paragraph (paragraph ? " " : "") $0; next }
+        collecting && paragraph { exit }
+        END { print paragraph }
+      ' "$continuity_state" 2>/dev/null || true)"
+      if [[ -n "$continuity_objective" ]]; then
+        if (( ${#continuity_objective} > 200 )); then
+          continuity_objective="${continuity_objective:0:200}..."
+        fi
+        messages+=("Project continuity is active in '$working_tree_root' and tracks this objective: \"$continuity_objective\". If that is the task you were just asked to do, invoke the project-continuity skill and reconcile its state against Git before substantive work. If it is not, leave the file untouched, answer the new request, and say the other task is still parked there. State 'Continuity: enabled' in the first progress update.")
+      else
+        messages+=("Project continuity is active in '$working_tree_root'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update.")
+      fi
     elif [[ "$source" == "compact" ]]; then
       messages+=("This conversation was compacted without active project continuity in '$working_tree_root'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update.")
     else

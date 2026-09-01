@@ -85,7 +85,25 @@ if ($isInsideWorkTree) {
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($workingTreeRoot)) {
         $continuityState = Join-Path $workingTreeRoot ".project-continuity\state.md"
         if (Test-Path -LiteralPath $continuityState -PathType Leaf) {
-            $messages += "Project continuity is active in '$workingTreeRoot'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update."
+            # Naming the tracked objective turns "is this the same task?" from something the model
+            # has to remember to ask into a fact it has already been shown. Replacing an unfinished
+            # task's state with an unrelated one is the failure this is here to prevent.
+            $objective = ""
+            $collecting = $false
+            foreach ($line in (Get-Content -LiteralPath $continuityState)) {
+                if ($line -match '^## Objective') { $collecting = $true; continue }
+                if (-not $collecting) { continue }
+                if ($line -match '^## ') { break }
+                if ($line.Trim()) {
+                    $objective = if ($objective) { "$objective $($line.Trim())" } else { $line.Trim() }
+                } elseif ($objective) { break }
+            }
+            if ($objective) {
+                if ($objective.Length -gt 200) { $objective = $objective.Substring(0, 200) + "..." }
+                $messages += "Project continuity is active in '$workingTreeRoot' and tracks this objective: `"$objective`". If that is the task you were just asked to do, invoke the project-continuity skill and reconcile its state against Git before substantive work. If it is not, leave the file untouched, answer the new request, and say the other task is still parked there. State 'Continuity: enabled' in the first progress update."
+            } else {
+                $messages += "Project continuity is active in '$workingTreeRoot'. Before substantive work, invoke the project-continuity skill and reconcile its state against Git. State 'Continuity: enabled' in the first progress update."
+            }
         } elseif ($source -eq "compact") {
             $messages += "This conversation was compacted without active project continuity in '$workingTreeRoot'. Before resuming substantive work, reassess continuity under the global rule and make the decision visible in the next progress update."
         } else {

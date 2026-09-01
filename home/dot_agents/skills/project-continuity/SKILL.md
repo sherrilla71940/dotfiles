@@ -54,9 +54,13 @@ Whoever created the directory, any supported client can work in it.
 
 Enable continuity when losing the conversation now would cost materially more than re-reading the diff: substantive implementation, multi-file changes, investigation that produced real findings, refactors, migrations, architectural work, or unresolved dependencies.
 
+**Wait for material state before creating the file.** Discussion, questions, options being weighed and a plan still being negotiated are not yet expensive to lose — the user holds that context too, and writing state during them produces a file describing a task nobody has started. Create it at the first point where the work itself becomes the record: implementation begins, a change spans several files, an investigation turns up something non-obvious, a decision is made that constrains what follows, or a dependency is left unresolved. This is later activation, not optional activation — once that point is reached, create it without asking.
+
+Reassess when a small task grows into one of those, and always use continuity for an explicit handoff, an explicit resume, or recovery after compaction, whatever stage the work is at.
+
 Do not enable it for explanation-only questions, small self-contained edits, formatting, or work that is obvious from the diff.
 
-The presence of `.project-continuity/state.md` means continuity is already active — resume it without asking to opt in again. When the file is absent and the work qualifies, create it and say so rather than interrogating the user first. Ask only when it is genuinely unclear whether the work qualifies.
+The presence of `.project-continuity/state.md` means continuity is already active — resume it without asking to opt in again, once you have confirmed it tracks the current task. When the file is absent and the work qualifies, create it and say so rather than interrogating the user first. Ask only when it is genuinely unclear whether the work qualifies.
 
 This skill cannot bootstrap its own discovery. The user's always-on instructions carry a small rule that checks for the file and invokes this skill by name, with `~/.agents/skills/project-continuity/SKILL.md` as an explicit fallback path when name resolution fails.
 

@@ -16,16 +16,4 @@
 {{-   $live = fromJson .chezmoi.stdin -}}
 {{- end -}}
 {{- $durable := includeTemplate "claude/settings-durable.json" . | fromJson -}}
-{{- $merged := merge $durable $live -}}
-{{- /* Retired hook events. merge only wins on keys the repository still names, so an event
-       deleted from settings-durable.json would otherwise survive in an existing settings.json
-       forever, firing a script that no longer handles it. Same lifecycle as .chezmoiremove:
-       delete these lines once every managed machine has applied. Retired 2026-09-01 with the
-       compaction-recovery machinery. */ -}}
-{{- if hasKey $merged "hooks" -}}
-{{-   $hooks := index $merged "hooks" -}}
-{{-   range list "PreCompact" "PostCompact" -}}
-{{-     $_ := unset $hooks . -}}
-{{-   end -}}
-{{- end -}}
-{{ $merged | toPrettyJson }}
+{{ merge $durable $live | toPrettyJson }}

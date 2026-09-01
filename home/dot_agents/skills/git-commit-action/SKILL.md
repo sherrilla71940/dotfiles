@@ -69,28 +69,34 @@ Example invocations (0–4 flags, any order):
    - `single`: one group containing all candidates.
 6. Load the `git-commit-reference` skill and compose a Conventional Commit message for each group, following its type table, description/body rules, bullet-body guidance, and breaking-change/footer conventions.
 7. **Draft mode** — present the plan: for each group, list its files and show its proposed message in a fenced `text` block. State that nothing was staged or committed. End with the exact next command, e.g. `Next: run /git-commit-action commit <same flags>` to create these. Stop here.
-8. **Commit mode** — create the commit(s). Git has a single index, so batch commits are made by staging and committing **one group at a time**; git will not partition changes on its own. For each group, in order:
-   1. Stage exactly that group's files (prefer the most targeted approach):
-      ```bash
-      git add path/to/file1 path/to/file2   # specific files for this group
-      git add 'src/components/*'            # by pattern
-      git add -p path/to/file               # when one file's hunks span groups
-      git rm path/to/deleted-file           # stage a deletion
-      ```
-   2. Run `git diff --cached --check`.
-   3. Commit — single-line, or a heredoc for a body:
+8. **Commit mode** — create the commit(s). Git has one index per working tree, and `git commit` records the index rather than the paths you meant to stage. Commit each group **by pathspec**, so the commit builds its own index and ignores everything else:
+
+   ```bash
+   git add path/to/new-file   # untracked files only; --only cannot name what git does not know
+   git commit --only -m "<message>" -- path/to/file1 path/to/file2
+   ```
+
+   This matters whenever anything else can write to the index: another agent session in the same working tree, an editor, a watcher. Those sessions share one index and one HEAD, so a plain `git add` + `git commit` can silently carry their staged work into your commit, and it outlives the session that staged it. Pathspec commits remove the hazard rather than detecting it, so no client needs to warn you first.
+
+   For each group, in order:
+
+   1. Stage only what `--only` cannot reference — untracked files (`git add <path>`), and hunks when one file's changes span groups (`git add -p <path>`). A deletion needs no staging; naming the path in the commit records it.
+   2. Run `git diff --cached --check` when anything was staged.
+   3. Commit that group's paths — single-line, or a heredoc for a body:
 
       ```bash
-      git commit -m "$(cat <<'EOF'
+      git commit --only -m "$(cat <<'EOF'
       <type>[scope]: <description>
 
       <optional body>
       <optional footer>
       EOF
-      )"
+      )" -- path/to/file1 path/to/file2
       ```
 
       Then move to the next group. Never mix files from different groups in one commit.
+
+   `--only` refuses to run during a merge or rebase (`cannot do a partial commit during a merge`). There, stage deliberately and commit normally, and say that the index was not isolated.
 
 9. Finish with `git status --short` and report each commit's hash and message.
 
@@ -107,6 +113,6 @@ Example invocations (0–4 flags, any order):
 Overriding these creates no danger; it makes the result meaningless, because the mode stops describing what happened. There is no confirmation that unlocks them.
 
 - Never stage files or create commits in `draft` mode.
-- In `batch` mode, stage and commit one group at a time; never combine files from different logical groups in a single commit.
+- In `batch` mode, commit one group at a time by pathspec; never combine files from different logical groups in a single commit. If `--only` is unavailable (mid-merge), say that the index was not isolated rather than committing as though it were.
 
 Rewriting or discarding existing history — `git commit --amend`, `git reset --hard`, `git clean`, force-pushing — is outside this skill. It creates commits; it does not undo them.

@@ -62,6 +62,7 @@ report_stale_verification() {
   local state_file="$1" directory="$2"
   local recorded_head actual_head recorded_branch actual_branch
   local head_drift="" branch_drift="" message=""
+  local head_reason="" commits_behind=""
 
   recorded_head="$(recorded_field "$state_file" "HEAD")"
   recorded_branch="$(recorded_field "$state_file" "Branch")"
@@ -72,17 +73,30 @@ report_stale_verification() {
   actual_head="$(git -C "$directory" rev-parse --short HEAD 2>/dev/null || true)"
   actual_branch="$(git -C "$directory" branch --show-current 2>/dev/null || true)"
 
-  # A moved HEAD is only worth reporting once the recorded commit has left this history.
-  # Committing moves HEAD constantly, and on the ordinary path the recorded commit is simply an
-  # ancestor of the new one - that is progress, not drift, and a notice after every commit only
-  # trains the reader to ignore it. `merge-base --is-ancestor` also fails when the recorded
-  # commit no longer resolves at all, which is exactly the case worth reporting: a rebase, a
-  # reset, or state belonging to a different line of work.
+  # Two different things can be wrong with a recorded HEAD, and they need different messages.
+  #
+  # The recorded commit has left this history - rebased, reset, or state from another line of
+  # work. The recorded starting point cannot be trusted at all.
+  #
+  # Or it is still an ancestor, and the work has simply moved on. Reporting that after every
+  # commit is what taught readers to ignore this notice, so it is only raised once the file is
+  # more than one commit behind: one commit ahead of the last checkpoint is work in flight, two
+  # or more means a checkpoint opportunity passed without the file being rewritten, which is
+  # when its claims start being overtaken by the work.
   if [[ -n "$recorded_head" && "$recorded_head" != "unknown" && -n "$actual_head" \
-        && "$recorded_head" != "$actual_head" ]] \
-     && ! git -C "$directory" merge-base --is-ancestor "$recorded_head" HEAD 2>/dev/null; then
-    head_drift="continuity records HEAD $recorded_head, which is no longer in this history"
-    head_drift="$head_drift (HEAD is $actual_head)"
+        && "$recorded_head" != "$actual_head" ]]; then
+    if ! git -C "$directory" merge-base --is-ancestor "$recorded_head" HEAD 2>/dev/null; then
+      head_drift="continuity records HEAD $recorded_head, which is no longer in this history"
+      head_drift="$head_drift (HEAD is $actual_head)"
+      head_reason="gone"
+    else
+      commits_behind="$(git -C "$directory" rev-list --count "$recorded_head..HEAD" 2>/dev/null || printf '0')"
+      if [[ "$commits_behind" =~ ^[0-9]+$ ]] && (( commits_behind > 1 )); then
+        head_drift="continuity was last reconciled $commits_behind commits ago"
+        head_drift="$head_drift (records HEAD $recorded_head, HEAD is $actual_head)"
+        head_reason="behind"
+      fi
+    fi
   fi
   # An empty actual_branch means a detached HEAD, which is how the Codex app runs its managed
   # worktrees. That is not branch drift, so the -n guard keeps it out of the warning below.
@@ -110,12 +124,19 @@ report_stale_verification() {
     if [[ -n "$head_drift" ]]; then
       message="$message Separately, $head_drift."
     fi
-  else
+  elif [[ "$head_reason" == "gone" ]]; then
     message="Project continuity is out of date: $head_drift."
     message="$message The branch may have been rebased or reset, or this state may belong to a"
     message="$message different line of work. Establish which before trusting what it records,"
     message="$message then reconcile .project-continuity/state.md against Git and prune anything"
     message="$message in it that the repository can already answer."
+  else
+    message="Project continuity is behind the work: $head_drift."
+    message="$message Rewrite .project-continuity/state.md whole against current Git state before"
+    message="$message the next substantive action - do not patch one section, because the claims"
+    message="$message that go stale are the ones you are not currently thinking about. Check in"
+    message="$message particular for work still listed as outstanding that has since landed, and"
+    message="$message for anything recorded as unverified that has since been checked."
   fi
 
   jq -cn --arg message "$message" '{systemMessage:$message}'

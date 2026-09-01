@@ -139,20 +139,37 @@ case "$head_message" in
     printf 'HEAD drift must not emit the branch-switch warning\n' >&2; exit 1 ;;
 esac
 
-# Committing moves HEAD every time, leaving the recorded commit an ancestor of the new one. That
-# is ordinary progress rather than drift, so the notice must stay silent - otherwise it fires
-# after every commit and the reader learns to ignore it.
-previous_head="$(git -C "$fixture" rev-parse --short HEAD)"
+# One commit ahead of the last checkpoint is work in flight, so the notice stays silent -
+# otherwise it fires after every commit and the reader learns to ignore it.
+one_behind_head="$(git -C "$fixture" rev-parse --short HEAD)"
 printf 'advance\n' >> "$fixture/tracked.txt"
 git -C "$fixture" add tracked.txt
-git -C "$fixture" commit -qm 'advance HEAD'
-fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
-write_state "$fixture_branch" "$previous_head"
+git -C "$fixture" commit -qm 'advance HEAD once'
+write_state "$fixture_branch" "$one_behind_head"
 append_section 'Next actions' '1. Keep the task open.'
 if [[ -n "$(stop_notice)" ]]; then
-  printf 'an ancestor commit is progress, not drift: %s\n' "$(notice_message "$(stop_notice)")" >&2
+  printf 'one commit ahead is work in flight, not drift: %s\n' "$(notice_message "$(stop_notice)")" >&2
   exit 1
 fi
+
+# Two or more means a checkpoint opportunity passed without the file being rewritten, which is
+# when its claims start being overtaken. That is worth saying, and it says rewrite rather than
+# patch, because the claims that go stale are the ones nobody was thinking about.
+printf 'advance\n' >> "$fixture/tracked.txt"
+git -C "$fixture" add tracked.txt
+git -C "$fixture" commit -qm 'advance HEAD twice'
+fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
+write_state "$fixture_branch" "$one_behind_head"
+append_section 'Next actions' '1. Keep the task open.'
+behind_message="$(notice_message "$(stop_notice)")"
+case "$behind_message" in
+  *"behind the work"*"last reconciled 2 commits ago"*"Rewrite"*"whole"*) ;;
+  *) printf 'expected the behind-the-work notice, got: %s\n' "$behind_message" >&2; exit 1 ;;
+esac
+case "$behind_message" in
+  *"no longer in this history"*)
+    printf 'a commit that is still an ancestor must not read as lost history\n' >&2; exit 1 ;;
+esac
 
 # A different branch may mean a different task, so the notice must warn against merging rather
 # than ask for reconciliation - that is the case that used to corrupt the previous task's state.

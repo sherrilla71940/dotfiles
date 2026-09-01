@@ -165,7 +165,7 @@ When checkpointing:
 
 1. Re-read the file immediately before writing and compare it with what was loaded earlier. Merge automatically when changes are clearly non-conflicting; ask only on a real contradiction. Never overwrite a version that was not just re-read.
 2. Reconcile against current repository and Git state.
-3. Merge and normalize — never append a diary entry.
+3. **Write the file whole. Never patch a section in place.** A targeted edit updates the part you were thinking about and silently leaves every other section asserting what it asserted before, which is how a state file ends up contradicting itself: one section still calling work outstanding that a later section records as done, a superseded conclusion nobody removed, a `not verified` line the user has since falsified. Rewriting forces you to re-affirm every claim, and the file is capped at about 120 lines precisely so that stays cheap. Never append a diary entry either.
 4. Remove stale, resolved, duplicated, or superseded entries.
 5. Keep it under about 120 lines; compact it by dropping resolved history and detail the repository already holds.
 6. If the work is complete and nothing continuity-worthy remains, do not invent a next action — say continuity looks unnecessary and offer cleanup.

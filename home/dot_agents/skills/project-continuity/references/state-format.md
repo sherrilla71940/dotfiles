@@ -56,6 +56,9 @@ The phase another session should resume from.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
 - Write every section in English, quoting a foreign-language string verbatim only where its exact wording matters.
+- Rewrite the file whole at every checkpoint rather than editing one section. Two sections
+  disagreeing about the same item is the characteristic failure of this file, and patching
+  in place is what produces it.
 - Prefer current state over historical narrative.
 - Replace superseded information instead of keeping both versions.
 - Remove resolved blockers and completed TODOs from active sections.
@@ -67,4 +70,8 @@ The phase another session should resume from.
 - Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
 - A file in `parked/` keeps this same format. Add `Parked` and change nothing else; it is a
   handoff that was set aside, not a summary of one.
+- Keep durable environment facts out of this file - a toolchain version, a shell workaround,
+  a local URL. They are not task state, they inflate the file, and a longer file is what
+  makes rewriting it whole feel expensive. They belong in the client's private project
+  instructions instead.
 - Do not store secrets or credentials.

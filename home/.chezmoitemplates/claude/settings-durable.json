@@ -14,14 +14,14 @@
 
 {{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
 
-{{- $notificationCommand := "bash \"$HOME/.claude/hooks/show-claude-notification-macos.sh\"" -}}
+{{- $notificationCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
 {{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
-{{- $continuityLifecycleCommand := "bash \"$HOME/.claude/hooks/maintain-project-continuity.sh\"" -}}
+{{- $continuityLifecycleCommand := "bash \"$HOME/.local/share/maintain-project-continuity.sh\"" -}}
 {{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
 {{- if $isWindows -}}
-{{-   $notificationCommand = printf "%s \"$HOME/.claude/hooks/show-claude-notification.ps1\"" $pwsh -}}
+{{-   $notificationCommand = printf "%s \"$HOME/.local/share/show-agent-notification.ps1\"" $pwsh -}}
 {{-   $sessionStartCommand = printf "%s \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" $pwsh -}}
-{{-   $continuityLifecycleCommand = printf "\"%s\" \"$HOME/.claude/hooks/maintain-project-continuity.sh\"" $gitBash -}}
+{{-   $continuityLifecycleCommand = printf "\"%s\" \"$HOME/.local/share/maintain-project-continuity.sh\"" $gitBash -}}
 {{-   $statusLineCommand = printf "%s \"$HOME/.claude/claude-session-statusline.ps1\"" $pwsh -}}
 {{- end -}}
 
@@ -47,10 +47,12 @@
        the work is cheap but the interpreter is not. A timeout here loses the warning
        silently, so it is set well clear of the measured worst case.
 
-       Compaction lifecycle hooks use Bash even on Windows. Claude Code already requires
-       Git Bash there, and avoiding PowerShell startup matters because Stop runs after every
-       response. The Stop path exits after one marker lookup unless compaction recovery is
-       actually pending. */}}
+       The continuity hook uses Bash even on Windows. Claude Code already requires Git Bash
+       there, and avoiding PowerShell startup matters because Stop runs after every response;
+       that path exits on a single file test when the working tree holds no continuity state.
+       It also runs on SessionStart, which is the first event after compaction that can put
+       context back in front of the model - PreCompact and PostCompact cannot, so neither is
+       wired here. */}}
   "hooks": {
     "Notification": [
       {
@@ -64,22 +66,7 @@
       {
         "matcher": "startup|resume|clear|compact|fork",
         "hooks": [
-          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 20 }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          { "type": "command", "command": {{ $continuityLifecycleCommand | toJson }}, "timeout": 10 }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "manual|auto",
-        "hooks": [
+          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 20 },
           { "type": "command", "command": {{ $continuityLifecycleCommand | toJson }}, "timeout": 10 }
         ]
       }

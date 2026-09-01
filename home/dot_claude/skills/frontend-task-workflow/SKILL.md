@@ -47,6 +47,13 @@ Unless supplied, derive:
 - `branch` as `{type}/{slug}/{suffix}`;
 - the worktree path as `<repo-root>/.claude/worktrees/<slug>`.
 
+That path is deliberate, not a copy of a terminal habit. `EnterWorktree` moves the session
+without an approval prompt only inside the repository's `.claude/worktrees/`, and no permission
+rule suppresses the prompt elsewhere. A sibling `.worktrees/` directory would therefore add one
+approval to every run. Do not relocate it to match a `git wt-add` invocation; that command has
+no default path of its own. The dotfiles repository's `docs/worktree-provisioning.md` carries the
+full reasoning and the pre-v2.1.246 sweep caveat.
+
 ## 3. Establish the remote base
 
 ```bash
@@ -69,7 +76,11 @@ git wt-add -- -b <branch> "<repo-root>/.claude/worktrees/<slug>" "origin/<base>"
 ```
 
 If `git wt-add` is unavailable, use `git worktree add -b <branch> <path> origin/<base>` and state
-that `.worktreeinclude` files were not provisioned.
+that `.worktreeinclude` files were not provisioned. Either way, report what provisioning actually
+did. `git wt-add` can succeed while copying nothing, for example
+`[skipped] .worktreeinclude: manifest not found in source worktree`, and that skip is silent
+until the app fails to run. Claude Code's own `.worktreeinclude` handling does not apply here,
+because the worktree is created by Git rather than by Claude Code.
 
 Enter the created path with Claude Code's `EnterWorktree` tool using its `path` parameter.
 `EnterWorktree` cannot itself select an arbitrary base, which is why Git creates the worktree
@@ -83,6 +94,16 @@ provisioned files. Stop on any mismatch.
 
 Respect Claude Code's worktree boundary. If it refuses a command that it cannot trace safely,
 rewrite the command plainly rather than bypassing the guard.
+
+Report the worktree's absolute path, branch, and base commit in the response, not only in a tool
+call. The session has moved and the user's editor has not, so an unreported path leaves them
+looking at the old branch in the main checkout with no sign of the change.
+
+Do not treat the status line as evidence either way. After `EnterWorktree` moves the session by
+path, Claude Code has been observed still sending the main checkout as `workspace.current_dir`,
+so a status line built on that documented field keeps showing the old directory and branch for
+the rest of the session. Verify with `git rev-parse` from the worktree instead, and say so if the
+user reports a contradiction.
 
 ## 6. Implement through publishing
 

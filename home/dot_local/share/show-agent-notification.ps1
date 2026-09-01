@@ -6,8 +6,13 @@ $ErrorActionPreference = "Stop"
 
 # Windows attributes a toast to an Application User Model ID (AUMID). Without a registered
 # one it invents a per-process identity with an empty display name, so the banner cannot say
-# where it came from. scripts/bootstrap-windows.ps1 registers this AUMID by hand.
+# where it came from. scripts/bootstrap-windows.ps1 registers both AUMIDs below by hand.
+#
+# One script serves both clients, so the identity is chosen per notification: a banner raised
+# for a Codex session must not be attributed to Claude Code. The AUMID sets the name and icon
+# Windows draws in the header, which no property in the toast markup can override.
 $claudeCodeAumid = "Anthropic.ClaudeCode"
+$codexAumid = "OpenAI.Codex"
 
 # Every Windows install ships this AUMID for Windows PowerShell, so it always delivers. An
 # unregistered AUMID drops the toast silently, which is the failure this fallback prevents.
@@ -15,7 +20,9 @@ $fallbackAumid = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\
 
 # The Start Menu shortcut carrying System.AppUserModel.ID is what registers the custom AUMID,
 # so its presence is the registration test.
-$claudeCodeShortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Claude Code.lnk"
+$startMenuPrograms = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
+$claudeCodeShortcut = Join-Path $startMenuPrograms "Claude Code.lnk"
+$codexShortcut = Join-Path $startMenuPrograms "Codex.lnk"
 
 # The banner's icon is named by scripts/bootstrap-windows.ps1 on the AppUserModelId key, so
 # nothing about it belongs in the markup below. An appLogoOverride image was tried and removed:
@@ -111,7 +118,13 @@ try {
 # Windows offers for it all cost more than they return: see New-ToastXml. Being away from the
 # desk is the case this cannot serve at all, whatever the banner does, and that belongs to a
 # notification that reaches a phone rather than to a longer toast.
+# Codex sends no notification_type - it has no Notification event, only lifecycle ones - so
+# its SessionEnd is mapped to a type here. Without this the switch falls to default and the
+# toast is silently dropped, which is how the previous Codex hook failed unnoticed.
 $notificationType = [string]$payload.notification_type
+if (-not $notificationType -and [string]$payload.hook_event_name -eq "SessionEnd") {
+    $notificationType = "session_end"
+}
 switch ($notificationType) {
     "permission_prompt" {
         $title = "Claude needs permission"
@@ -142,6 +155,10 @@ switch ($notificationType) {
     "agent_completed" {
         $title = "Agent finished"
         $message = if ($payload.message) { [string]$payload.message } else { "A background agent finished its task." }
+    }
+    "session_end" {
+        $title = "Codex finished"
+        $message = "The Codex session ended."
     }
     default {
         exit 0
@@ -190,7 +207,17 @@ try {
     exit 1
 }
 
-$aumid = if (Test-Path -LiteralPath $claudeCodeShortcut) { $claudeCodeAumid } else { $fallbackAumid }
+# session_end is only ever raised by the Codex hook; every other type comes from Claude's
+# Notification event. An unregistered identity drops the toast silently, so each falls back to
+# the always-present Windows PowerShell identity rather than to the other client's.
+if ($notificationType -eq "session_end") {
+    $preferredAumid = $codexAumid
+    $preferredShortcut = $codexShortcut
+} else {
+    $preferredAumid = $claudeCodeAumid
+    $preferredShortcut = $claudeCodeShortcut
+}
+$aumid = if (Test-Path -LiteralPath $preferredShortcut) { $preferredAumid } else { $fallbackAumid }
 
 try {
     Show-Toast -Aumid $aumid -Xml (New-ToastXml -Aumid $aumid) -Tag (Get-ShortSessionId -Payload $payload)

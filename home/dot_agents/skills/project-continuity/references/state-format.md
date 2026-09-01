@@ -13,10 +13,6 @@ One or two sentences describing the tracked outcome.
 
 The phase another session should resume from.
 
-## Completed
-
-- Only verified work relevant to the current objective.
-
 ## In progress
 
 - Work that has started but is not verified complete.
@@ -39,21 +35,6 @@ The phase another session should resume from.
 
 - Decisions that continue to constrain implementation and would be costly to rediscover.
 
-## Relevant files
-
-- `path/to/file` - why it matters to the next session.
-
-## Candidate durable knowledge
-
-- Optional. Facts or rules that may deserve promotion to permanent/private project instructions, but have not been promoted yet.
-
-<!-- claude-compaction-recovery:start -->
-## Emergency recovery
-
-Temporary unverified Claude compact summary. This entire section, including its delimiter
-comments, is removed after the Resume workflow merges useful facts into normal state.
-<!-- claude-compaction-recovery:end -->
-
 ## Verification
 
 - Working tree: `<absolute path of this working directory>`
@@ -63,26 +44,34 @@ comments, is removed after the Resume workflow merges useful facts into normal s
 - Status: `<clean / modified / concise description>`
 - Last reconciled: `<ISO date/time when practical>`
 - Cleanup: `<omit normally; set to declined once the user has refused cleanup for this task>`
+- Parked: `<omit normally; set to the ISO date when this file is moved into parked/>`
 ```
 
 ## Maintenance rules
 
 - Treat the continuity file's existence as the marker that continuity is active here.
-- Treat `Emergency recovery` as a temporary exception to the normalized format. Reconcile it
-  immediately, merge only current facts, then remove it rather than preserving summary history.
 - `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
 - Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task. Update the recorded branch when reconciling the same task, never merely to silence a drift notice.
 - Record in `Status` whether a branch switch stashed or carried this task's uncommitted changes. Without that, a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
+- Write every section in English, quoting a foreign-language string verbatim only where its exact wording matters.
+- Rewrite the file whole at every checkpoint rather than editing one section. Two sections
+  disagreeing about the same item is the characteristic failure of this file, and patching
+  in place is what produces it.
 - Prefer current state over historical narrative.
 - Replace superseded information instead of keeping both versions.
 - Remove resolved blockers and completed TODOs from active sections.
-- Keep completed items only while they help explain the current objective or prevent rediscovery; prune them when they no longer help.
+- Record a completed step only inside `Current phase` or a decision that still constrains the work; there is no `Completed` section, because finished work belongs to Git.
 - Label assumptions and unverified claims explicitly.
-- Never use `Completed` for work that has not been checked against repository evidence.
 - Keep implementation details in the repository rather than copying large code snippets here.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
 - `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.
 - Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
+- A file in `parked/` keeps this same format. Add `Parked` and change nothing else; it is a
+  handoff that was set aside, not a summary of one.
+- Keep durable environment facts out of this file - a toolchain version, a shell workaround,
+  a local URL. They are not task state, they inflate the file, and a longer file is what
+  makes rewriting it whole feel expensive. They belong in the client's private project
+  instructions instead.
 - Do not store secrets or credentials.

@@ -9,59 +9,6 @@ Continuity does not try to remember everything. It minimizes the cost of suddenl
 
 Treat it as **where the work stopped and why**, not as project documentation, native client memory, or a transcript.
 
-## For humans
-
-**What it is.** One markdown file, `.project-continuity/state.md`, private to one working directory. Any of Claude Code, Codex or Copilot can read it and continue.
-
-**The move it exists for.**
-
-```text
-Claude working
-  → quota hits
-  → open Codex in the same worktree
-  → "Continue from project continuity"
-  → Codex reads state.md and checks Git
-  → continues
-```
-
-It picks up the objective, the blockers, and the reasoning behind decisions the diff alone cannot explain. The reverse, Codex to Claude, works the same way, as does either to Copilot.
-
-**The one rule that matters:** same interrupted task → reopen the same directory. New independent task → a new worktree, if isolation helps.
-
-Opening a *different* directory gives you a different working tree, without that one's uncommitted changes, untracked files, or continuity.
-
-**You do not need worktrees.** The repository's ordinary checkout is a working tree like any other, and continuity works there with no setup. Worktrees only matter when you want independent tasks side by side.
-
-**Where each answer comes from:**
-
-| Question | Preferred evidence |
-| --- | --- |
-| What do I want now? | Your current instruction |
-| What code actually exists? | The repository and Git |
-| Where did unfinished work stop, and why? | Reconciled continuity |
-| What rules always apply? | Project instructions |
-| What reusable client-specific knowledge exists? | That client's native memory |
-
-**What to expect:**
-
-| Situation | Behavior |
-| --- | --- |
-| Quick or self-contained task | No continuity |
-| Substantive work | Continuity enabled without asking each time |
-| A discovery or decision worth keeping | Checkpoint |
-| Client hits its limit | Open another client in the same directory |
-| New independent task | New worktree when isolation helps |
-| New task, same directory, old unfinished state | You are asked before it is replaced |
-| Task genuinely complete | Continuity deleted |
-
-Lost the directory? `git worktree list` shows every working tree of the repository. [references/worktree-handoff.md](references/worktree-handoff.md) covers switching clients in practice.
-
-**What it feels like.** Not conversation teleportation — the receiving client does not get the old conversation. On its first task turn in the same working tree, it detects the state, performs a short reconciliation against the diff, then keeps working. "Continue from project continuity" is still a useful explicit instruction, but should not be required when the global bootstrap loaded correctly. The goal is not re-explaining the task from scratch.
-
-The friction that remains is operational, not architectural: opening a different directory than the one that holds the state, a cutoff arriving before the last important reasoning was checkpointed, or a managed worktree being archived while still needed. [references/worktree-handoff.md](references/worktree-handoff.md) exists to reduce exactly those.
-
-**A caution about memory.** All three clients keep memory of their own, and it may hold stale claims about this task. Memory can inform reasoning, but continuity reconciled against Git is what establishes where the work actually stands.
-
 ## Operating principles
 
 1. Repository and Git reality are authoritative for what exists. Continuity is context and last-known state, never proof.
@@ -73,7 +20,7 @@ The friction that remains is operational, not architectural: opening a different
 7. Once enabled for a task, maintain it without asking permission to checkpoint again.
 8. Re-read before overwriting; another client may be in the same working tree.
 
-Read [references/state-format.md](references/state-format.md) when creating or restructuring the file, and [references/client-routing.md](references/client-routing.md) before promoting anything into private client-specific instructions.
+Read [references/state-format.md](references/state-format.md) when creating or restructuring the file.
 
 ## Supported clients
 
@@ -90,7 +37,7 @@ Continuity belongs to **one working directory**, and each working tree has at mo
 - The repository's primary checkout is a working tree. Continuity does not require creating a worktree.
 - The same working tree is reused over time: finish task 1, clean up, start task 2 there.
 - Same repository does not imply same continuity. Neither does same branch.
-- **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, use a separate worktree.
+- **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, park one of them, or use a separate worktree when they also need separate uncommitted changes.
 - **A branch switch is not a reconciliation trigger.** Claude's Stop hook reports a recorded branch that no longer matches the checkout, and that report is a warning not to merge rather than an instruction to update. Do not fold the new branch's work into state describing the old task, and do not rewrite the recorded branch just to silence the notice. Reconcile only once the task is established to be the same one. Do not key state files by branch name to avoid this decision either: a detached HEAD has no branch to key on, which is how the Codex app runs its managed worktrees, and uncommitted work belongs to the directory rather than to any branch.
 - **Uncommitted work does not follow a branch.** If a branch switch stashed or carried the task's changes, record that in `Status`; otherwise a later reconciliation sees a clean tree and may conclude the work was finished or lost.
 - A new worktree starts with no continuity and must not inherit another task's state. Claude Code and the Codex app both read `.worktreeinclude` at the repository root to decide which ignored files to copy into a new worktree, so a pattern there matching `.project-continuity/` would leak one task's state into every new worktree of both clients. Never add one.
@@ -107,9 +54,13 @@ Whoever created the directory, any supported client can work in it.
 
 Enable continuity when losing the conversation now would cost materially more than re-reading the diff: substantive implementation, multi-file changes, investigation that produced real findings, refactors, migrations, architectural work, or unresolved dependencies.
 
+**Wait for material state before creating the file.** Discussion, questions, options being weighed and a plan still being negotiated are not yet expensive to lose — the user holds that context too, and writing state during them produces a file describing a task nobody has started. Create it at the first point where the work itself becomes the record: implementation begins, a change spans several files, an investigation turns up something non-obvious, a decision is made that constrains what follows, or a dependency is left unresolved. This is later activation, not optional activation — once that point is reached, create it without asking.
+
+Reassess when a small task grows into one of those, and always use continuity for an explicit handoff, an explicit resume, or recovery after compaction, whatever stage the work is at.
+
 Do not enable it for explanation-only questions, small self-contained edits, formatting, or work that is obvious from the diff.
 
-The presence of `.project-continuity/state.md` means continuity is already active — resume it without asking to opt in again. When the file is absent and the work qualifies, create it and say so rather than interrogating the user first. Ask only when it is genuinely unclear whether the work qualifies.
+The presence of `.project-continuity/state.md` means continuity is already active — resume it without asking to opt in again, once you have confirmed it tracks the current task. When the file is absent and the work qualifies, create it and say so rather than interrogating the user first. Ask only when it is genuinely unclear whether the work qualifies.
 
 This skill cannot bootstrap its own discovery. The user's always-on instructions carry a small rule that checks for the file and invokes this skill by name, with `~/.agents/skills/project-continuity/SKILL.md` as an explicit fallback path when name resolution fails.
 
@@ -122,6 +73,14 @@ Continuity always lives at one canonical path, relative to the working tree root
 ```
 
 The directory belongs to this workflow. Never put anything else in it.
+
+**Always write the file in English.** It is working state handed between agent sessions and
+clients, not a project artifact, so neither a repository's comment-language convention nor the
+language of the current conversation reaches it. A reconciling session should never have to
+translate before it can establish where the work stopped. This does not change the language of
+your replies, and it does not apply to quoted material: keep an error message, a UI string, or a
+user's own wording verbatim when the exact text matters, and write the surrounding state in
+English.
 
 In a Git repository, ensure it is ignored before relying on it as private:
 
@@ -138,35 +97,18 @@ Never store secrets, credentials, personal data unrelated to the work, or large 
 
 ## Resume
 
-1. Read continuity.
-2. Confirm it plausibly belongs to the current task and working tree, using its objective and recorded starting point. If it clearly belongs to another task, follow the wrong-task rules instead of merging.
-3. Inspect enough repository state to establish reality: branch and HEAD, working-tree status and diffs, the files continuity names, and tests or build output when a claim depends on them.
-4. Reconcile — correct claims that are no longer true, drop resolved blockers and completed TODOs, replace superseded decisions, absorb work done after the last checkpoint, and deduplicate.
-5. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
-6. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
+Step 1 is a gate, not a formality. Everything after it assumes the answer was yes.
+
+1. **Read the `Objective` and `Started from`, and decide whether this state tracks the task you
+   were just asked to do.** If it does not, stop here and follow the wrong-task rules below.
+   Do not reconcile first and decide afterwards: reconciling rewrites the file to match what you
+   are doing now, which is exactly how another task's handoff state gets destroyed.
+2. Inspect enough repository state to establish reality: branch and HEAD, working-tree status and diffs, the files continuity names, and tests or build output when a claim depends on them.
+3. Reconcile — correct claims that are no longer true, drop resolved blockers and completed TODOs, replace superseded decisions, absorb work done after the last checkpoint, and deduplicate.
+4. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
+5. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
 
 Where repository evidence and continuity disagree, the repository wins and continuity is corrected. Where the user's current instruction and continuity disagree about intent, the user wins.
-
-### Claude compaction recovery
-
-Claude Code may add a temporary `## Emergency recovery` section delimited by
-`claude-compaction-recovery` comments. This is a deterministic lifecycle backstop, not normal
-continuity state and not verified truth.
-
-When the section is present:
-
-1. Perform the ordinary Resume workflow immediately.
-2. Treat the compact summary as unverified evidence. Resolve its objective, progress, decisions,
-   blockers and next action against Git and the current user instruction.
-3. Merge only useful, current facts into the normal sections. Replace an automatically created
-   generic objective and phase when the real task can be established.
-4. Remove the complete emergency section and both delimiter comments in the same checkpoint.
-5. Continue the first genuinely unfinished action. Do not leave the raw compact summary in state
-   after it has been absorbed.
-
-If the summary is insufficient, preserve only the uncertainty that matters and inspect the
-repository; do not invent missing conversation context. Claude's bounded Stop hook may request
-this reconciliation once, but the skill owns the result and another client can reconcile it too.
 
 ## Wrong-task continuity
 
@@ -176,7 +118,26 @@ When the existing state clearly belongs to a different task, never merge it into
 - If it still represents useful unfinished work, preserve it and ask before replacing. The test is whether replacing would destroy recoverable handoff state, not whether the new request is ambiguous — a user saying "forget that for now, fix the navbar" may be switching tasks temporarily, not abandoning the old one.
 - If the user says to abandon the previous task, replace it.
 
-Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable, a separate worktree is the answer.
+Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable in the same directory, park the first one.
+
+## Parking a second task
+
+A worktree is the right answer when two tasks need separate working trees — separate uncommitted changes, separate HEAD. It is the wrong answer when they do not, and it is unavailable in a repository whose own instructions forbid worktrees. Parking covers that case:
+
+```text
+.project-continuity/
+  state.md                 the active task
+  parked/<short-slug>.md   tasks set aside, same format, not active
+```
+
+- **Park:** move `state.md` to `parked/<short-slug>.md`, where the slug comes from the objective. Add `Parked: <ISO date>` to its Verification block and change nothing else — a parked file is a handoff, not a summary.
+- **Resume:** move it back to `state.md`, then run the ordinary Resume workflow against it. Park whatever was active first; there is never more than one `state.md`.
+- **List:** read the directory. There is no index to maintain and nothing to keep in sync.
+- **Close:** delete the file when its task is done. Parked state is not an archive, and a finished task leaves nothing behind here — Git history and the pull request are where a decision's reasoning belongs.
+
+Park when the user turns to something substantial while unfinished state is still useful, and say that you did. Do not park to avoid asking: if the new request is small, answer it and leave `state.md` alone. If the old task is genuinely abandoned, replace it rather than parking it, so the directory does not fill with work nobody will return to.
+
+The Git exclude entry is `/.project-continuity/`, so it already covers `parked/`. The Stop hook only reads `state.md`, so parked tasks raise no drift or cleanup notices.
 
 ## Checkpoint
 
@@ -204,7 +165,7 @@ When checkpointing:
 
 1. Re-read the file immediately before writing and compare it with what was loaded earlier. Merge automatically when changes are clearly non-conflicting; ask only on a real contradiction. Never overwrite a version that was not just re-read.
 2. Reconcile against current repository and Git state.
-3. Merge and normalize — never append a diary entry.
+3. **Write the file whole. Never patch a section in place.** A targeted edit updates the part you were thinking about and silently leaves every other section asserting what it asserted before, which is how a state file ends up contradicting itself: one section still calling work outstanding that a later section records as done, a superseded conclusion nobody removed, a `not verified` line the user has since falsified. Rewriting forces you to re-affirm every claim, and the file is capped at about 120 lines precisely so that stays cheap. Never append a diary entry either.
 4. Remove stale, resolved, duplicated, or superseded entries.
 5. Keep it under about 120 lines; compact it by dropping resolved history and detail the repository already holds.
 6. If the work is complete and nothing continuity-worthy remains, do not invent a next action — say continuity looks unnecessary and offer cleanup.
@@ -225,7 +186,9 @@ for a checkpoint to raise it, and do not treat a quiet final turn as a reason to
 
 1. Reconcile once more and verify no unfinished work, blocker, deferred item, or useful handoff state remains.
 2. If something belongs in durable documentation or private instructions, say so before deleting; never promote it silently.
-3. Delete `.project-continuity/`.
+3. Delete `state.md`. Remove the whole `.project-continuity/` directory only when `parked/`
+   is empty or absent; a parked task is somebody's unfinished work, and cleaning up the task
+   in front of you is not a reason to discard it. If parked files remain, say which.
 4. Leave the Git exclude entry. It is one anchored line covering every working tree of the repository, so removing it would strip protection from the others.
 5. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native memory, or unrelated files as part of cleanup.
 6. Say what was removed.
@@ -241,10 +204,17 @@ created worktrees in place.
 
 - **Transient unfinished work** → continuity.
 - **Durable project or team rule** → shared project instructions or documentation, but only when the user asks to make it durable.
-- **Durable private personal instruction** → the client's private mechanism, only when asked; see [references/client-routing.md](references/client-routing.md).
+- **Durable private personal instruction** → the client's private mechanism, only when asked:
+  `CLAUDE.local.md` for Claude Code, `AGENTS.override.md` for Codex. Two cautions before writing
+  either. Codex reads `AGENTS.override.md` *instead of* its sibling `AGENTS.md` rather than in
+  addition to it, so creating one beside a committed `AGENTS.md` silences that file for every
+  Codex session with no warning. And Copilot has no private project-scoped equivalent at all —
+  its repository instructions are tracked and shared, and `~/.copilot/instructions/` applies to
+  every repository — so say the gap exists rather than inventing a filename or falling back to
+  another client's mechanism.
 - **Client-learned preference** → leave to that client's native memory.
 
-Routine continuity work must not modify `CLAUDE.local.md` or `AGENTS.override.md`. If a discovery looks worth promoting but the user has not asked, record a short `Candidate durable knowledge` item instead of editing instruction files.
+Routine continuity work must not modify `CLAUDE.local.md` or `AGENTS.override.md`. If a discovery looks worth promoting but the user has not asked, say so in your reply instead of editing instruction files.
 
 ## Failure and ambiguity
 

@@ -80,7 +80,9 @@ Continuity works in any Git worktree; it does not depend on this wrapper. A cros
 handoff does depend on both clients opening the same physical working-tree directory. After
 creating a worktree, `git wt-add` prints the exact path and the suggested continuation prompt
 as a non-blocking reminder. It also reminds you to use a separate worktree for another
-unfinished task.
+unfinished task — which is the right answer when the two tasks need separate uncommitted
+changes, and unnecessary when they do not. For a second task in the same directory, the
+`project-continuity` skill parks the first under `.project-continuity/parked/` instead.
 
 The wrapper options are:
 
@@ -178,6 +180,26 @@ Cleanup splits the same way. `ExitWorktree` declines to remove a worktree that w
 path, and Claude's periodic sweep leaves every worktree it did not create alone, so the skill
 exits with `keep` and then runs `git worktree remove` from the main checkout — never with
 `--force`, so git's own refusal on uncommitted or untracked files remains the safety net.
+
+That sweep protection requires **Claude Code v2.1.246 or later**, which is when the sweep began
+checking for the marker Claude Code writes into the git metadata of worktrees it creates. Before
+that version the sweep could remove a worktree created with `git worktree add` when a stale
+background-session record pointed at its path — a collision this workflow makes more reachable,
+because it deliberately reuses Claude's own `.claude/worktrees/<name>` naming.
+
+The exposure is narrow but not theoretical, and it needs every one of these at once:
+
+- a stale background-session record pointing at that path, most likely from an earlier
+  `claude --worktree <slug>` session that was backgrounded under the same slug;
+- a worktree that looks empty to the sweep. This is the sharp edge: the sweep spares changed or
+  untracked files and unpushed commits, but `.project-continuity/`, `.env` and `node_modules` are
+  all ignored, so a `cleanup=keep` worktree whose commits are already pushed looks like nothing
+  would be lost;
+- an age past [`cleanupPeriodDays`](https://code.claude.com/docs/en/settings-reference), which
+  defaults to 30 days and this repository does not set.
+
+On an older version, `git worktree lock` on a worktree being kept for review is the reliable
+guard, since the sweep never releases a lock set by hand.
 
 Removing a worktree is not retiring a branch. `git worktree remove` deletes no refs, and the
 skill deletes none either: the task branch stays for the open request, its reviews and its CI.

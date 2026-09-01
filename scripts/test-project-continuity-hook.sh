@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repository_root="$(git rev-parse --show-toplevel)"
-lifecycle_hook="$repository_root/home/dot_claude/hooks/maintain-project-continuity.sh"
+lifecycle_hook="$repository_root/home/dot_local/share/maintain-project-continuity.sh"
 session_start_hook="$repository_root/home/dot_claude/hooks/check-worktree-launch.sh"
 fixture="$(mktemp -d)"
 
@@ -25,62 +25,72 @@ git -C "$fixture" commit -qm initial
 session_id="continuity-hook-test-$$"
 state_file="$fixture/.project-continuity/state.md"
 
-printf 'not-json' | bash "$lifecycle_hook"
+# SessionStart reporting lives in the lifecycle hook, not in any one client's launch hook, so
+# that Codex gets it too. It must name the tracked objective: the same-task decision is what
+# stops an unrelated request overwriting an unfinished task's handoff state.
+mkdir -p "$fixture/.project-continuity"
+printf '# Project Continuity\n\n## Objective\n\nRepair the invoice export so totals match\nthe ledger for partial refunds.\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+session_start() {
+  jq -cn --arg sid "$session_id" --arg cwd "$fixture" --arg src "$1" \
+    '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:$src}' \
+    | bash "$lifecycle_hook" | jq -r '.hookSpecificOutput.additionalContext // ""'
+}
 
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PreCompact",trigger:"auto",custom_instructions:""}' \
-  | bash "$lifecycle_hook"
-
-test -f "$state_file"
+active_output="$(session_start compact)"
+case "$active_output" in
+  *"Project continuity is active"*) ;;
+  *) printf 'expected the active notice, got: %s\n' "$active_output" >&2; exit 1 ;;
+esac
+# The whole first paragraph, joined onto one line - not just its first line.
+case "$active_output" in
+  *"Repair the invoice export so totals match the ledger for partial refunds."*) ;;
+  *) printf 'the objective must be named in full, got: %s\n' "$active_output" >&2; exit 1 ;;
+esac
+# Continuity existing is what makes the exclude entry appear.
 git -C "$fixture" check-ignore -q .project-continuity/state.md
-grep -q 'Emergency recovery state was created automatically' "$state_file"
 
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  --arg summary $'Implemented one part.\nNext: verify the bridge.' \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PostCompact",trigger:"auto",compact_summary:$summary}' \
-  | bash "$lifecycle_hook"
+# With no Objective section there is nothing to name, so the plain notice is used.
+printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
+case "$(session_start startup)" in
+  *"tracks this objective"*) printf 'must not claim an objective when there is none\n' >&2; exit 1 ;;
+  *"Project continuity is active"*) ;;
+  *) printf 'expected the plain active notice\n' >&2; exit 1 ;;
+esac
 
-grep -qxF '<!-- claude-compaction-recovery:start -->' "$state_file"
-grep -q '> Next: verify the bridge.' "$state_file"
+# No continuity at all: the activation reminder, and a distinct one after compaction.
+rm -f "$state_file"
+case "$(session_start startup)" in
+  *"Project continuity is not active"*) ;;
+  *) printf 'expected the activation reminder\n' >&2; exit 1 ;;
+esac
+case "$(session_start compact)" in
+  *"compacted without active project continuity"*) ;;
+  *) printf 'expected the post-compaction reminder\n' >&2; exit 1 ;;
+esac
 
-# A later compact replaces temporary recovery context without losing normalized state.
-printf '\n## Decisions still in force\n\n- Preserve this authored fact.\n' >> "$state_file"
-jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-  --arg summary 'Replacement compact summary.' \
-  '{session_id:$sid,cwd:$cwd,hook_event_name:"PostCompact",trigger:"manual",compact_summary:$summary}' \
-  | bash "$lifecycle_hook"
+# The Claude-only launch hook must no longer say anything about continuity.
+launch_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"startup"}' \
+  | bash "$session_start_hook" || true)"
+case "$launch_output" in
+  *continuity*) printf 'continuity reporting must not be in the launch hook: %s\n' "$launch_output" >&2; exit 1 ;;
+esac
 
-test "$(grep -cFx '<!-- claude-compaction-recovery:start -->' "$state_file")" -eq 1
-grep -q '> Replacement compact summary.' "$state_file"
-grep -q -- '- Preserve this authored fact.' "$state_file"
+printf '# Project Continuity\n\n## Next actions\n\n1. Keep the task open.\n' > "$state_file"
 
-session_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"SessionStart",source:"compact"}' \
-    | bash "$session_start_hook"
-})"
-printf '%s' "$session_output" \
-  | jq -e '.hookSpecificOutput.additionalContext | contains("Claude compaction recovery is pending")' \
-  >/dev/null
-
-stop_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
-    | bash "$lifecycle_hook"
-})"
-printf '%s' "$stop_output" | jq -e '.decision == "block"' >/dev/null
-
-second_stop_output="$({
-  jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
-    '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:true}' \
-    | bash "$lifecycle_hook"
-})"
-test -z "$second_stop_output"
+# Nothing blocks a Stop any more; the hook only ever reports.
+stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
+  | bash "$lifecycle_hook")"
+if printf '%s' "$stop_output" | jq -e 'has("decision")' >/dev/null 2>&1; then
+  printf 'Stop must never block\n' >&2
+  exit 1
+fi
 
 printf 'project continuity hook lifecycle OK\n'
 
 # --- Drift notices and the cleanup offer -------------------------------------------------------
-# No marker remains, so Stop takes the notice path rather than the compaction-recovery path.
+# Stop only ever reports; these exercise the two notices it can produce.
 fixture_branch="$(git -C "$fixture" branch --show-current)"
 fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
 
@@ -115,17 +125,50 @@ notice_message() {
   printf '%s' "$1" | jq -r '.systemMessage // ""'
 }
 
-# A moved HEAD is ordinary progress: the recorded commit is stale and should be refreshed.
+# A recorded commit that has left this history is real drift - rebased, reset, or state belonging
+# to another line of work - and the recorded starting point can no longer be trusted.
 write_state "$fixture_branch" deadbee
 append_section 'Next actions' '1. Keep the task open.'
 head_message="$(notice_message "$(stop_notice)")"
 case "$head_message" in
-  *"is out of date"*"Reconcile"*) ;;
-  *) printf 'expected HEAD-drift reconcile notice, got: %s\n' "$head_message" >&2; exit 1 ;;
+  *"is out of date"*"no longer in this history"*) ;;
+  *) printf 'expected HEAD-drift notice, got: %s\n' "$head_message" >&2; exit 1 ;;
 esac
 case "$head_message" in
   *"not by itself a new task"*)
     printf 'HEAD drift must not emit the branch-switch warning\n' >&2; exit 1 ;;
+esac
+
+# One commit ahead of the last checkpoint is work in flight, so the notice stays silent -
+# otherwise it fires after every commit and the reader learns to ignore it.
+one_behind_head="$(git -C "$fixture" rev-parse --short HEAD)"
+printf 'advance\n' >> "$fixture/tracked.txt"
+git -C "$fixture" add tracked.txt
+git -C "$fixture" commit -qm 'advance HEAD once'
+write_state "$fixture_branch" "$one_behind_head"
+append_section 'Next actions' '1. Keep the task open.'
+if [[ -n "$(stop_notice)" ]]; then
+  printf 'one commit ahead is work in flight, not drift: %s\n' "$(notice_message "$(stop_notice)")" >&2
+  exit 1
+fi
+
+# Two or more means a checkpoint opportunity passed without the file being rewritten, which is
+# when its claims start being overtaken. That is worth saying, and it says rewrite rather than
+# patch, because the claims that go stale are the ones nobody was thinking about.
+printf 'advance\n' >> "$fixture/tracked.txt"
+git -C "$fixture" add tracked.txt
+git -C "$fixture" commit -qm 'advance HEAD twice'
+fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
+write_state "$fixture_branch" "$one_behind_head"
+append_section 'Next actions' '1. Keep the task open.'
+behind_message="$(notice_message "$(stop_notice)")"
+case "$behind_message" in
+  *"behind the work"*"last reconciled 2 commits ago"*"Rewrite"*"whole"*) ;;
+  *) printf 'expected the behind-the-work notice, got: %s\n' "$behind_message" >&2; exit 1 ;;
+esac
+case "$behind_message" in
+  *"no longer in this history"*)
+    printf 'a commit that is still an ancestor must not read as lost history\n' >&2; exit 1 ;;
 esac
 
 # A different branch may mean a different task, so the notice must warn against merging rather
@@ -134,7 +177,7 @@ write_state some-other-branch "$fixture_head"
 append_section 'Next actions' '1. Keep the task open.'
 branch_message="$(notice_message "$(stop_notice)")"
 case "$branch_message" in
-  *"not by itself a new task"*"separate worktree"*) ;;
+  *"not by itself a new task"*"park it instead"*) ;;
   *) printf 'expected branch-switch warning, got: %s\n' "$branch_message" >&2; exit 1 ;;
 esac
 case "$branch_message" in
@@ -161,7 +204,7 @@ git -C "$fixture" checkout -q "$fixture_branch"
 
 # A state file with no unfinished work anywhere should raise the cleanup offer.
 write_state "$fixture_branch" "$fixture_head"
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 cleanup_message="$(notice_message "$(stop_notice)")"
 case "$cleanup_message" in
   *"records no unfinished work"*"offer cleanup"*) ;;
@@ -188,19 +231,14 @@ done
 
 # A declined offer is not raised again for the rest of the task.
 write_state "$fixture_branch" "$fixture_head" '- Cleanup: `declined`'
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 test -z "$(stop_notice)"
 
 # Drift outranks the cleanup offer, because one response carries one system message and wrong
 # recorded state misleads the next reader more than an unretired file does.
 write_state "$fixture_branch" deadbee
-append_section 'Completed' '- Verified work only.'
+append_section 'Decisions still in force' '- A decision that still binds.'
 notice_message "$(stop_notice)" | grep -q 'is out of date'
-
-# An unreconciled emergency section always has work to do, so no cleanup offer.
-write_state "$fixture_branch" "$fixture_head"
-printf '\n<!-- claude-compaction-recovery:start -->\n## Emergency recovery\n\n> summary\n<!-- claude-compaction-recovery:end -->\n' >> "$state_file"
-test -z "$(stop_notice)"
 
 # With no Verification block there is nothing to compare against, so drift stays silent -
 # but the file still records no unfinished work, so the cleanup offer is the right notice.

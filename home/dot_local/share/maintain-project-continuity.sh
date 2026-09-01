@@ -72,9 +72,17 @@ report_stale_verification() {
   actual_head="$(git -C "$directory" rev-parse --short HEAD 2>/dev/null || true)"
   actual_branch="$(git -C "$directory" branch --show-current 2>/dev/null || true)"
 
+  # A moved HEAD is only worth reporting once the recorded commit has left this history.
+  # Committing moves HEAD constantly, and on the ordinary path the recorded commit is simply an
+  # ancestor of the new one - that is progress, not drift, and a notice after every commit only
+  # trains the reader to ignore it. `merge-base --is-ancestor` also fails when the recorded
+  # commit no longer resolves at all, which is exactly the case worth reporting: a rebase, a
+  # reset, or state belonging to a different line of work.
   if [[ -n "$recorded_head" && "$recorded_head" != "unknown" && -n "$actual_head" \
-        && "$recorded_head" != "$actual_head" ]]; then
-    head_drift="continuity records HEAD $recorded_head, but HEAD is $actual_head"
+        && "$recorded_head" != "$actual_head" ]] \
+     && ! git -C "$directory" merge-base --is-ancestor "$recorded_head" HEAD 2>/dev/null; then
+    head_drift="continuity records HEAD $recorded_head, which is no longer in this history"
+    head_drift="$head_drift (HEAD is $actual_head)"
   fi
   # An empty actual_branch means a detached HEAD, which is how the Codex app runs its managed
   # worktrees. That is not branch drift, so the -n guard keeps it out of the warning below.
@@ -87,8 +95,8 @@ report_stale_verification() {
     return 0
   fi
 
-  # The two kinds of drift call for opposite actions, so they must not share one message. A moved
-  # HEAD means the recorded commit is merely stale and should be refreshed at the next checkpoint.
+  # The two kinds of drift call for opposite actions, so they must not share one message. A HEAD
+  # that has left the history means the recorded starting point can no longer be trusted at all.
   # A different branch may mean a different task, and there the damaging move is folding the new
   # branch's work into state that belongs to the old one - so that message says leave it alone.
   if [[ -n "$branch_drift" ]]; then
@@ -104,8 +112,10 @@ report_stale_verification() {
     fi
   else
     message="Project continuity is out of date: $head_drift."
-    message="$message Reconcile .project-continuity/state.md against Git before the next"
-    message="$message checkpoint, and prune anything in it that the repository can already answer."
+    message="$message The branch may have been rebased or reset, or this state may belong to a"
+    message="$message different line of work. Establish which before trusting what it records,"
+    message="$message then reconcile .project-continuity/state.md against Git and prune anything"
+    message="$message in it that the repository can already answer."
   fi
 
   jq -cn --arg message "$message" '{systemMessage:$message}'

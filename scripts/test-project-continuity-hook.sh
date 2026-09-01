@@ -125,18 +125,34 @@ notice_message() {
   printf '%s' "$1" | jq -r '.systemMessage // ""'
 }
 
-# A moved HEAD is ordinary progress: the recorded commit is stale and should be refreshed.
+# A recorded commit that has left this history is real drift - rebased, reset, or state belonging
+# to another line of work - and the recorded starting point can no longer be trusted.
 write_state "$fixture_branch" deadbee
 append_section 'Next actions' '1. Keep the task open.'
 head_message="$(notice_message "$(stop_notice)")"
 case "$head_message" in
-  *"is out of date"*"Reconcile"*) ;;
-  *) printf 'expected HEAD-drift reconcile notice, got: %s\n' "$head_message" >&2; exit 1 ;;
+  *"is out of date"*"no longer in this history"*) ;;
+  *) printf 'expected HEAD-drift notice, got: %s\n' "$head_message" >&2; exit 1 ;;
 esac
 case "$head_message" in
   *"not by itself a new task"*)
     printf 'HEAD drift must not emit the branch-switch warning\n' >&2; exit 1 ;;
 esac
+
+# Committing moves HEAD every time, leaving the recorded commit an ancestor of the new one. That
+# is ordinary progress rather than drift, so the notice must stay silent - otherwise it fires
+# after every commit and the reader learns to ignore it.
+previous_head="$(git -C "$fixture" rev-parse --short HEAD)"
+printf 'advance\n' >> "$fixture/tracked.txt"
+git -C "$fixture" add tracked.txt
+git -C "$fixture" commit -qm 'advance HEAD'
+fixture_head="$(git -C "$fixture" rev-parse --short HEAD)"
+write_state "$fixture_branch" "$previous_head"
+append_section 'Next actions' '1. Keep the task open.'
+if [[ -n "$(stop_notice)" ]]; then
+  printf 'an ancestor commit is progress, not drift: %s\n' "$(notice_message "$(stop_notice)")" >&2
+  exit 1
+fi
 
 # A different branch may mean a different task, so the notice must warn against merging rather
 # than ask for reconciliation - that is the case that used to corrupt the previous task's state.

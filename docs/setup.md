@@ -330,8 +330,11 @@ skill cannot do for itself. On `SessionStart` it reports whether continuity exis
 does, names the objective it tracks, so the decision about whether this is the same task is made
 against a shown fact rather than from recall; it also ensures `.project-continuity/` is excluded
 from Git. On `Stop` it compares the recorded branch and HEAD against the checkout and reports
-drift, and it offers cleanup once every tracking section is empty. The script never reads or
-copies the transcript.
+drift, and it offers cleanup once every tracking section is empty. A HEAD that merely moved
+forward is not drift - the recorded commit is then an ancestor of the new one, which is what
+every commit does - so only a recorded commit that has left the history is reported, meaning a
+rebase, a reset, or state belonging to another line of work. The script never reads or copies
+the transcript.
 
 It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
 run it**. They share hook event names, stdin fields (`cwd`, `hook_event_name`, `session_id`,

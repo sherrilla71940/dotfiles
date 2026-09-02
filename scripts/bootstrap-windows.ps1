@@ -83,15 +83,25 @@ if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     $manifest = Join-Path $repo "scripts\vscode-extensions.txt"
     if (Test-Path $manifest) {
         Write-Host "installing VS Code extensions from the manifest..."
-        $failed = 0
+        $failed = @()
         Get-Content $manifest | ForEach-Object { $_.Trim() } |
             Where-Object { $_ -and -not $_.StartsWith("#") } |
             ForEach-Object {
-                code --install-extension $_ --force 2>$null | Out-Null
-                if ($LASTEXITCODE -ne 0) { $failed++ }
+                # Windows PowerShell 5.1 promotes native stderr to an error record before
+                # redirection. VS Code can emit a deprecation warning while still succeeding,
+                # so let the native exit code decide whether this installation failed.
+                $savedErrorActionPreference = $ErrorActionPreference
+                try {
+                    $ErrorActionPreference = "Continue"
+                    code --install-extension $_ --force 2>$null | Out-Null
+                    $extensionInstallExitCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $savedErrorActionPreference
+                }
+                if ($extensionInstallExitCode -ne 0) { $failed += $_ }
             }
-        if ($failed -gt 0) {
-            Write-Warning "$failed VS Code extensions failed. Rerun the manifest command from docs/setup.md."
+        if ($failed.Count -gt 0) {
+            Write-Warning "$($failed.Count) VS Code extensions failed: $($failed -join ', '). Rerun the manifest command from docs/setup.md."
         }
     }
 }

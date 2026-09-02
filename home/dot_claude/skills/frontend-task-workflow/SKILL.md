@@ -100,8 +100,14 @@ shell's inherited working directory before a command runs, which means a `cd` th
 left the worktree cannot be undone from the shell: every later call is refused, `pwd` and
 `git -C "<worktree>"` among them, and so is the corrective `cd "<worktree>"`, whose only effect
 would have been to satisfy the guard. The message names the worktree to re-run from while making
-it unreachable. Reaching that state takes one command — the guard permits the call that leaves
-the worktree and refuses everything after it — which is why the working-directory rule in
+it unreachable.
+
+Do not rely on the guard to keep you out of that state. Tested on 2026-09-02, it refuses a `cd`
+into the main checkout before a *git* command, but permits the same `cd` before a non-git one, so
+an ordinary search walks straight through. Whether the escape then sticks to the shell varied
+within the same session: it stuck when the command piped its output and did not when it ran bare,
+which is reason to treat every escape as capable of ending the session rather than to look for a
+safe spelling. That is why the working-directory rule in
 [references/lifecycle.md](references/lifecycle.md) covers read-only commands too.
 
 Recover with `ExitWorktree` and `action: "keep"`. It returns the session to the main checkout and

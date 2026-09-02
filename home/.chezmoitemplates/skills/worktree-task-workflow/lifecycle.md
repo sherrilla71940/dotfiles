@@ -37,12 +37,21 @@ ones are needed to run the manual test. Resolve a real gap with `git wt-copy` fr
 that has them, or name exactly what the user must place and where. A skip that genuinely does
 not matter, because the settings the app reads are tracked, is worth one sentence saying so.
 
-Settle which of those it is rather than passing the warning along: `git status --ignored` lists
-what the repository actually keeps locally, and a repository whose only ignored files are agent
-state, build output and data directories had nothing to copy. When one is warranted, authoring it
-is a separate task for the `worktree-manifest` skill rather than a fix to fold in here, because
-the manifest is tracked at the repository root and would otherwise reach the base branch through
-this task's request.
+Settle which of those it is rather than passing the warning along, and run `git status --ignored`
+in the source worktree or main checkout to do it — that tree has been used and so holds the ignored
+files, while the same command in the freshly created worktree lists nothing by construction and
+reads as evidence it has not earned.
+
+What that listing shows answers only one of two questions. Whether anything needs provisioning for
+the app to build and run here is settled by building and running it, not by classifying filenames:
+a dependency directory is regenerable in principle yet still required in practice, as a
+`packages.config` .NET project's ignored `packages/` is when no restore path exists to rebuild it.
+Resolve that with a dependency restore where one works, otherwise by copying the directory from the
+source worktree. Whether anything belongs in the tracked `.worktreeinclude` is the separate
+question — regenerable dependency and build output does not, local configuration that cannot be
+regenerated does — and authoring the manifest remains a task for the `worktree-manifest` skill
+rather than a fix to fold in here, because it is tracked at the repository root and would otherwise
+reach the base branch through this task's request.
 
 When the manual test needs a running app, start it and request one real route before writing
 the steps. A fresh worktree can fail at startup for reasons the build output does not reveal:

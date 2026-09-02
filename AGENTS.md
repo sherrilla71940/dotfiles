@@ -106,6 +106,14 @@ git commit --only -m "<message>" -- <path>...   # commits exactly these paths
 The pre-commit hook lists every staged path on each commit so a mixed one is visible as it
 happens; `--only` is what stops it happening.
 
+For the same reason, **never `git commit --amend` here, and never rewrite history**. `--only`
+protects what a commit contains but not which commit it targets: amend rewrites whatever HEAD is
+at that instant, and in a shared tree HEAD moves whenever another session commits. That has
+already happened. An amend correcting a typo in its own message instead rewrote the commit a
+concurrent session had just made, and replaced that session's message with this one's. A wrong
+word in a commit message is cheap; fix it in a follow-up commit, or wait until the tree is
+certainly yours alone.
+
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish

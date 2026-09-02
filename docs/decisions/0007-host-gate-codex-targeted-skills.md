@@ -20,7 +20,7 @@ read it natively, so a skill placed there for Codex alone is visible to Copilot 
 has the path-scoped version. Directory placement cannot isolate it.
 
 A second case is a workflow whose contract is shared but whose execution adapter is inherently
-host-specific. Claude Code and Codex can each support `frontend-task-workflow`, but Claude uses
+host-specific. Claude Code and Codex can each support `worktree-task-workflow`, but Claude uses
 `EnterWorktree` and `ExitWorktree` while Codex uses an already-associated worktree and app-owned
 Handoff and retention. One supposedly portable skill would either contain misleading tool names
 or make every host load instructions for the other. Copilot does not support this workflow here.
@@ -67,8 +67,11 @@ Isolation depends on five separate conditions rather than a directory, so it is 
 partly right. That is why the hook checks it and why the procedure is written out in
 [docs/customization-support.md](../customization-support.md#add-a-codex-targeted-skill).
 
-`frontend-task-workflow` is the first skill gated this way. Its Codex adapter lives under
-`home/dot_agents/skills/`, while its Claude adapter remains under `home/dot_claude/skills/`.
+`worktree-task-workflow` is the first skill gated this way; it was named
+`frontend-task-workflow` until 2026-09-02, when it was renamed because nothing in it is
+frontend-specific and the worktree precondition is what both adapters actually share.
+Its Codex adapter lives under `home/dot_agents/skills/`, while its Claude adapter remains
+under `home/dot_claude/skills/`.
 Their invocation, implementation, manual-test and publishing rules come from shared template
 bodies; their worktree entry and cleanup mechanics remain host-specific.
 

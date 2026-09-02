@@ -19,7 +19,9 @@ Read its `Objective` first and decide whether it describes the task you were jus
 replaced without asking** — reconciling is how you update the state of the task it already
 tracks, not how you take the file over for a new one. If the task matches, use the
 `project-continuity` skill and reconcile before substantive work. If it does not, answer the
-new request without touching that file, and say it is still parked there. If the file is absent
+new request without touching that file, and report that it still tracks a different unfinished
+task. Say `parked` only if you actually parked it — parking is a deliberate move into
+`.project-continuity/parked/`, not a word for state you merely left alone. If the file is absent
 and losing the conversation would cost materially more than re-reading the diff, use the skill
 and initialize continuity before proceeding. If the client cannot resolve the skill by name,
 read and follow `~/.agents/skills/project-continuity/SKILL.md` directly instead. Write that file

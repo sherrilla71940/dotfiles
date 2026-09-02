@@ -165,12 +165,15 @@ specific way: both create a Git worktree and provision ignored files approved by
 Use `claude --worktree` when starting an isolated Claude Code session. Use `git wt-add` when
 the worktree itself is the goal and a terminal, VS Code, Codex, or another tool will use it.
 
-### Claude frontend workflow
+### Claude worktree task workflow
 
-The Claude-only `frontend-task-workflow` skill combines them, because neither alone gives an
+The Claude adapter of `worktree-task-workflow` combines them, because neither alone gives an
 isolated session on a branch taken from an arbitrary remote base. Claude Code's own worktree
-creation branches only from the remote default branch or from local `HEAD`; its
-`worktree.baseRef` setting accepts no branch name. So the skill creates the worktree with
+creation branches from the remote default branch (`fresh`), from local `HEAD` (`head`), or from a
+pull or merge request passed to `--worktree` as `"#1234"` or as a GitHub or GitLab URL. Those are
+the only three, and none of them expresses a named branch: `worktree.baseRef` takes `fresh` or
+`head` and nothing else, and Claude Code's own documentation sends you to Git directly to start
+from a specific existing branch. So the skill creates the worktree with
 `git wt-add` from `origin/<base>`, places it at `<repo>/.claude/worktrees/<slug>` where entering
 it raises no approval prompt, and then moves the running session into it with the
 `EnterWorktree` tool's `path` argument. From that point Claude Code enforces the isolation
@@ -206,9 +209,9 @@ skill deletes none either: the task branch stays for the open request, its revie
 `ExitWorktree` with `action: "remove"` is the one operation here that *would* delete the branch
 along with the directory, which is why that path is never used.
 
-### Codex frontend workflow
+### Codex worktree task workflow
 
-The Codex adapter of `frontend-task-workflow` starts only after the chat is already in a linked
+The Codex adapter of `worktree-task-workflow` starts only after the chat is already in a linked
 worktree. In the Codex app, choose Worktree when starting the chat or use Handoff from Local. In
 the CLI or IDE extension, start Codex in a worktree created with `git wt-add`; changing only a
 shell's directory does not move an existing chat's workspace.
@@ -252,6 +255,12 @@ EIACarbonRightMatch/appsettings.secret.config
 
 Review that repository's local files before committing the manifest. The manifest names are
 tracked, but the ignored files and their contents remain local.
+
+The `worktree-manifest` skill runs this as a guided task: it enumerates the repository's ignored
+files, classifies them against the safety boundaries above, confirms the entries with you, and
+commits the manifest on its own branch. Its first answer is often that no manifest is warranted,
+because a repository whose ignored entries are only build output, dependencies, agent state and
+data directories has nothing eligible to copy.
 
 ## References
 

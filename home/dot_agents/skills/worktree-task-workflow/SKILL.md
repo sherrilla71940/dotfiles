@@ -1,15 +1,15 @@
 ---
-name: frontend-task-workflow
-description: "Run one isolated frontend implementation task through its lifecycle in a Codex worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving handoff."
+name: worktree-task-workflow
+description: "Run one isolated implementation task through its lifecycle in a Codex worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving handoff."
 disable-model-invocation: true
 ---
 
-# Frontend task workflow
+# Worktree task workflow
 
 If the current host is GitHub Copilot, stop: this adapter depends on Codex worktree behavior and
 must not be translated into Copilot operations.
 
-Run one frontend task in an existing Codex worktree:
+Run one task in an existing Codex worktree:
 
 ```text
 validate -> read materials -> confirm isolation -> branch -> plan -> implement -> verify
@@ -27,8 +27,8 @@ Read [references/invocation.md](references/invocation.md) and follow it through 
 Invoke this skill as either:
 
 ```text
-$frontend-task-workflow <base> "<task>" [materials...] [options...]
-$frontend-task-workflow <base> --infer-task <materials...> [options...]
+$worktree-task-workflow <base> "<task>" [materials...] [options...]
+$worktree-task-workflow <base> --infer-task <materials...> [options...]
 ```
 
 `base` is required. Task identity requires exactly one non-empty explicit task or requested

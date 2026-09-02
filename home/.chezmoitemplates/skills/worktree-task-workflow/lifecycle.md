@@ -39,9 +39,10 @@ not matter, because the settings the app reads are tracked, is worth one sentenc
 
 Settle which of those it is rather than passing the warning along: `git status --ignored` lists
 what the repository actually keeps locally, and a repository whose only ignored files are agent
-state, build output and data directories had nothing to copy. Authoring the missing
-`.worktreeinclude` is a separate task, not a fix to fold in here, because the manifest is tracked
-at the repository root and would otherwise reach the base branch through this task's request.
+state, build output and data directories had nothing to copy. When one is warranted, authoring it
+is a separate task for the `worktree-manifest` skill rather than a fix to fold in here, because
+the manifest is tracked at the repository root and would otherwise reach the base branch through
+this task's request.
 
 When the manual test needs a running app, start it and request one real route before writing
 the steps. A fresh worktree can fail at startup for reasons the build output does not reveal:

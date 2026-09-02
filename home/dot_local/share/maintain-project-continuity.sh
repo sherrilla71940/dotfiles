@@ -254,7 +254,9 @@ report_session_start() {
       message="$message \"$objective\". If that is the task you were just asked to do, invoke the"
       message="$message project-continuity skill and reconcile its state against Git before"
       message="$message substantive work. If it is not, leave the file untouched, answer the new"
-      message="$message request, and say the other task is still parked there."
+      message="$message request, and report that this state still tracks a different unfinished"
+      message="$message task. Do not call it parked unless you actually moved it into parked/;"
+      message="$message parking is a deliberate step, not a word for state you left alone."
     else
       message="Project continuity is active in '$root'. Before substantive work, invoke the"
       message="$message project-continuity skill and reconcile its state against Git."

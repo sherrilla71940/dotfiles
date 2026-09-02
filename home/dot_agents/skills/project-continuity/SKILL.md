@@ -39,7 +39,7 @@ Continuity belongs to **one working directory**, and each working tree has at mo
 - Same repository does not imply same continuity. Neither does same branch.
 - **Switching branches does not create a new continuity scope.** Continuity is scoped to the directory, not the branch. If a branch switch means a different task while useful unfinished state is still present, apply the wrong-task rules below before replacing it. When both tasks must stay independently resumable, park one of them, or use a separate worktree when they also need separate uncommitted changes.
 - **A branch switch is not a reconciliation trigger.** Claude's Stop hook reports a recorded branch that no longer matches the checkout, and that report is a warning not to merge rather than an instruction to update. Do not fold the new branch's work into state describing the old task, and do not rewrite the recorded branch just to silence the notice. Reconcile only once the task is established to be the same one. Do not key state files by branch name to avoid this decision either: a detached HEAD has no branch to key on, which is how the Codex app runs its managed worktrees, and uncommitted work belongs to the directory rather than to any branch.
-- **Uncommitted work does not follow a branch.** If a branch switch stashed or carried the task's changes, record that in `Status`; otherwise a later reconciliation sees a clean tree and may conclude the work was finished or lost.
+- **Uncommitted work does not follow a branch, and a stash hides it entirely.** If a branch switch stashed or carried the task's changes, record that in `Status` — and record any other stash of this task's work the same way, naming the stash message or ref. A branch switch is the common cause, not the only one: a plain `git stash` leaves the same clean tree while state still describes work in progress, and a later reconciliation may conclude the work was finished or lost. A stash made outside the session leaves nothing to record at all, which is why Resume checks `git stash list` instead of trusting `Status` alone.
 - A new worktree starts with no continuity and must not inherit another task's state. Claude Code and the Codex app both read `.worktreeinclude` at the repository root to decide which ignored files to copy into a new worktree, so a pattern there matching `.project-continuity/` would leak one task's state into every new worktree of both clients. Never add one.
 
 Client worktree support differs, and that affects only how a directory is *created*, never who may work in it:
@@ -91,6 +91,8 @@ In a Git repository, ensure it is ignored before relying on it as private:
 
 `info/exclude` lives in the repository's common directory, so it is **shared by the primary checkout and every linked worktree**, and the anchored pattern resolves against each working tree's own root. One entry therefore protects every working tree, including ones created later — which is why cleanup must never remove it.
 
+Being ignored is also what makes the file sweepable. `git stash -a` moves it into the stash and `git clean -x` deletes it outright, while a plain `git stash`, `git stash -u` and `git clean -d` all leave it alone. If continuity is missing from a working tree that should have it, check `git stash list` before concluding it was never created or was cleaned up.
+
 Outside Git, keep the file local and tell the user that ignore-based protection is unavailable.
 
 Never store secrets, credentials, personal data unrelated to the work, or large copied artifacts.
@@ -104,6 +106,7 @@ Step 1 is a gate, not a formality. Everything after it assumes the answer was ye
    Do not reconcile first and decide afterwards: reconciling rewrites the file to match what you
    are doing now, which is exactly how another task's handoff state gets destroyed.
 2. Inspect enough repository state to establish reality: branch and HEAD, working-tree status and diffs, the files continuity names, and tests or build output when a claim depends on them.
+   **When the tree is clean but state describes uncommitted work, run `git stash list` before concluding anything about it.** The user, another client, or a tool may have stashed that work without recording it, and a clean tree is otherwise indistinguishable from work that was finished, reverted or lost. Report a matching stash and let the user decide; never restore or drop one on your own.
 3. Reconcile — correct claims that are no longer true, drop resolved blockers and completed TODOs, replace superseded decisions, absorb work done after the last checkpoint, and deduplicate.
 4. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
 5. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.

@@ -1,3 +1,12 @@
+# Keep every text file LF in the working tree. chezmoi copies the working tree
+# into the home directory, so a CRLF checkout renders CRLF targets and `chezmoi
+# diff` then reports whole-file differences that are pure line-ending noise.
+# core.autocrlf=true on a Windows checkout is what would otherwise introduce it.
+# text=auto detects binary files and leaves them alone.
+* text=auto eol=lf
+
+# Executables and generated shell config, forced to text so binary detection
+# cannot leave a CRLF interpreter line behind.
 *.sh text eol=lf
 *.sh.tmpl text eol=lf
 scripts/git-hooks/* text eol=lf

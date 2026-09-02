@@ -22,6 +22,9 @@ Follow the repository's pull- or merge-request template when present.
 - Use the primary commit's Conventional Commit subject as the title.
 - Describe what changed, why, the covered scope, and anything deliberately excluded.
 - Use the resolved `lang`; load `natural-zhtw` before Traditional Chinese request text.
+- For a description longer than a few sentences, load `technical-writing` for structure. On a
+  Traditional Chinese description load both: `natural-zhtw` wins where they overlap, because it
+  carries the zh-TW heading conventions and warns against overcorrecting into compression.
 - Attribute verification accurately: name the agent-run checks and separately state that the user
   performed the manual test and reported it passing.
 - Do not describe reading as execution, or claim review, approval, deployment, or agreement that

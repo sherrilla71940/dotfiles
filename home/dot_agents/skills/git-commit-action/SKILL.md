@@ -53,7 +53,7 @@ Example invocations (0–4 flags, any order):
 ### Language
 
 - `en` (default) — aliases `eng`, `english`. Description/body in English.
-- `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan). The `git-commit-reference` skill, which step 6 loads anyway, carries the zh-TW rules for a commit message; no second skill load is needed.
+- `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan). Load the `natural-zhtw` skill as well as `git-commit-reference`: the reference file keeps only the commit-specific rules and delegates the zh-TW wording rules to `natural-zhtw`.
 
 ## Workflow
 
@@ -67,7 +67,7 @@ Example invocations (0–4 flags, any order):
 5. Group the candidates:
    - `batch`: partition into logical changes by concern/type/area. Prefer fewer cohesive commits — don't split a single coherent change just because it spans multiple files; split on distinct concern/type, not on file count. One logical change can span files of different types or folders — e.g. a rule moved from one file to another is **one** commit even across folders, while files that merely share a folder aren't automatically one commit. Group by *why it changed*, not *where it lives*. Everything that is one logical change is one group. Prefer whole-file grouping; only reach for `git add -p` when one file's hunks genuinely belong to different groups.
    - `single`: one group containing all candidates.
-6. Load the `git-commit-reference` skill and compose a Conventional Commit message for each group, following its type table, description/body rules, bullet-body guidance, and breaking-change/footer conventions.
+6. Load the `git-commit-reference` skill and compose a Conventional Commit message for each group, following its type table, description/body rules, bullet-body guidance, and breaking-change/footer conventions. When Language is `zhtw`, load `natural-zhtw` too and check each message against it before step 7.
 7. **Draft mode** — present the plan: for each group, list its files and show its proposed message in a fenced `text` block. State that nothing was staged or committed. End with the exact next command, e.g. `Next: run /git-commit-action commit <same flags>` to create these. Stop here.
 8. **Commit mode** — create the commit(s). Git has one index per working tree, and `git commit` records the index rather than the paths you meant to stage. Commit each group **by pathspec**, so the commit builds its own index and ignores everything else:
 

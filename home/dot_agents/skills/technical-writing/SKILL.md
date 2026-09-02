@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Google Technical Writing style rules for READMEs, design documents, PR and MR descriptions, commit message bodies, doc comments, and code comments. Load when drafting or substantially rewriting one of those, not for ordinary chat replies or short inline notes."
+description: "Google Technical Writing style rules for READMEs, design documents, PR and MR descriptions, doc comments, and code comments. Load when drafting or substantially rewriting one of those and the prose runs longer than a few sentences. Not for ordinary chat replies, short inline notes, or commit messages — a commit body is written for someone who has just read the diff, so `git-commit-reference` governs it instead."
 ---
 
 # Technical Writing Rules

@@ -7,7 +7,9 @@ short plan naming likely files. Resolve genuine contradictions, missing assets, 
 risks before implementing the affected part. Otherwise proceed without a separate plan approval.
 
 Enable `project-continuity` in the task worktree. Record material paths because they may live
-outside it and the manual-test gate can span sessions.
+outside it and the manual-test gate can span sessions. Enable it whatever the change's size: a
+general exemption for small self-contained edits does not reach this workflow, because what has
+to survive is the gate and the worktree path rather than the diff.
 
 ## Implement and verify
 
@@ -20,6 +22,13 @@ identically whether or not the session actually moved, so a failed switch stays 
 rest of the task. A relative path fails loudly instead, and it keeps the transcript evidence that
 the work happened in the worktree.
 
+Never let a command's working directory resolve outside the worktree, read-only commands
+included. Absolute re-anchoring is what makes that reachable: once every call carries its own
+`cd`, one wrong anchor relocates the shell for good, and a search or a listing is as capable of
+doing that as an edit. Reaching outside for something genuinely outside — a reference document,
+another worktree — is what the file-reading and search tools are for, since they take an absolute
+path without moving the shell.
+
 Confirm the ignored local configuration this app needs to run is actually present in the
 worktree, because a fresh checkout carries no ignored file. Provisioning can report a skip such
 as `[skipped] .worktreeinclude: manifest not found in source worktree`, which means nothing was
@@ -27,6 +36,12 @@ copied. Do not treat a skip as harmless: say which files were expected, and whet
 ones are needed to run the manual test. Resolve a real gap with `git wt-copy` from a worktree
 that has them, or name exactly what the user must place and where. A skip that genuinely does
 not matter, because the settings the app reads are tracked, is worth one sentence saying so.
+
+Settle which of those it is rather than passing the warning along: `git status --ignored` lists
+what the repository actually keeps locally, and a repository whose only ignored files are agent
+state, build output and data directories had nothing to copy. Authoring the missing
+`.worktreeinclude` is a separate task, not a fix to fold in here, because the manifest is tracked
+at the repository root and would otherwise reach the base branch through this task's request.
 
 When the manual test needs a running app, start it and request one real route before writing
 the steps. A fresh worktree can fail at startup for reasons the build output does not reveal:

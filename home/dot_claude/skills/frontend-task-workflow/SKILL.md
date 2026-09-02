@@ -95,6 +95,21 @@ provisioned files. Stop on any mismatch.
 Respect Claude Code's worktree boundary. If it refuses a command that it cannot trace safely,
 rewrite the command plainly rather than bypassing the guard.
 
+One refusal has no plain rewrite, so recognize it rather than retrying. The guard reads the
+shell's inherited working directory before a command runs, which means a `cd` that has already
+left the worktree cannot be undone from the shell: every later call is refused, `pwd` and
+`git -C "<worktree>"` among them, and so is the corrective `cd "<worktree>"`, whose only effect
+would have been to satisfy the guard. The message names the worktree to re-run from while making
+it unreachable. Reaching that state takes one command — the guard permits the call that leaves
+the worktree and refuses everything after it — which is why the working-directory rule in
+[references/lifecycle.md](references/lifecycle.md) covers read-only commands too.
+
+Recover with `ExitWorktree` and `action: "keep"`. It returns the session to the main checkout and
+drops the guard, leaving the worktree directory and the task branch on disk; address the worktree
+with `git -C` afterwards, and hold the manual-test gate exactly where it was. A fresh session
+started in the worktree recovers just as well. Nothing on disk is lost either way, so say what
+happened and which recovery was taken instead of quietly routing around it.
+
 Report the worktree's absolute path, branch, and base commit in the response, not only in a tool
 call. The session has moved and the user's editor has not, so an unreported path leaves them
 looking at the old branch in the main checkout with no sign of the change.

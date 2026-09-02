@@ -7,8 +7,11 @@ an unresolved dependency. Discussion, questions and a plan still being negotiate
 state — the user holds that context too. This is later activation, not optional activation: once
 that point is reached, create it without asking. In the first progress update for such work,
 state either `Continuity: enabled` or `Continuity: not needed — <reason>` so the decision cannot
-be skipped silently. Reassess if a small task grows into one of those, and always use continuity
-for an explicit handoff or resume and after conversation compaction.
+be skipped silently. A `not needed` verdict covers the task you were asked to do, not the one it
+turns into, so reassess it at your first commit and at every commit after: a commit is already a
+point where you stop to report a hash, which makes it the one moment the question cannot be
+silently carried past. Reassess too whenever a small task grows into one of those, and always
+use continuity for an explicit handoff or resume and after conversation compaction.
 
 If the working tree root contains `.project-continuity/state.md`, continuity is already active.
 Read its `Objective` first and decide whether it describes the task you were just asked to do.

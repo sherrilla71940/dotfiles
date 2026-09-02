@@ -318,24 +318,40 @@ The source supports operating-system differences in three ways:
 Derive home paths from `{{ .chezmoi.homeDir }}` inside templates. Never hardcode a user
 directory.
 
-### Line endings and `chezmoi diff` noise
+### Line endings
 
-[`.gitattributes`](../.gitattributes) pins `eol=lf` only where LF matters at runtime: shell
-scripts and shell profiles. Markdown is left to Git's `core.autocrlf`, which on Windows commits
-LF and checks out CRLF.
+[`.gitattributes`](../.gitattributes) pins every file to LF with `* text=auto eol=lf`, and keeps
+explicit `text eol=lf` lines for shell scripts and shell profiles so binary misdetection cannot
+leave CRLF in an interpreter line.
 
-chezmoi copies source bytes verbatim, so an applied target keeps whatever endings the source
-working copy had at apply time. A target applied from a working copy with mixed endings, then
-compared against a freshly checked-out and uniformly CRLF source, therefore shows EOL-only
-hunks in `chezmoi diff` for paragraphs nobody edited.
+That rule exists because chezmoi copies source bytes verbatim. A CRLF working copy renders CRLF
+targets, and `chezmoi diff` then reports whole-file differences that contain no changed words.
+Before the rule, 215 of 327 tracked files were checked out CRLF by `core.autocrlf`, and that
+noise hid a real two-line change inside a 118-line diff. [ADR-0010](./decisions/0010-normalize-the-working-tree-to-lf.md)
+records the decision and the alternatives.
 
-That churn is expected and is not evidence of a mistake:
+`chezmoi diff` should now show only hunks that change content. Treat an EOL-only hunk as a
+symptom, not as background churn: it means some file reached the working tree with CRLF.
 
-- Trust `git diff` for whether content changed. `core.autocrlf` normalizes on staging, so a
-  pure line-ending difference does not reach a commit.
-- Do not hand-edit endings to quiet `chezmoi diff`. Git converts them back on the next
-  checkout, and the next contributor sees the same churn.
-- Read `chezmoi diff` for the hunks that change words, and let the EOL-only hunks apply.
+**Check endings with Git, not with `grep`.** Two obvious checks silently report clean on a CRLF
+file, and both have produced a wrong answer here. Git Bash strips CR from text-mode input before
+`grep` sees it, and `\r` in a POSIX basic regular expression matches a literal `r`. Use:
 
-Adding `*.md text eol=lf` would settle it repository-wide, but it rewrites every markdown target
-on the next apply. That is a decision for [an ADR](./decisions), not an incidental edit.
+```bash
+git ls-files --eol | awk '{print $2}' | sort | uniq -c   # whole repository
+tr -cd '\r' < path/to/file | wc -c                       # one file, 0 when clean
+```
+
+If a file does come back CRLF, restore it from the index rather than editing endings by hand.
+`git checkout-index -a -f` alone will not do it, because it honors the stat cache and leaves
+existing files in place:
+
+```bash
+git status --porcelain                    # must be empty first
+git ls-files -z | xargs -0 rm -f
+git checkout-index -a -f
+git add --renormalize .                   # refresh index stat entries; stages no content
+```
+
+Git reports every restored file as modified until that last command runs. `git diff --stat`
+stays empty throughout, which is how you tell a stat-cache artifact from a real change.

@@ -66,6 +66,15 @@ proposing `modify_` here, note that a TOML round-trip reformats the whole file, 
 `chezmoi status` would report it dirty after almost every Codex session; that trade needs an
 ADR, not an edit.
 
+**A repository-wide mechanism changes by ADR, not by edit.** Git attributes, the source-state
+conventions, the ownership model for a tool's configuration: a change to any of these applies to
+every file and every machine, however small its diff. Write the record under
+[docs/decisions](./docs/decisions) as part of the same work, so a later session finds the reasoning
+beside the result and can tell a deliberate constraint from accidental legacy. This has already
+failed once. `* text=auto eol=lf` went in as a one-line edit, and the sentence requiring an ADR for
+exactly that change was sitting in a workflow-guide section the session never opened - which is why
+this constraint lives here instead.
+
 **`/statusline` output never reaches this repository.** It writes `statusLine`, a key
 `home/.chezmoitemplates/claude/settings-durable.json` owns, so the next `chezmoi apply`
 reverts it, and it leaves an unmanaged script in `~/.claude/`. Edit the managed statusline
@@ -112,6 +121,14 @@ Never run `chezmoi apply` until the identity check and the diff both succeed. A 
 command uses its configured source directory regardless of the current working directory, and
 that path may resolve through a symlink or Windows junction, so it will not look like this
 repository. Compare Git identity as above rather than the displayed string.
+
+**Check line endings with Git, not with `grep`.** `.gitattributes` pins every file to LF
+because chezmoi copies working-tree bytes into the home directory, so one CRLF checkout renders
+CRLF targets and fills `chezmoi diff` with whole-file hunks that change no words. That noise has
+already hidden a real two-line change. Two obvious checks report clean on a CRLF file anyway:
+Git Bash strips CR before `grep` sees it, and `\r` in a POSIX basic regular expression matches a
+literal `r`. Use `git ls-files --eol` for the repository or `tr -cd '\r' | wc -c` for one file,
+and treat any EOL-only hunk in `chezmoi diff` as a symptom rather than as background churn.
 
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
 filenames, so real names are transformed silently and files can vanish. This has caused real

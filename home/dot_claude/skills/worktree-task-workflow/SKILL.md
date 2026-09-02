@@ -86,6 +86,11 @@ Enter the created path with Claude Code's `EnterWorktree` tool using its `path` 
 `EnterWorktree` cannot itself select an arbitrary base, which is why Git creates the worktree
 first. Never use `ExitWorktree` with `action: "remove"`; that would delete the task branch.
 
+Read [references/lifecycle.md](references/lifecycle.md) now, before the first command inside the
+worktree, rather than when step 6 refers to it again. Its working-directory rule governs every
+command from here, and its provisioning check is what turns the skip reported above into a
+verdict; reaching them at step 6 means reading them after the point where they applied.
+
 ## 5. Verify isolation
 
 From inside the worktree, verify its root, branch, HEAD, and status. They must equal the created

@@ -113,6 +113,14 @@ command uses its configured source directory regardless of the current working d
 that path may resolve through a symlink or Windows junction, so it will not look like this
 repository. Compare Git identity as above rather than the displayed string.
 
+**Check line endings with Git, not with `grep`.** `.gitattributes` pins every file to LF
+because chezmoi copies working-tree bytes into the home directory, so one CRLF checkout renders
+CRLF targets and fills `chezmoi diff` with whole-file hunks that change no words. That noise has
+already hidden a real two-line change. Two obvious checks report clean on a CRLF file anyway:
+Git Bash strips CR before `grep` sees it, and `\r` in a POSIX basic regular expression matches a
+literal `r`. Use `git ls-files --eol` for the repository or `tr -cd '\r' | wc -c` for one file,
+and treat any EOL-only hunk in `chezmoi diff` as a symptom rather than as background churn.
+
 **Check file-count parity after any bulk move.** chezmoi reads attributes off the front of
 filenames, so real names are transformed silently and files can vanish. This has caused real
 loss here twice — four skills dropped in one refactor, and empty `__init__.py` package markers

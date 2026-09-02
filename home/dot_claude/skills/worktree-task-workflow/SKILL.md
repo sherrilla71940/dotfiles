@@ -1,13 +1,13 @@
 ---
-name: frontend-task-workflow
-description: "Run one isolated frontend implementation task through its lifecycle in a Claude Code worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving cleanup."
+name: worktree-task-workflow
+description: "Run one isolated implementation task through its lifecycle in a Claude Code worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving cleanup."
 argument-hint: '<base> ("<task>" [materials...] | --infer-task <materials...>) [options...]'
 disable-model-invocation: true
 ---
 
-# Frontend task workflow
+# Worktree task workflow
 
-Run one frontend task in its own Claude Code worktree:
+Run one task in its own Claude Code worktree:
 
 ```text
 validate -> read materials -> isolate -> plan -> implement -> verify

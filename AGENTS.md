@@ -66,6 +66,15 @@ proposing `modify_` here, note that a TOML round-trip reformats the whole file, 
 `chezmoi status` would report it dirty after almost every Codex session; that trade needs an
 ADR, not an edit.
 
+**A repository-wide mechanism changes by ADR, not by edit.** Git attributes, the source-state
+conventions, the ownership model for a tool's configuration: a change to any of these applies to
+every file and every machine, however small its diff. Write the record under
+[docs/decisions](./docs/decisions) as part of the same work, so a later session finds the reasoning
+beside the result and can tell a deliberate constraint from accidental legacy. This has already
+failed once. `* text=auto eol=lf` went in as a one-line edit, and the sentence requiring an ADR for
+exactly that change was sitting in a workflow-guide section the session never opened - which is why
+this constraint lives here instead.
+
 **`/statusline` output never reaches this repository.** It writes `statusLine`, a key
 `home/.chezmoitemplates/claude/settings-durable.json` owns, so the next `chezmoi apply`
 reverts it, and it leaves an unmanaged script in `~/.claude/`. Edit the managed statusline

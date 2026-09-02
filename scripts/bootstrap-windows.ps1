@@ -367,7 +367,7 @@ $codexDisplayName = "Codex"
 
 [ClaudeCodeBootstrap.ShortcutWriter]::Write(
     (Join-Path $startMenuPrograms "$codexDisplayName.lnk"),
-    (Join-Path $env:SystemRoot "System32\WindowsPowerShell1.0\powershell.exe"),
+    (Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"),
     "-NoExit -Command codex",
     $env:USERPROFILE,
     $codexDisplayName,

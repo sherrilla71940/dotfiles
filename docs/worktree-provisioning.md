@@ -253,6 +253,12 @@ EIACarbonRightMatch/appsettings.secret.config
 Review that repository's local files before committing the manifest. The manifest names are
 tracked, but the ignored files and their contents remain local.
 
+The `worktree-manifest` skill runs this as a guided task: it enumerates the repository's ignored
+files, classifies them against the safety boundaries above, confirms the entries with you, and
+commits the manifest on its own branch. Its first answer is often that no manifest is warranted,
+because a repository whose ignored entries are only build output, dependencies, agent state and
+data directories has nothing eligible to copy.
+
 ## References
 
 - [Git worktree command reference](https://git-scm.com/docs/git-worktree.html)

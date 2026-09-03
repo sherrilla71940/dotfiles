@@ -21,8 +21,6 @@ Treat it as **where the work stopped and why**, not as project documentation, na
 8. Re-read before overwriting; another client may be in the same working tree.
 
 Read [references/state-format.md](references/state-format.md) when creating or restructuring the file.
-It is not loaded on an ordinary turn, so a check this skill applies every turn stays written out
-here rather than replaced by a reference to it.
 
 ## Completion gate
 

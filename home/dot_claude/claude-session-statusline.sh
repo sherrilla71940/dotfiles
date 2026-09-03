@@ -242,8 +242,8 @@ usage_color() {
 # a repository, which branch is checked out, and what the work tree looks like —
 # because spawning git costs about as much as git's own work here. The query is
 # scoped to the session's directory since this script's working directory is not
-# necessarily the project. Normal untracked files are included because newly
-# created artifacts are still work-tree changes worth showing.
+# necessarily the project. All untracked files are included so the count has
+# the same file-level meaning as staged and modified counts.
 git_branch=""
 git_object_id=""
 git_ahead_count=0
@@ -265,7 +265,7 @@ git_summary() {
   fi
 
   local status_output line states
-  status_output="$(git -C "$directory" status --porcelain=v2 --branch --untracked-files=normal 2>/dev/null || true)"
+  status_output="$(git -C "$directory" status --porcelain=v2 --branch --untracked-files=all 2>/dev/null || true)"
   if [[ -z "$status_output" ]]; then
     return 0
   fi

@@ -231,8 +231,8 @@ function Get-UsageColor {
 # a repository, which branch is checked out, and what the work tree looks like —
 # because spawning git costs about as much as git's own work here. The query is
 # scoped to the session's directory since this script's working directory is not
-# necessarily the project. Normal untracked files are included because newly
-# created artifacts are still work-tree changes worth showing.
+# necessarily the project. All untracked files are included so the count has
+# the same file-level meaning as staged and modified counts.
 function Get-GitSummary {
     param([string]$Directory)
 
@@ -242,7 +242,7 @@ function Get-GitSummary {
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        $lines = @(& git -C $Directory status --porcelain=v2 --branch --untracked-files=normal 2>$null)
+        $lines = @(& git -C $Directory status --porcelain=v2 --branch --untracked-files=all 2>$null)
         if ($LASTEXITCODE -ne 0) { return $null }
     } finally {
         $ErrorActionPreference = $previousPreference

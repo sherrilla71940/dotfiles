@@ -84,6 +84,13 @@
   `~/Documents/reference-docs/{repo}/`, or a bulky or cross-worktree manual test input to
   `~/Documents/test-files/{repo}/`. Leave the original untouched and wait for the user's
   confirmation before copying or moving anything.
+- That classification covers material that arrives from elsewhere. A file **you author** — a
+  handoff note, a drafted message, a PR/MR description, a question list for another developer —
+  is not project material and is **not filed by default**. Put its content where its audience
+  reads it: the MR description, the ticket, the message itself. Write a file only when the user
+  asks for one, and then put it in `~/Documents/handoff/{repo}/`, never in the reference-docs
+  folder, which is for received sources only. A note kept beside the MR that already states the
+  same thing is duplicate state, and it goes stale as the findings move.
 - Derive `{repo}` from the Git remote's repository name, never the working-directory name,
   which differs per worktree. Prefix it with `{owner}-` only when needed to distinguish two
   repositories with the same name. Keep each folder flat until retrieval is genuinely harder

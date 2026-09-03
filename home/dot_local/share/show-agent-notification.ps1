@@ -1,7 +1,9 @@
 $ErrorActionPreference = "Stop"
 
-# Windows PowerShell writes stdout using the console code page, which is not UTF-8 on every
-# machine. Force UTF-8 before any output is produced.
+# Windows PowerShell uses console code pages that are not UTF-8 on every machine. Claude sends
+# UTF-8 JSON on stdin, and hook diagnostics use stdout, so force UTF-8 in both directions before
+# either stream is read or written.
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding $false
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 
 # Windows attributes a toast to an Application User Model ID (AUMID). Without a registered

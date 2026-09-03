@@ -57,6 +57,11 @@ The phase another session should resume from.
 - Record `Parked` as a full ISO 8601 timestamp with timezone. During cleanup or an explicit parked-task listing, report entries older than 14 days as stale candidates with their paths and timestamps; never delete them automatically. Missing or invalid timestamps have unknown age.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
+- Concurrent edits are detected opportunistically, not transactionally protected. Two clients can
+  each re-read the same version and both write, and the file is untracked, so nothing holds the
+  version that lost. Rewriting whole is what limits the damage: a clobbered file still describes
+  one task coherently, which the Resume gate can catch, where a half-merged one would read as
+  valid while contradicting itself.
 - Keep state language independent of conversation language: write every section in English, quoting a foreign-language string verbatim only where its exact wording matters. User-facing replies may follow the conversation language.
 - Rewrite the file whole at every checkpoint rather than editing one section. Two sections
   disagreeing about the same item is the characteristic failure of this file, and patching

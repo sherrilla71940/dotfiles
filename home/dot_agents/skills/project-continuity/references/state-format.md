@@ -68,7 +68,11 @@ The phase another session should resume from.
 - Label assumptions and unverified claims explicitly.
 - Keep implementation details in the repository rather than copying large code snippets here.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
-- `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.
+- **Finished-state invariant.** `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are
+  the sections that carry unfinished work, and the task is finished exactly when all four are
+  empty or absent. Claude's Stop hook reads that same test to raise the cleanup offer, so do not
+  park a placeholder item in them to keep a finished file alive. Being finished is not by itself
+  sufficient for cleanup, which also requires that nothing remains worth promoting elsewhere.
 - Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
 - A file in `parked/` keeps this same format. Add `Parked` and change nothing else; it is a
   handoff that was set aside, not a summary of one.

@@ -27,7 +27,10 @@ Read [references/state-format.md](references/state-format.md) when creating or r
 Before ending a response that touched continuity, apply this gate:
 
 1. Reconcile the state against the current repository and Git reality.
-2. If `state.md` exists and `In progress`, `Next actions`, `Blockers`, and `TODO / deferred` are all empty or absent, say that continuity looks unnecessary and offer cleanup immediately.
+2. Apply the finished-state invariant: if `state.md` exists and `In progress`, `Next actions`,
+   `Blockers`, and `TODO / deferred` are all empty or absent, the task is finished. Unless the
+   Verification block already records `Cleanup: declined`, say that continuity looks unnecessary
+   and offer cleanup immediately.
 3. If the user confirms, follow [Cleanup](#cleanup); do not delete state merely because the task is complete.
 4. If the user declines, record `Cleanup: declined` in the Verification block and do not raise the offer again for that task.
 
@@ -188,12 +191,12 @@ file. A handoff does not imply cleanup.
 
 ## Cleanup
 
-Clean up when the user asks, or when the task is complete, nothing continuity-worthy remains, and the user confirms.
+Clean up when the user asks, or when the finished-state invariant holds, nothing continuity-worthy remains, and the user confirms.
 
 The end-of-response completion check in Checkpoint is what raises the second case. Do not wait
 for a checkpoint to raise it, and do not treat a quiet final turn as a reason to skip it.
 
-1. Reconcile once more and verify no unfinished work, blocker, deferred item, or useful handoff state remains.
+1. Reconcile once more, confirm the finished-state invariant still holds, and verify that no useful handoff state remains.
 2. If something belongs in durable documentation or private instructions, say so before deleting; never promote it silently.
 3. Run the parked-task review above. Report stale candidates, but do not remove parked files
    unless the user separately confirms those specific deletions.

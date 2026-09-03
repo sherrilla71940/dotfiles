@@ -28,19 +28,15 @@ Everything below depends on a Claude Code feature that Codex and Copilot do not 
 
 ## Asking the user
 
-- Use an `AskUserQuestion` picker for a decision about **where work lands, or whether something is
-  kept**, whenever the options are a small closed set you could otherwise settle unilaterally and
-  get wrong: which branch or worktree a fix belongs on, whether repository infrastructure rides
-  along in the current request or takes its own branch, whether a file is filed and where. These
-  are the user's calls, and prose invites them to re-type an answer a click could give.
-- Do not generalize that to every question. A picker needs mutually exclusive options that already
-  exist; an open-ended question — which account, what threshold, what wording — is worse as a
-  picker, because the options have to be invented and the real answer may not be among them. Ask
-  those plainly, and settle anything with a conventional default yourself.
-- The shared project-material rule says to propose filing a durable reference or reusable manual
-  test input and to wait for confirmation. Put that proposal as a picker too — copy it to the
-  folder, leave it where it is, or no filing at all. Only ask when the file has no stable home: a
-  disposable attachment, and a file that already sits somewhere stable, need no question.
+- Use an `AskUserQuestion` picker when the decision is **where work lands or whether something is
+  kept**, and the options are a small closed set you could otherwise settle unilaterally and get
+  wrong: which branch or worktree a fix belongs on, whether repository infrastructure rides along
+  in the current request or takes its own branch, whether a file is filed and where. Prose there
+  makes the user retype an answer a click could give.
+- A picker needs options that already exist. Ask an open-ended question — which account, what
+  threshold, what wording — plainly instead; settle anything with a conventional default yourself;
+  and skip the question entirely for a disposable attachment or a file already sitting somewhere
+  stable.
 
 ## Session workflow
 

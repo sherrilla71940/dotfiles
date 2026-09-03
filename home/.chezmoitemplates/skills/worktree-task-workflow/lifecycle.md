@@ -49,9 +49,16 @@ a dependency directory is regenerable in principle yet still required in practic
 Resolve that with a dependency restore where one works, otherwise by copying the directory from the
 source worktree. Whether anything belongs in the tracked `.worktreeinclude` is the separate
 question — regenerable dependency and build output does not, local configuration that cannot be
-regenerated does — and authoring the manifest remains a task for the `worktree-manifest` skill
-rather than a fix to fold in here, because it is tracked at the repository root and would otherwise
-reach the base branch through this task's request.
+regenerated does.
+
+When a manifest is warranted, do not decide alone where it lands. `.worktreeinclude` is tracked at
+the repository root, so folding it in carries an unrelated root-level file into this task's
+request; but that is a disclosure problem rather than a prohibition, and the user may reasonably
+prefer one review to two. Offer the choice at the moment it arises — fold it into this branch and
+say so in the request description, author it on a separate branch off the base, or defer it to a
+later task and only report the gap. Authoring itself belongs to the `worktree-manifest` skill
+whichever they pick. The rule this replaces is silent scope creep, not an explicit instruction, so
+the same offer fits any repository-infrastructure work this workflow turns up mid-task.
 
 When the manual test needs a running app, start it and request one real route before writing
 the steps. A fresh worktree can fail at startup for reasons the build output does not reveal:

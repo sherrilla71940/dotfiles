@@ -1,0 +1,3 @@
+We're dropping the Redis session store - platform won't support it and the whole
+approach is dead. Forget it. Start on rate limiting for the upload endpoint
+instead.

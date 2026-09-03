@@ -134,9 +134,15 @@ Where repository evidence and continuity disagree, the repository wins and conti
 
 When the existing state clearly belongs to a different task, never merge it into the current one. Then:
 
-- If it is completed, obsolete, or no longer useful, replace it.
-- If it still represents useful unfinished work, preserve it and ask before replacing. The test is whether replacing would destroy recoverable handoff state, not whether the new request is ambiguous — a user saying "forget that for now, fix the navbar" may be switching tasks temporarily, not abandoning the old one.
-- If the user says to abandon the previous task, replace it.
+- Replace it without asking on two grounds only: the finished-state invariant holds for it, or
+  the user said to abandon that task. The first is a check you can run, the second is an
+  instruction you were given.
+- Otherwise preserve it and ask before replacing — including when it merely looks obsolete or no
+  longer useful. That judgment has no oracle, and the file is untracked and ignored, so a wrong
+  call destroys handoff state with nothing to recover it from. The test is whether replacing
+  would destroy recoverable handoff state, not whether the new request is ambiguous — a user
+  saying "forget that for now, fix the navbar" may be switching tasks temporarily, not
+  abandoning the old one.
 
 Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable in the same directory, park the first one.
 

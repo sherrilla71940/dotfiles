@@ -65,8 +65,15 @@ minor_separator_plain=" · "
 minor_separator="${dim}${minor_separator_plain}${reset}"
 
 # Statusline fields are plain text when measured. ASCII characters occupy one
-# cell; the non-ASCII glyphs used here and CJK text conservatively occupy two.
+# cell; CJK and emoji conservatively occupy two. The specific punctuation and
+# UI glyphs used here that occupy one cell are listed in the width condition.
 # This keeps width decisions local and fast enough for a render on every event.
+if ((terminal_columns < 90)); then
+  # Add one cell before the compact reset arrow so both limit groups have the
+  # same visual spacing as the full reset labels.
+  reset_prefix=" ${reset_prefix}"
+fi
+
 visible_width() {
   local text="$1" width=0 index character code_point
   if [[ "$text" == *$'\033'* ]]; then

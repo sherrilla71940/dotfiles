@@ -68,7 +68,7 @@ if ($terminalColumns -lt 90) {
     $majorSeparatorPlain = " $majorSeparatorGlyph "
     $majorSeparator = "$dim$majorSeparatorPlain$reset"
     $contextLabel = "ctx"
-    $resetPrefix = [char]0x2192
+    $resetPrefix = " $([char]0x2192)"
     $limitsLabel = $iconLimits
 } else {
     $majorSeparatorPlain = "  $majorSeparatorGlyph  "

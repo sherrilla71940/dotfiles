@@ -1,6 +1,6 @@
 ---
 name: worktree-manifest
-description: "Author or extend a repository's .worktreeinclude, the tracked manifest that lets git wt-add, Claude Code and Codex copy approved ignored files into a new worktree. Use when provisioning reports 'manifest not found in source worktree', when a fresh worktree cannot run the app because a local config file is missing, or when the user asks which ignored files a worktree should carry."
+description: "Author or extend a repository's .worktreeinclude, the tracked manifest that lets git wt-add, Claude Code and Codex copy approved ignored files into a new worktree. Use when provisioning reports 'manifest not found in source worktree', when a fresh worktree cannot run the app because a local config file is missing, when a repository moves configuration into ignored files so that every worktree created afterwards will need them - externalized secrets, configSource or include targets, a new .env or *.local.* file - or when the user asks which ignored files a worktree should carry."
 argument-hint: "[repo path] optional; defaults to the current repository"
 ---
 
@@ -96,10 +96,12 @@ git wt-add --dry-run -- <throwaway path> HEAD
 worktree. An entry that does not appear is either tracked already or not ignored, and belongs in
 neither the manifest nor the commit.
 
-Commit the manifest alone, on its own branch, with a `chore` or `build` type. It is repository
-infrastructure, so it must not ride into an unrelated feature request — this matters most when
-the manifest gap was found during another task, because the branch in hand then belongs to that
-task, not to this one.
+Commit the manifest alone, with a `chore` or `build` type. It is repository infrastructure, so its
+own branch off the base is the default — this matters most when the gap was found during another
+task, because the branch in hand then belongs to that task. But the default is not a prohibition:
+when the user has been offered the choice and asked for it to ride along, commit it on the branch
+in hand and make sure the request description says the manifest is included and why. Never fold it
+in silently, and never on your own judgement.
 
 Tell the user that the manifest only takes effect for worktrees created after it is merged, and
 that `git wt-copy` provisions worktrees that already exist.

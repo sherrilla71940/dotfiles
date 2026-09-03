@@ -1,6 +1,0 @@
-{{/* Retire the frontend-task-workflow skill directories left behind by its 2026-09-02 rename
-     to worktree-task-workflow. chezmoi does not remove a target whose source entry is gone, so
-     without this both host adapters stay discoverable under the old name as unmanaged files.
-     Delete this file once every machine that applied the old name has applied once. */ -}}
-.agents/skills/frontend-task-workflow
-.claude/skills/frontend-task-workflow

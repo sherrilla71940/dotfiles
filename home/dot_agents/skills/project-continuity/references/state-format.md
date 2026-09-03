@@ -42,9 +42,9 @@ The phase another session should resume from.
 - HEAD: `<commit or unknown>`
 - Started from: `<commit this task began at, when known>`
 - Status: `<clean / modified / concise description>`
-- Last reconciled: `<ISO date/time when practical>`
+- Last reconciled: `<ISO 8601 timestamp with timezone>`
 - Cleanup: `<omit normally; set to declined once the user has refused cleanup for this task>`
-- Parked: `<omit normally; set to the ISO date when this file is moved into parked/>`
+- Parked: `<omit normally; set to an ISO 8601 timestamp with timezone when this file is moved into parked/>`
 ```
 
 ## Maintenance rules
@@ -53,9 +53,16 @@ The phase another session should resume from.
 - `Objective` plus `Started from` is the task identity. It exists only to detect an obvious mismatch when a working tree is reused for a different task; do not add version or identifier machinery beyond it.
 - Branch is supporting evidence, not identity. A branch switch in the same working tree does not by itself mean a different task. Update the recorded branch when reconciling the same task, never merely to silence a drift notice.
 - Record in `Status` whether this task's uncommitted changes were stashed or carried, naming the stash message or ref when they were stashed. A branch switch is the common cause but not the only one; a plain `git stash` produces the same clean tree. Without that, a later reconciliation may conclude the work was finished or lost. Nothing can be recorded when someone stashes outside the session, so Resume also runs `git stash list` against a clean tree.
+- Record `Last reconciled` as a full ISO 8601 timestamp with timezone, for example `2026-09-03T17:13:26+08:00`, so stale or overlapping updates can be distinguished precisely.
+- Record `Parked` as a full ISO 8601 timestamp with timezone. During cleanup or an explicit parked-task listing, report entries older than 14 days as stale candidates with their paths and timestamps; never delete them automatically. Missing or invalid timestamps have unknown age.
 - Keep the file under about 120 lines when practical. Compact it by removing resolved history, duplicated context, superseded decisions, and details already durable in the repository before it grows past that.
 - Treat the file as subject to concurrent edits from another session or client. Re-read it immediately before writing and compare against what was loaded earlier; merge non-conflicting changes automatically and ask the user only on an actual contradiction. Never overwrite a version that was not just re-read.
-- Write every section in English, quoting a foreign-language string verbatim only where its exact wording matters.
+- Concurrent edits are detected opportunistically, not transactionally protected. Two clients can
+  each re-read the same version and both write, and the file is untracked, so nothing holds the
+  version that lost. Rewriting whole is what limits the damage: a clobbered file still describes
+  one task coherently, which the Resume gate can catch, where a half-merged one would read as
+  valid while contradicting itself.
+- Keep state language independent of conversation language: write every section in English, quoting a foreign-language string verbatim only where its exact wording matters. User-facing replies may follow the conversation language.
 - Rewrite the file whole at every checkpoint rather than editing one section. Two sections
   disagreeing about the same item is the characteristic failure of this file, and patching
   in place is what produces it.
@@ -66,7 +73,11 @@ The phase another session should resume from.
 - Label assumptions and unverified claims explicitly.
 - Keep implementation details in the repository rather than copying large code snippets here.
 - Do not invent next actions when the tracked work is complete; ask about cleanup instead.
-- `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are the sections that carry unfinished work. All four being empty or absent is what marks the task finished, and Claude's Stop hook reads exactly that to raise the cleanup offer, so do not park a placeholder item in them to keep a finished file alive.
+- **Finished-state invariant.** `In progress`, `Next actions`, `Blockers` and `TODO / deferred` are
+  the sections that carry unfinished work, and the task is finished exactly when all four are
+  empty or absent. Claude's Stop hook reads that same test to raise the cleanup offer, so do not
+  park a placeholder item in them to keep a finished file alive. Being finished is not by itself
+  sufficient for cleanup, which also requires that nothing remains worth promoting elsewhere.
 - Set `Cleanup: declined` only after the user has actually refused cleanup. It suppresses the offer for the rest of the task, so it must never be used to pre-empt asking.
 - A file in `parked/` keeps this same format. Add `Parked` and change nothing else; it is a
   handoff that was set aside, not a summary of one.

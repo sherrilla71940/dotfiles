@@ -3,9 +3,13 @@
 Notes for the human. Agents read [SKILL.md](SKILL.md); nothing loads this file.
 
 One markdown file, `.project-continuity/state.md`, private to one working directory. Claude Code,
-Codex and Copilot can each read it and carry on. It holds where the work stopped and why — the
-objective, the blockers, and the reasoning the diff cannot explain — not project documentation
-and not a transcript.
+Codex and Copilot can each read it and carry on.
+
+Think of it as a write-through cache of unrecoverable reasoning. Git already knows which files
+changed and the tests already know what passes, so the file holds only what neither can answer:
+why an approach was rejected, what a backend did that nobody expected, which behavior you chose,
+what is blocking, and what to do next. That is also why it has no `Completed` section — there is
+no point caching what the authoritative store can already tell you.
 
 It exists for one move: a client hits its usage limit mid-task, and another client picks the work
 up in the same directory rather than being re-briefed from scratch.

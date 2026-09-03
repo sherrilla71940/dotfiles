@@ -1,0 +1,2 @@
+What does the retry helper in src/net/retry.ts do? Just explain it, I'm reading
+through this file and the backoff logic isn't obvious.

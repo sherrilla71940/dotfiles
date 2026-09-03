@@ -86,8 +86,9 @@
        is why /statusline cannot be used to change this - see AGENTS.md.
 
        refreshInterval refreshes what the script works out for itself while no
-       event fires here: the branch and the count of modified files, which a
-       background agent or another window changes under an idle session.
+       event fires here: the branch and the counts of staged, modified, and
+       untracked files, which a background agent or another window changes under
+       an idle session.
 
        It cannot refresh the rate limits. Those arrive with an API response, so a
        timed re-run re-renders the same figures, and they only move when this
@@ -97,7 +98,7 @@
   "statusLine": {
     "type": "command",
     "command": {{ $statusLineCommand | toJson }},
-    "refreshInterval": 60
+    "refreshInterval": 5
   },
 
 "autoUpdatesChannel": "latest"

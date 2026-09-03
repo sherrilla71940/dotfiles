@@ -1,0 +1,2 @@
+Put the session store aside for now. The upload endpoint needs rate limiting
+before Friday - add it, wire it into the router, and get tests around it.

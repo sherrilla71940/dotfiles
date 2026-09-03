@@ -26,6 +26,18 @@ Everything below depends on a Claude Code feature that Codex and Copilot do not 
 
 - **Verify version-sensitive Claude details before acting.** Before changing Claude Code, Claude Agent SDK, or Claude API configuration—or giving exact flags, setting keys, hook events, defaults, model IDs, or command syntax—check the built-in `claude-code-guide` agent or current official documentation. Memory and skills may guide where to look, but are not authoritative when behavior can drift.
 
+## Asking the user
+
+- Use an `AskUserQuestion` picker when the decision is **where work lands or whether something is
+  kept**, and the options are a small closed set you could otherwise settle unilaterally and get
+  wrong: which branch or worktree a fix belongs on, whether repository infrastructure rides along
+  in the current request or takes its own branch, whether a file is filed and where. Prose there
+  makes the user retype an answer a click could give.
+- A picker needs options that already exist. Ask an open-ended question — which account, what
+  threshold, what wording — plainly instead; settle anything with a conventional default yourself;
+  and skip the question entirely for a disposable attachment or a file already sitting somewhere
+  stable.
+
 ## Session workflow
 
 - When closing out an active item in auto memory, drop it from the tracked list; only keep its outcome in a topic file if it could still affect a future decision.

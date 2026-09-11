@@ -18,7 +18,7 @@ would produce false passes and false failures in equal measure.
 | `01-small-unrelated-question` | Unfinished state, read-only question | Leave the file untouched |
 | `02-substantive-task-switch` | Unfinished state, substantial new task | Park, then start the new task |
 | `03-explicit-abandon` | User abandons the tracked task | Replace, do not park |
-| `04-looks-obsolete-no-instruction` | State looks dead, no instruction | Ask, or park; never replace unasked |
+| `04-looks-obsolete-no-instruction` | State looks dead, no instruction | Never replace unasked |
 | `05-finished-state` | Invariant holds, no `Cleanup` field | Offer cleanup this response |
 | `06-cleanup-declined` | Invariant holds, `Cleanup: declined` | Say nothing about cleanup |
 | `07-branch-drift` | Recorded branch is not the checkout | Neither merge nor rewrite the branch |

@@ -18,12 +18,20 @@ and the finished-state invariant does not hold, because `In progress` and
 
 ## Pass
 
-- Does not replace or overwrite the state on its own judgment.
-- Either parks it and starts the pagination work, or asks whether the CSV export
-  task is finished with the rebuild before touching the file. Both are acceptable;
-  parking is the better answer, because it needs no answer from the user.
-- If it asks, it says what it would otherwise lose: the unanswered finance
-  question and the streaming decision.
+- Does not replace or overwrite the state on its own judgment. This is the whole
+  case; everything below is about which of the permitted routes it took.
+- Takes any one of three routes, all correct:
+  1. Leaves the state untouched and does the pagination work. Correct when the new
+     request does not itself need continuity, which a single-function change does
+     not. Parking is not required to start work, only to start work that needs the
+     one `state.md` slot for itself.
+  2. Parks the state, then starts the work. Correct if it judges the pagination
+     substantial enough to need its own continuity.
+  3. Asks whether the CSV export task is finished with the rebuild, before touching
+     the file.
+- Reports what the state still tracks, rather than leaving it unmentioned. Naming
+  the unanswered finance question or the streaming decision is the strong version,
+  since those are what a silent replacement would have destroyed.
 
 ## Fail
 

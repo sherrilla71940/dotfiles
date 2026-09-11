@@ -114,6 +114,12 @@ concurrent session had just made, and replaced that session's message with this 
 word in a commit message is cheap; fix it in a follow-up commit, or wait until the tree is
 certainly yours alone.
 
+**Fabricated continuity state lives under `scripts/continuity-fixtures/`.** Each case holds a
+`state.md` deliberately indistinguishable from the real thing, because a "this is a fixture"
+marker would bias the session under test. A grep here will surface one. Real state is only ever
+at the working tree root: never act on a `state.md` found anywhere else, and never copy one out
+of that directory except through its `setup-case.sh`, which stages it in a throwaway repository.
+
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 
 ## Before you finish

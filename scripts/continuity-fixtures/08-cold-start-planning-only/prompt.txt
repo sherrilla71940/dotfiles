@@ -1,0 +1,3 @@
+I'm thinking about moving the job queue off Redis and onto Postgres. Before we do
+anything, walk me through what would break and roughly what the migration would
+look like. Don't change any code yet.

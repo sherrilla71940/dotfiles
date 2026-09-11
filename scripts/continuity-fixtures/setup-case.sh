@@ -28,6 +28,11 @@ cd "$target"
 git init -q
 git commit -q --allow-empty -m "init"
 
+# Git Bash reports a POSIX path that PowerShell and cmd cannot cd into, and this is a
+# manual procedure driven from a Windows terminal as often as from bash. pwd -W is
+# MSYS-only, so a failure here just means there is no second path worth printing.
+target_windows="$(pwd -W 2>/dev/null || true)"
+
 if [[ -f "$case_dir/state.md" ]]; then
   mkdir -p .project-continuity
   cp "$case_dir/state.md" .project-continuity/state.md
@@ -45,6 +50,9 @@ elif [[ -f .project-continuity/state.md ]]; then
 fi
 
 printf '\nStaged %s in %s\n' "$(basename "$case_dir")" "$target"
+if [[ -n "$target_windows" && "$target_windows" != "$target" ]]; then
+  printf 'From PowerShell or cmd: %s\n' "$target_windows"
+fi
 if [[ -f .project-continuity/state.md ]]; then
   printf 'Continuity state is in place.\n\n'
 else
@@ -53,4 +61,4 @@ fi
 printf 'Paste this as the first message, verbatim, and nothing else:\n\n'
 sed 's/^/    /' "$case_dir/prompt.txt"
 printf '\nThen score the response against %s/expected.md.\n' "$case_dir"
-printf 'Delete %s afterwards; a leftover fixture is fabricated state.\n' "$target"
+printf 'Delete %s afterwards; a leftover fixture is fabricated state.\n' "${target_windows:-$target}"

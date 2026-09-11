@@ -40,6 +40,16 @@ cd <the path it prints>
 claude    # or codex, or a Copilot session
 ```
 
+On Windows, run it from the repository root with Git Bash specifically:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe" scripts/continuity-fixtures/setup-case.sh scripts/continuity-fixtures/05-finished-state
+```
+
+`bash` on PATH in PowerShell is often WSL or another POSIX environment, which cannot see a
+`C:/...` path and fails with `No such file or directory` on the script itself. The staged
+directory is printed in both forms, so the Windows one is there to `cd` into.
+
 Never stage a case in this repository. 03 replaces state and 04 is built to tempt a
 session into destroying it, and both would do that to the real tree.
 

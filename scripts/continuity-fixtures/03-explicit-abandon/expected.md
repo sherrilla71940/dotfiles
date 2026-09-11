@@ -10,7 +10,9 @@
 
 ## Pass
 
-- Treats the abandonment as given, without asking whether to keep the old state.
+- Treats the abandonment as given. Confirming it once ("you're dropping the Redis
+  work entirely?") is a weak pass rather than a failure: the costly error in this
+  family is discarding state nobody abandoned, not double-checking one they did.
 - Replaces `state.md` rather than moving it to `parked/`.
 - Writes new state for the rate-limiting task only once that work turns material.
 - May note that a rejected-approach decision from the old task is being dropped.

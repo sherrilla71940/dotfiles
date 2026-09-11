@@ -56,8 +56,12 @@ session into destroying it, and both would do that to the real tree.
 The script rewrites the recorded branch, HEAD and working-tree path to match the throwaway
 repository. Without that the Stop hook reports drift on every case, and the session is then
 reacting to a drift notice rather than to the situation under test. A case that needs the
-mismatch, or a repository seeded with something to work on, carries its own `setup.sh`,
-which runs instead. 07 and 08 are the two.
+mismatch carries a `skip-align` marker file and sets the repository up itself.
+
+Every case seeds its repository through its own `setup.sh`, which runs before alignment, so a
+session has real files to work on rather than an empty tree. That matters more than it sounds:
+the first live run of 04 blocked on "there is no code here" before it ever reached the branch
+under test, which made a pass much weaker evidence than it looked.
 
 Paste `prompt.txt` as the first message and nothing else. The point is what the
 session does before being steered, so do not answer questions it asks until you have
@@ -117,4 +121,6 @@ plausible detail, and no marker saying it is a fixture, because the session unde
 would read it and behave differently. If the case needs the repository itself to be in a
 particular shape — a mismatched branch, a stash, an unmerged history — give it its own
 `setup.sh` rather than describing the steps in prose, so the setup cannot drift from the
-case it sets up.
+case it sets up. Seed enough for the prompt to be answerable and for the state's `Status`
+line to be true of the tree; a believable whole application is not the goal. If the case
+needs the recorded branch or HEAD to stay wrong, add an empty `skip-align` file beside it.

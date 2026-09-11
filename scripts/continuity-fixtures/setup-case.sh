@@ -38,11 +38,16 @@ if [[ -f "$case_dir/state.md" ]]; then
   cp "$case_dir/state.md" .project-continuity/state.md
 fi
 
+# A case seeds its repository with setup.sh when the prompt needs something real to work
+# on. Alignment runs afterwards, so a seeded case still gets a matching branch and HEAD.
+# A case whose whole subject is a mismatch opts out with a skip-align marker file.
 if [[ -f "$case_dir/setup.sh" ]]; then
   bash "$case_dir/setup.sh"
-elif [[ -f .project-continuity/state.md ]]; then
+fi
+
+if [[ -f .project-continuity/state.md && ! -f "$case_dir/skip-align" ]]; then
   recorded_branch="$(sed -n 's/^- Branch: `\(.*\)`$/\1/p' .project-continuity/state.md)"
-  if [[ -n "$recorded_branch" ]]; then
+  if [[ -n "$recorded_branch" && "$(git branch --show-current)" != "$recorded_branch" ]]; then
     git switch -q -c "$recorded_branch"
   fi
   sed -i "s|^- HEAD: \`.*\`\$|- HEAD: \`$(git rev-parse --short HEAD)\`|" .project-continuity/state.md

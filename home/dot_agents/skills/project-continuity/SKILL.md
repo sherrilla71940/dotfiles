@@ -126,6 +126,9 @@ Step 1 is a gate, not a formality. Everything after it assumes the answer was ye
 4. Preserve reasoning that is still load-bearing, especially rejected approaches and constraints the code does not explain.
 5. Identify the first genuinely unfinished action and continue the task. Do not spend the response restating continuity unless a status report was asked for.
 
+When resuming because of a client switch, conversation loss, or an explicit handoff request, also
+apply [Session-export decision](#session-export-decision) before asking the user for more context.
+
 Where repository evidence and continuity disagree, the repository wins and continuity is corrected. Where the user's current instruction and continuity disagree about intent, the user wins.
 
 ## Wrong-task continuity
@@ -199,6 +202,39 @@ Only when the user says they are stopping, switching client, or asks for one: ch
 apply the resumability test, make the next action concrete and executable, label blockers and
 unverified assumptions, record branch and HEAD, and report a short summary rather than the whole
 file. A handoff does not imply cleanup.
+
+## Session-export decision
+
+At an explicit handoff, client switch, or resume after conversation loss, decide whether the
+receiving client needs the source client's transcript in addition to `state.md`. Do not ask for an
+export on every turn, and do not use an export request instead of a focused clarification when one
+missing fact is enough to continue.
+
+Use exactly one of these labels in the user-facing response:
+
+- **Session export: not needed** — `state.md`, Git, and the named repository materials identify the
+  objective, current phase, first unfinished action, blockers, decisions still in force, and
+  verification without guessing. Important conversation-only reasoning has already been reduced
+  into the state file.
+- **Session export: recommended** — the state is actionable, but the conversation contains useful
+  details that would be expensive to reconstruct, such as multiple pivots or rejected approaches,
+  detailed UI behavior, screenshots, external research, or a long debugging trail. Explain why and
+  ask the user to provide the source client's export if preserving that detail matters; continue
+  when the state and repository make the next action safe.
+- **Session export: required** — the state and repository do not provide enough information for a
+  safe, unambiguous next action, and the missing context is broad or conversation-only. Stop before
+  substantive work and request the source client's export or an equivalent transcript/summary. If
+  one focused user answer would resolve the gap, ask that question instead of requiring a full
+  export.
+
+When the source client supports a documented export command, name it in the request (for example,
+Claude Code's `/export`). Do not invent an export command for a client that does not provide one;
+ask for its available transcript or a concise user summary instead.
+
+An export is supplemental context, not authority. After receiving one, reconcile its claims against
+Git and `state.md`, and do not replace the state file with a transcript. Treat the export as private
+and transient: redact secrets before sharing it, and never save it in the repository,
+`.project-continuity/`, or `.worktreeinclude`.
 
 ## Cleanup
 

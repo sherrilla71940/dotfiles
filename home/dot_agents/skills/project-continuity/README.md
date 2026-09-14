@@ -28,6 +28,22 @@ The receiving client detects the state on its first task turn, reconciles it aga
 resumes. Say "continue from project continuity" only to force that, or if the global bootstrap
 did not load.
 
+### When to export the session
+
+At a client switch or handoff, the agent reports one of three labels:
+
+- `Session export: not needed` — continuity and Git are enough.
+- `Session export: recommended` — the task can continue, but the conversation contains useful
+  details such as rejected approaches, UI behavior, screenshots, external research, or a long
+  debugging trail. Paste the source client's export if you want to preserve those details.
+- `Session export: required` — the receiving agent cannot safely determine the next action. Provide
+  the source client's export or answer the focused clarification it requests.
+
+For Claude Code, the source-client command is `/export`. Other clients may require an equivalent
+transcript or a summary. Treat exports as private, redact secrets, and paste them only as
+supplemental context; Git and `state.md` remain authoritative. Do not put exports in the repository
+or `.project-continuity/`.
+
 If you need to work on something else before finishing, the unfinished task is parked rather
 than overwritten — it moves to `.project-continuity/parked/<slug>.md` and moves back when you
 return. `ls .project-continuity/parked/` is the whole list command. A worktree is still the

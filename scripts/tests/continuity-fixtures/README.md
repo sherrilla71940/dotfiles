@@ -35,7 +35,7 @@ invents one it was not owed.
 `setup-case.sh` stages a case in a throwaway repository and prints the prompt to paste:
 
 ```bash
-bash scripts/continuity-fixtures/setup-case.sh scripts/continuity-fixtures/05-finished-state
+bash scripts/tests/continuity-fixtures/setup-case.sh scripts/tests/continuity-fixtures/05-finished-state
 cd <the path it prints>
 claude    # or codex, or a Copilot session
 ```
@@ -43,7 +43,7 @@ claude    # or codex, or a Copilot session
 On Windows, run it from the repository root with Git Bash specifically:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe" scripts/continuity-fixtures/setup-case.sh scripts/continuity-fixtures/05-finished-state
+& "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe" scripts/tests/continuity-fixtures/setup-case.sh scripts/tests/continuity-fixtures/05-finished-state
 ```
 
 `bash` on PATH in PowerShell is often WSL or another POSIX environment, which cannot see a

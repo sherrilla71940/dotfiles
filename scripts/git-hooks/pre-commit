@@ -5,7 +5,7 @@
 # touches the home directory. It catches template failures and chezmoi filename-attribute
 # collisions that are not obvious in a normal Git diff.
 #
-# Enabled once per clone by scripts/bootstrap-*, or by hand:
+# Enabled once per clone by scripts/bootstrap/bootstrap-*, or by hand:
 #   git config core.hooksPath scripts/git-hooks
 set -euo pipefail
 

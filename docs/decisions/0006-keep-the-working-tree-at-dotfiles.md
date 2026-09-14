@@ -58,7 +58,7 @@ machine whose link is missing silently uses whatever `~/.local/share/chezmoi` co
 identity check belongs immediately after cloning rather than at first failure.
 
 A new machine needed one step beyond cloning, and that step differs per operating system.
-`scripts/bootstrap-*` now performs it: each creates the link when the path is free, reports
+`scripts/bootstrap/bootstrap-*` now performs it: each creates the link when the path is free, reports
 it when it already points at this repository, and refuses to replace anything else. The
 Windows check compares the junction's reparse target, because `Resolve-Path` normalises a
 path without following it and would report a correctly linked machine as unrelated.
@@ -76,7 +76,7 @@ path without following it and would report a correctly linked machine as unrelat
 - [`.chezmoiroot`](../../.chezmoiroot)
 - [`docs/setup.md`](../setup.md#working-tree-at-dotfiles)
 - [`AGENTS.md`](../../AGENTS.md)
-- [`scripts/bootstrap-macos.sh`](../../scripts/bootstrap-macos.sh) and [`scripts/bootstrap-windows.ps1`](../../scripts/bootstrap-windows.ps1)
+- [`scripts/bootstrap/bootstrap-macos.sh`](../../scripts/bootstrap/bootstrap-macos.sh) and [`scripts/bootstrap/bootstrap-windows.ps1`](../../scripts/bootstrap/bootstrap-windows.ps1)
 
 ```bash
 chezmoi source-path                                        # ends in .local/share/chezmoi/home

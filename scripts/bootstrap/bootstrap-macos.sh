@@ -4,7 +4,7 @@
 # install software unexpectedly.
 set -euo pipefail
 
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 
 # Wiring the clone up runs before the package-manager gate below. Neither step needs Homebrew,
 # and both are the ones that fail silently when skipped.
@@ -72,7 +72,7 @@ else
   # The manifest stays out of routine apply because installing this many extensions is slow
   # and is not something a configuration change should trigger. This script runs once, by
   # hand, which is where it belongs.
-  manifest="$repo/scripts/vscode-extensions.txt"
+  manifest="$repo/scripts/manifests/vscode-extensions.txt"
   if [[ -f "$manifest" ]]; then
     printf 'installing VS Code extensions from the manifest...\n'
     grep -v '^#' "$manifest" | grep . |
@@ -95,9 +95,9 @@ if command -v claude >/dev/null 2>&1; then
 
   # ~/.claude.json also holds application-owned state, so the installer adds only missing
   # server names and leaves any existing one exactly as it is.
-  if [[ -f "$repo/scripts/install-claude-mcp.sh" ]]; then
-    bash "$repo/scripts/install-claude-mcp.sh" ||
-      printf 'The Claude MCP installer failed. Run scripts/install-claude-mcp.sh by hand.\n' >&2
+  if [[ -f "$repo/scripts/install/install-claude-mcp.sh" ]]; then
+    bash "$repo/scripts/install/install-claude-mcp.sh" ||
+      printf 'The Claude MCP installer failed. Run scripts/install/install-claude-mcp.sh by hand.\n' >&2
   fi
 else
   printf 'claude is not on PATH, so plugins were skipped. Install Claude Code, then rerun this script.\n' >&2

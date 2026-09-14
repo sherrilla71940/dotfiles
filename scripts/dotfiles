@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Repository-local tooling entry point; this is not rendered by chezmoi.
+# Usage: bash scripts/dotfiles <command>
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+case "${1:-}" in
+  doctor)
+    shift
+    exec bash "$script_dir/diagnostics/dotfiles-doctor.sh" "$@"
+    ;;
+  *)
+    printf 'usage: %s doctor\n' "$0" >&2
+    exit 2
+    ;;
+esac

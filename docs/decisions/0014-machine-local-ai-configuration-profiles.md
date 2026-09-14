@@ -139,11 +139,11 @@ the test on a structural error that balanced delimiters alone would not catch.
 - `home/.chezmoitemplates/core.md`, `profiles/`, and `continuity.md` compose the instruction layers.
 - Claude, Codex, and VS Code wrappers pass the root template data explicitly.
 - `home/dot_local/share/maintain-project-continuity.sh.tmpl` carries the continuity-off no-op guard.
-- `scripts/test-ai-configuration-profiles.sh` renders all four combinations, defaults, and invalid
+- `scripts/tests/test-ai-configuration-profiles.sh` renders all four combinations, defaults, and invalid
   values without changing live targets. It asserts that the worktree launch check survives both
   continuity states, and runs the rendered helper against a throwaway repository to prove that
   continuity off prints nothing and changes neither the state file nor `.git/info/exclude`.
-- Run `bash scripts/test-ai-configuration-profiles.sh` from Git Bash or macOS Bash, then run the
+- Run `bash scripts/tests/test-ai-configuration-profiles.sh` from Git Bash or macOS Bash, then run the
   repository pre-commit hook for staged-source rendering and cross-client structural checks.
 
 ## Revisions

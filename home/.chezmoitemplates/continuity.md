@@ -1,6 +1,5 @@
 {{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {{- if eq $profile.ai_continuity "on" }}
-
 ## Project continuity
 
 Decide whether continuity is needed before the first substantive repository action, and create

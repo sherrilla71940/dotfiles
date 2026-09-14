@@ -20,10 +20,10 @@ macOS.
   composes it at render time: the always-on baseline, the selected personal or company context,
   optional continuity guidance, and platform- or client-specific branches. Thin adapters then
   render the resulting content into each tool's native format. Some content is shared verbatim,
-  some is conditional, and some remains client-specific. Where a complete file can be shared,
-  such as portable skills, symlinks avoid duplicate copies. `~/.claude/CLAUDE.md`, for example,
-  combines the shared baseline, selected context, optional continuity guidance, and a Claude-only
-  section at render time.
+  some content is included conditionally, and some content remains client-specific. Where a complete
+  file can be shared, such as portable skills, symlinks avoid duplicate copies. For example,
+  `~/.claude/CLAUDE.md` combines the shared baseline, selected context, optional continuity guidance,
+  and a Claude-only section at render time.
 - **One computer can support both personal and company work without maintaining two separate
   configuration sets.** Two machine-local selectors drive render-time composition: a shared baseline,
   either the personal or company context, and project-continuity instructions when enabled. The same

@@ -99,6 +99,17 @@ Folders use the remote repository name so every linked worktree converges on one
 The remote owner is added only to resolve an actual same-name collision, avoiding unnecessary
 migration of existing project folders.
 
+### Files the agent authors
+
+The authored-file rule once said such files were never written unless the user asked. The
+principle it protected is real — a handoff note restating an MR description diverges from it —
+but authorship turned out to be the wrong test. What predicts staleness is whether the content
+has a canonical home, and a prompt written for another agent has none: no MR, no ticket, only a
+paste buffer. Defaulting that case to chat cost a round trip whenever the content was long
+enough to need copying, which is most of the time. The rule now keys on the canonical home
+rather than on who wrote the file, and it asks a filed handoff to name what it is pinned to,
+because the snapshot problem is the one genuine cost of writing the file at all.
+
 ## JavaScript instructions
 
 ### PascalCase functions and globals

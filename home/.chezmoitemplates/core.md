@@ -9,13 +9,11 @@
 - Your own user-level configuration on this machine is rendered by chezmoi from a dotfiles repository, so a live configuration file in your home directory — a shell profile, editor settings, or an AI client's instructions, skills, agents, hooks, prompts, or settings — is generated output rather than source. Before creating or changing one, run `chezmoi source-path <file>`. If it resolves, edit the file it names and leave the live file alone; `chezmoi edit <file>` opens the correct source directly. If it does not resolve, do not conclude the file is unmanaged yet: retry with symlinks resolved (`chezmoi source-path "$(readlink -f <file>)"`) and confirm with `chezmoi status`. chezmoi resolves by source-entry path, so a file reached **through** a managed symlink — such as the `~/.claude` ↔ `~/.agents` AI-config mirrors — reports `not managed` while being fully managed under its real path, and an edit to the live file is silently reverted by the next apply. Only when the file is absent from `chezmoi status` after resolving, or chezmoi is not installed, is it unmanaged and safe to edit in place.
 - A partially managed file's source states which keys it owns; leave the rest to the application. Preview with `chezmoi diff`, and ask before running `chezmoi apply`, which can replace live configuration.
 - That repository sets its own conventions for how its sources may be changed. Read the `AGENTS.md` at its root — the repository root, not the source directory — before editing anything there, because a session started outside it does not load that file automatically.
-
 {{ if eq $profile.ai_context "company" }}
-{{ includeTemplate "profiles/company.md" . }}
-{{ else }}
-{{ includeTemplate "profiles/personal.md" . }}
-{{ end }}
-
+{{ includeTemplate "profiles/company.md" . -}}
+{{- else }}
+{{ includeTemplate "profiles/personal.md" . -}}
+{{- end }}
 ## Response behavior
 
 - Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
@@ -94,11 +92,15 @@
   confirmation before copying or moving anything.
 - That classification covers material that arrives from elsewhere. A file **you author** — a
   handoff note, a drafted message, a PR/MR description, a question list for another developer —
-  is not project material and is **not filed by default**. Put its content where its audience
-  reads it: the MR description, the ticket, the message itself. Write a file only when the user
-  asks for one, and then put it in `~/Documents/handoff/{repo}/`, never in the reference-docs
-  folder, which is for received sources only. A note kept beside the MR that already states the
-  same thing is duplicate state, and it goes stale as the findings move.
+  is not project material. Where it goes depends on whether its content has a canonical home.
+  **If it does** — an MR description, a ticket, a commit message, the message itself — put it
+  there and do not also write a file: a note kept beside the MR that already states the same
+  thing is duplicate state, and it goes stale as the findings move. **If it does not**, as with
+  a prompt or brief handed to another session or agent, write it to `~/Documents/handoff/{repo}/`
+  and give the path, because terminal scrollback is not a destination for anything meant to be
+  copied verbatim. Never use the reference-docs folder, which is for received sources only.
+  A filed handoff is a snapshot, so name the commit or state it is pinned to and let a later
+  reader judge whether it still applies.
 - Derive `{repo}` from the Git remote's repository name, never the working-directory name,
   which differs per worktree. Prefix it with `{owner}-` only when needed to distinguish two
   repositories with the same name. Keep each folder flat until retrieval is genuinely harder

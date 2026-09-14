@@ -18,6 +18,13 @@ that agents edit and commit. A **target** is the live file in the home directory
 application reads. `chezmoi apply` makes targets match the source state. The repository-root
 `.chezmoiroot` file selects `home/`; it does not create a `~/home/` directory.
 
+## Profile context in this repository
+
+The machine-wide AI profile defaults to `company`, but this dotfiles repository always uses the
+`personal` context while work is performed here. Treat that as a repository instruction with
+priority over the machine-local context selector: keep artifact defaults and application/project
+comments in English, and do not change the machine selector just to work on this repository.
+
 ## Helping someone operate this repository
 
 Assume the user may know the outcome they want without knowing chezmoi terminology or source

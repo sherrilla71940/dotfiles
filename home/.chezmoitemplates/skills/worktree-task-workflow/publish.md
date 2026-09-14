@@ -21,6 +21,7 @@ Follow the repository's pull- or merge-request template when present.
 
 - Use the primary commit's Conventional Commit subject as the title.
 - Describe what changed, why, the covered scope, and anything deliberately excluded.
+- When the invocation omits `lang`, use the active context default `{{ .langDefault }}`; an explicit `en` or `zhtw` value remains authoritative.
 - Use the resolved `lang`; load `natural-zhtw` before Traditional Chinese request text.
 - For a description longer than a few sentences, load `technical-writing` for structure. On a
   Traditional Chinese description load both: `natural-zhtw` wins where they overlap, because it

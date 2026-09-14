@@ -2,14 +2,31 @@
 set -euo pipefail
 
 repository_root="$(git rev-parse --show-toplevel)"
-lifecycle_hook="$repository_root/home/dot_local/share/maintain-project-continuity.sh"
 session_start_hook="$repository_root/home/dot_claude/hooks/check-worktree-launch.sh"
 fixture="$(mktemp -d)"
+rendered_hook_directory="$(mktemp -d)"
+
+# The lifecycle helper became a chezmoi template when continuity gained an off switch, so these
+# cases run the rendered script rather than the source. They describe the enabled helper's
+# reporting behaviour, so render it with continuity on regardless of this machine's selector; the
+# profile suite owns the disabled no-op. The rendered copy lives outside the fixture repository so
+# it cannot appear as an untracked file in the working tree under test.
+command -v chezmoi >/dev/null 2>&1 || { printf 'continuity hook tests: chezmoi is required\n' >&2; exit 1; }
+lifecycle_hook="$rendered_hook_directory/maintain-project-continuity.sh"
+printf 'ai_context: personal\nai_continuity: "on"\n' > "$rendered_hook_directory/profile.yaml"
+chezmoi execute-template --source="$repository_root" \
+  --override-data-file="$rendered_hook_directory/profile.yaml" \
+  --file "$repository_root/home/dot_local/share/maintain-project-continuity.sh.tmpl" \
+  > "$lifecycle_hook"
 
 cleanup() {
   case "$fixture" in
     "${TMPDIR:-/tmp}"/*) rm -rf -- "$fixture" ;;
     *) printf 'Refusing to remove unexpected fixture path: %s\n' "$fixture" >&2 ;;
+  esac
+  case "$rendered_hook_directory" in
+    "${TMPDIR:-/tmp}"/*) rm -rf -- "$rendered_hook_directory" ;;
+    *) printf 'Refusing to remove unexpected rendered hook path: %s\n' "$rendered_hook_directory" >&2 ;;
   esac
 }
 trap cleanup EXIT

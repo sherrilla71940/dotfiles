@@ -48,11 +48,13 @@ The accepted keys are:
 | `slug` | ASCII kebab-case branch slug | inferred |
 | `branch` | whole branch name, overriding `type`/`slug`/`suffix` | `{type}/{slug}/{suffix}` |
 | `suffix` | final branch segment | `frontend` |
-| `lang` | `en` or `zhtw`, for commit and request text only | `zhtw` |
+| `lang` | `en` or `zhtw`, for commit and request text only | `{{ .langDefault }}` |
 | `mode` | `commit` or `draft` | `commit` |
 | `group` | `batch` or `single` | `batch` |
 | `agent-test` | `true` or `false` | `true` |
 | `cleanup` | {{ .cleanupValues }} | `{{ .cleanupDefault }}` |
+
+An explicit `en` or `zhtw` value for `lang` overrides the active context default.
 
 `infer-task` and `agent-test` accept exactly `true` and `false`, case-insensitively. Reject empty
 values and alternate boolean spellings. `test=` is deliberately not a key: manual testing is

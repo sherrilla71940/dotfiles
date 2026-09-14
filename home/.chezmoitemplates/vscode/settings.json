@@ -1,3 +1,4 @@
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {
   // NOTE: All settings/extensions referencing Catppuccin schema or custom UI colors have been removed to avoid untrusted schema errors.
   // TypeScript SDK
@@ -133,7 +134,8 @@
   "github.copilot.selectedCompletionModel": "",
   "github.copilot.nextEditSuggestions.enabled": true,
   // "github.copilot.advanced": {},
-  // Chinese version of commit message guidelines
+{{- if eq $profile.ai_context "company" }}
+  // Traditional Chinese version of commit message guidelines
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
       "text": "Use Conventional Commits format as type(scope): summary or type: summary when scope is omitted. Keep type in English only and use exactly one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Use zh-TW for summary and for scope when present. Keep summary concise, imperative, and without a trailing period. Keep subject line within 72 characters when possible. Output one commit header only, with an optional body.",
@@ -147,17 +149,24 @@
     {
       "text": "When staged changes contain only non-code files such as .md, .prompt.md, .instructions.md, or files under prompts/, notes/, docs/, or similar meta directories, use chore or docs as the type. Base the scope and summary on what the FILE ITSELF is (its filename or folder), not on any feature, subject, or description written inside the file's content or frontmatter. Keep technical filenames, tool names, and English identifiers in their original form — do not translate them into zh-TW. For example, adding stream-tester-ongoing.prompt.md should produce: chore(prompts): 新增 stream-tester-ongoing prompt 檔案. Do not produce: a feat describing the feature the prompt discusses; or chore(prompts): 新增 stream-tester 進行中 prompt which wrongly translates the filename.",
     },
-    // English version of commit message guidelines
-    // {
-    //   "text": "Use Conventional Commits format as type(scope): summary or type: summary when scope is omitted. Keep type in English only and use exactly one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Use English for summary and for scope when present. Keep summary concise, imperative, and without a trailing period. Keep subject line within 72 characters when possible. Output one commit header only, with an optional body.",
-    // },
-    // {
-    //   "text": "Prefer page name as scope for page-specific changes. For non-page changes, use a broader module scope such as cart, member, or api, and omit scope only when no single area fits. If changes are long or mixed, such as 3 or more key points, keep the first line high-level and put details in body bullets. Add body bullets only when needed, and make bullets concrete without repeating the summary line.",
-    // },
-    // {
-    //   "text": "Follow these examples exactly in style: feat(login-page): add Google login flow; fix(cart): fix quantity not syncing during checkout; docs(dev-docs): update local development steps; style(product-page): adjust product card layout and spacing; chore: update dependencies; feat(product-page): integrate product list API with body bullets add product list API request flow, add loading and error state handling, add empty state message; fix(cart): fix checkout API integration issue with body bullets fix inconsistent request parameter field names, standardize error-code-to-message mapping, prevent duplicate checkout caused by repeated submit; refactor(member): extract login validation logic with body bullets centralize validation checks into shared module, remove duplicate validation code in page, keep existing login flow behavior unchanged.",
-    // },
   ],
+{{- else }}
+  // English version of commit message guidelines
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "Use Conventional Commits format as type(scope): summary or type: summary when scope is omitted. Keep type in English only and use exactly one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Use English for summary and for scope when present. Keep summary concise, imperative, and without a trailing period. Keep subject line within 72 characters when possible. Output one commit header only, with an optional body.",
+    },
+    {
+      "text": "Prefer page name as scope for page-specific changes. For non-page changes, use a broader module scope such as cart, member, or api, and omit scope only when no single area fits. If changes are long or mixed, such as 3 or more key points, keep the first line high-level and put details in body bullets. Add body bullets only when needed, and make bullets concrete without repeating the summary line.",
+    },
+    {
+      "text": "Follow these examples exactly in style: feat(login-page): add Google login flow; fix(cart): fix quantity not syncing during checkout; docs(dev-docs): update local development steps; style(product-page): adjust product card layout and spacing; chore: update dependencies; feat(product-page): integrate product list API with body bullets add product list API request flow, add loading and error state handling, add empty state message; fix(cart): fix checkout API integration issue with body bullets fix inconsistent request parameter field names, standardize error-code-to-message mapping, prevent duplicate checkout caused by repeated submit; refactor(member): extract login validation logic with body bullets centralize validation checks into shared module, remove duplicate validation code in page, keep existing login flow behavior unchanged.",
+    },
+    {
+      "text": "When staged changes contain only non-code files such as .md, .prompt.md, .instructions.md, or files under prompts/, notes/, docs/, or similar meta directories, use chore or docs as the type. Base the scope and summary on what the FILE ITSELF is (its filename or folder), not on any feature, subject, or description written inside the file's content or frontmatter. Keep technical filenames, tool names, and identifiers in their original form. For example, adding stream-tester-ongoing.prompt.md should produce: chore(prompts): add stream-tester-ongoing prompt file. Do not produce a feat describing the feature the prompt discusses.",
+    },
+  ],
+{{- end }}
   "github.copilot.chat.languageContext.fix.typescript.enabled": true,
   "github.copilot.chat.languageContext.inline.typescript.enabled": true,
   "github.copilot.chat.languageContext.typescript.enabled": true,

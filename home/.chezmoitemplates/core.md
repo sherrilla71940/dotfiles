@@ -1,12 +1,20 @@
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
+
 # Core Principles
 
 ## Scope and priority
 
-- Apply rules in this order when conflicts occur: explicit in-conversation user instruction > language/framework-specific > file-type-specific > general.
+- Apply rules in this order when conflicts occur: explicit in-conversation user instruction > repository or project instruction > active personal/company context > shared baseline. Language-, framework-, and file-type-specific rules apply within their stated scope.
 - Edit source-of-truth files, not generated output (for example: `.ts` over `.js`, `.scss` over `.css`). Regenerate output only when the requested change or proportionate verification requires it.
 - Your own user-level configuration on this machine is rendered by chezmoi from a dotfiles repository, so a live configuration file in your home directory — a shell profile, editor settings, or an AI client's instructions, skills, agents, hooks, prompts, or settings — is generated output rather than source. Before creating or changing one, run `chezmoi source-path <file>`. If it resolves, edit the file it names and leave the live file alone; `chezmoi edit <file>` opens the correct source directly. If it does not resolve, do not conclude the file is unmanaged yet: retry with symlinks resolved (`chezmoi source-path "$(readlink -f <file>)"`) and confirm with `chezmoi status`. chezmoi resolves by source-entry path, so a file reached **through** a managed symlink — such as the `~/.claude` ↔ `~/.agents` AI-config mirrors — reports `not managed` while being fully managed under its real path, and an edit to the live file is silently reverted by the next apply. Only when the file is absent from `chezmoi status` after resolving, or chezmoi is not installed, is it unmanaged and safe to edit in place.
 - A partially managed file's source states which keys it owns; leave the rest to the application. Preview with `chezmoi diff`, and ask before running `chezmoi apply`, which can replace live configuration.
 - That repository sets its own conventions for how its sources may be changed. Read the `AGENTS.md` at its root — the repository root, not the source directory — before editing anything there, because a session started outside it does not load that file automatically.
+
+{{ if eq $profile.ai_context "company" }}
+{{ includeTemplate "profiles/company.md" . }}
+{{ else }}
+{{ includeTemplate "profiles/personal.md" . }}
+{{ end }}
 
 ## Response behavior
 
@@ -72,7 +80,7 @@
 - Favor descriptive names and straightforward control flow over explanatory comments and clever abstractions.
 - Use JSDoc (`/** */`) for exported/public APIs and non-obvious functions: explain purpose, usage constraints, parameters, and return values.
 - Use inline `//` comments sparingly, for implementation notes that explain _why_ a non-obvious decision or workaround was made.
-- In application and project repositories, code comments are written in zh-tw — inline `//`, block `/* */`, and JSDoc `/** */` alike. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — comments are written in English. Chat responses stay English in either case.
+- In application and project repositories, code comments default to {{ if eq $profile.ai_context "company" }}Traditional Chinese (zh-TW){{ else }}English{{ end }} — inline `//`, block `/* */`, and JSDoc `/** */` alike — unless repository or project instructions specify another language. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — comments are written in English unconditionally. Chat responses stay English unless an explicit user request or an applicable repository or project rule requires otherwise.
 
 ## Project material
 

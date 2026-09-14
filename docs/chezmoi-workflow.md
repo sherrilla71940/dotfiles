@@ -31,6 +31,30 @@ Use these rules to choose a command:
   nothing. Never run `chezmoi add` on one — see the warning below.
 - **Created a new live file:** Run `chezmoi add <target>` to start managing it.
 
+## Machine-local AI profile selectors
+
+The AI profile is selected in chezmoi's machine-local config, not in this repository's source
+state. Run `chezmoi edit-config` and set these values under `[data]` when needed:
+
+```toml
+[data]
+ai_context = "company"        # personal or company; default: company
+ai_continuity = "on"           # on or off; default: on
+```
+
+Missing `ai_context` uses `company`; missing `ai_continuity` uses `on`. Any other value fails
+clearly during rendering. The selectors compose one baseline with either the personal or company
+context and, independently, continuity instructions and hooks when continuity is on. They affect
+newly rendered configuration and newly started sessions; an already-running session keeps its
+startup context. The values are local to the machine and are not committed or synchronized by
+this repository. When working in this dotfiles repository, root `AGENTS.md` overrides the machine
+context and requires the effective
+context to be `personal`.
+
+After editing the config, use `chezmoi diff` to preview the selected render. Review it before
+`chezmoi apply`, then restart the affected client sessions. A dedicated profile CLI is deferred;
+the worktree skills remain installed and independently invokable in every profile.
+
 Check which case applies by reading the whole source filename, not only its suffix:
 
 ```bash

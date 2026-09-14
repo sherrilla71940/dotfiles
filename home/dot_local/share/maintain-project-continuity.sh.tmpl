@@ -8,7 +8,16 @@
 # output, so both run this one script; anything naming a specific client belongs in that
 # client's own hook instead.
 set -euo pipefail
-
+{{ $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
+{{ if eq $profile.ai_continuity "off" }}
+# The machine-local AI profile sets ai_continuity to off, so this hook is a deliberate no-op: it
+# prints nothing and writes nothing, which keeps both clients quiet and leaves state and
+# .git/info/exclude untouched. Draining stdin first stops the client seeing a broken pipe while it
+# writes the event payload. The project-continuity skill stays installed, so an explicit request to
+# start, resume, checkpoint, hand off or clean up continuity still works.
+cat >/dev/null 2>&1 || true
+exit 0
+{{ end }}
 input="$(cat)"
 
 # `source` is read last on purpose. Tab is an IFS whitespace character, so a run of tabs collapses

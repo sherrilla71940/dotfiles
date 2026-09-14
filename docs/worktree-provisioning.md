@@ -84,6 +84,10 @@ unfinished task — which is the right answer when the two tasks need separate u
 changes, and unnecessary when they do not. For a second task in the same directory, the
 `project-continuity` skill parks the first under `.project-continuity/parked/` instead.
 
+The machine-local AI profile does not toggle worktree capabilities. Both personal and company
+contexts keep the canonical `worktree-task-workflow` and `worktree-manifest` skills available;
+continuity is an independent `ai_continuity` choice that the workflow may use when enabled.
+
 The wrapper options are:
 
 | Option | Effect |

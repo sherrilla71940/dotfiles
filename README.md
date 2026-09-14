@@ -1,28 +1,23 @@
 # Dotfiles
 
-Cross-platform personal developer-environment configuration managed with
-[chezmoi](https://www.chezmoi.io), including shell, editor, tool, and AI-client configuration.
-The desired state lives in Git; chezmoi renders it into the live files each machine reads,
-resolving what is shared, what differs per operating system, and what belongs to a single tool.
+[English](README.md) · [繁體中文](README.zh-TW.md)
 
-It solves four problems:
+This repository is a cross-platform AI developer environment and developer-tooling system managed
+with [chezmoi](https://www.chezmoi.io). It coordinates Claude Code, Codex, GitHub Copilot, and
+VS Code from one canonical source while preserving each client's native format and
+application-owned settings.
 
-- **Configuration drifts between machines, and the same setting lives at a different path on
-  each operating system.** Templates keep one managed configuration consistent across
-  platforms. A new machine clones this repository and renders every managed file with a
-  single chezmoi command; the tools those files configure are installed by their own scripts,
-  kept out of the apply path so a routine apply never installs software.
+It also includes machine-local personal/company profiles, independent project-continuity controls,
+cross-platform worktree tooling, and regression validation for rendered configuration.
+
+## What this repository provides
+
 - **Three AI tools need overlapping configuration, but each expects it in a different file and
   format.** Shared content is written once and rendered into the form each client accepts,
   while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the
   working agreement shared with Codex and Copilot with an additional Claude-only section at
   render time. Where the exact same file can serve multiple tools, as with shared skills, the
   repository uses symlinks instead of rendering copies.
-- **Some managed files are also rewritten by the applications that consume them.** One settings
-  file can hold both what should follow your machines and what the application records about
-  itself, so writing it wholesale destroys the second. Take Claude Code's `settings.json`:
-  the repository owns a handful of durable keys and merges them over whatever Claude wrote,
-  leaving your model, effort and theme untouched.
 - **One machine has to serve both personal and company work, and the conventions differ.** Two
   machine-local selectors choose the context and whether automatic project continuity is enabled.
   Project continuity is private, working-tree-local handoff state: it records the objective,
@@ -37,12 +32,16 @@ It solves four problems:
   merge-request text written by the worktree-task-workflow skill when publishing, while personal
   work stays English — and a repository's own instructions still outrank whatever the machine is
   set to.
-
-None of that is taken on trust. A commit hook re-renders the staged source and fails if shared
-rule bodies diverge between clients, a skill disappears because of a filename attribute,
-Codex's file gains frontmatter, a cross-reference points to a missing heading, or the bash and
-PowerShell status lines produce different output — one of the few pieces intentionally
-maintained as two implementations.
+- **Configuration drifts between machines, and the same setting lives at a different path on
+  each operating system.** Templates keep one managed configuration consistent across
+  platforms. A new machine clones this repository and renders every managed file with a
+  single chezmoi command; the tools those files configure are installed by their own scripts,
+  kept out of the apply path so a routine apply never installs software.
+- **Some managed files are also rewritten by the applications that consume them.** One settings
+  file can hold both what should follow your machines and what the application records about
+  itself, so writing it wholesale destroys the second. Take Claude Code's `settings.json`:
+  the repository owns a handful of durable keys and merges them over whatever Claude wrote,
+  leaving your model, effort and theme untouched.
 
 ## AI client architecture at a glance
 
@@ -144,6 +143,12 @@ Skills come in three tiers, which is why the diagram has two skill sources:
 Worktree workflow and worktree manifest stay independently available in every combination; neither
 is a profile toggle. Shared helper scripts render to `~/.local/share` so Claude Code and Codex can
 run the same file.
+
+None of that is taken on trust. A commit hook re-renders the staged source and fails if shared
+rule bodies diverge between clients, a skill disappears because of a filename attribute,
+Codex's file gains frontmatter, a cross-reference points to a missing heading, or the bash and
+PowerShell status lines produce different output — one of the few pieces intentionally
+maintained as two implementations.
 
 ## How it works
 

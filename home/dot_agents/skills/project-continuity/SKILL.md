@@ -142,6 +142,11 @@ When the existing state clearly belongs to a different task, never merge it into
   saying "forget that for now, fix the navbar" may be switching tasks temporarily, not
   abandoning the old one.
 
+Before replacing, name anything in it that belongs in durable documentation or private
+instructions, the way [Cleanup](#cleanup) requires before deleting. Parking is not how you keep
+one fact from an abandoned task — it leaves a whole handoff nobody will return to, and a
+session reaching for it to preserve a single constraint has picked the wrong mechanism.
+
 Do not build an archive or history system to avoid this decision. When both tasks need to stay resumable in the same directory, park the first one.
 
 ## Parking a second task

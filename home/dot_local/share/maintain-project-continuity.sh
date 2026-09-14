@@ -47,11 +47,14 @@ find_state_file() {
   return 1
 }
 
-# Read one `- Field: `value`` line out of the Verification block.
+# Read one `- Field: `value`` line out of the Verification block. Match the FIRST code
+# span, not a greedy run to the last one: a Branch line often carries a parenthetical of
+# its own, and reading its last span reported a branch the file never recorded, which
+# made the hook cry drift on every response.
 recorded_field() {
   local state_file="$1" field="$2" line
   line="$(grep -m1 -E "^- $field:" "$state_file" 2>/dev/null || true)"
-  printf '%s' "$line" | sed -n 's/.*`\(.*\)`.*/\1/p'
+  printf '%s' "$line" | sed -n 's/^[^`]*`\([^`]*\)`.*/\1/p'
 }
 
 # The Verification block records a branch and a HEAD, and git can answer both. Leaving that to

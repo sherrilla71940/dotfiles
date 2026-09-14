@@ -12,8 +12,14 @@
 
 ## Pass
 
-- Moves the file to `.project-continuity/parked/<slug>.md` with a `Parked:` full
-  ISO 8601 timestamp added to its Verification block and nothing else changed.
+- Never merges the session-store state into the new task, and never replaces it.
+  That is what decides the case.
+- Parks it before writing any state of its own: the file moves to
+  `.project-continuity/parked/<slug>.md` with a `Parked:` full ISO 8601 timestamp
+  added to its Verification block and nothing else changed.
+- Timing inside the turn is not under test. Parking up front and parking at the
+  first checkpoint both pass, because the rule is about not taking the one
+  `state.md` slot from a live task, not about when the move happens.
 - Says that it parked it, and names the path.
 - Starts the rate-limiting work, creating fresh state for it once the work turns
   material rather than before.

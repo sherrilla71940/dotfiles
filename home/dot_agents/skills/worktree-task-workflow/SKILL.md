@@ -1,6 +1,6 @@
 ---
 name: worktree-task-workflow
-description: "Run one isolated implementation task through its lifecycle in a Codex worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving handoff."
+description: "Start or continue one isolated implementation task through its lifecycle in a Codex worktree, from an explicit task or requested material inference through manual testing, publishing, and branch-preserving handoff."
 disable-model-invocation: true
 ---
 
@@ -9,10 +9,11 @@ disable-model-invocation: true
 If the current host is GitHub Copilot, stop: this adapter depends on Codex worktree behavior and
 must not be translated into Copilot operations.
 
-Run one task in an existing Codex worktree:
+Start or continue one task with a Codex-managed or provisioned worktree:
 
 ```text
-validate -> read materials -> confirm isolation -> branch -> plan -> implement -> verify
+validate -> read materials -> confirm isolation -> prepare/enter worktree -> branch
+         -> plan -> implement -> verify
          -> USER MANUAL TEST -> commit -> push -> request -> app-owned worktree lifecycle
 ```
 
@@ -35,7 +36,7 @@ $worktree-task-workflow <base> --infer-task <materials...> [options...]
 inference from readable materials. `task=""` is invalid; omit `task` when using inference. Do not
 touch Git before showing the resolved echo.
 
-## 2. Require a linked worktree
+## 2. Prepare the working-tree entry point
 
 Inspect the current root and worktree registry without changing them:
 
@@ -46,10 +47,21 @@ git worktree list --porcelain
 git status --porcelain
 ```
 
-The current root must be a linked worktree, not the repository's primary checkout. It must also
-be clean apart from ignored files provisioned for this worktree. If the chat is still Local,
-stop before fetching or branching and ask the user to move it with Codex Handoff or start a
-Codex Worktree chat from the intended repository. A shell `cd` does not move the chat's workspace.
+The current root may be the repository's primary checkout or a linked worktree. It must be clean
+apart from ignored files provisioned for this worktree. A new task must never edit, branch, or
+stage changes in the primary checkout; if the current root is primary, continue through the
+resolved echo and remote-base validation, then use section 4 to enter or provision a worktree.
+
+There are two Codex entry paths:
+
+- In the Codex desktop app, a Local chat should use the chat header's Handoff control to move to
+  Worktree after the resolved echo. Select the requested `<base>` branch. Codex creates the
+  managed detached worktree, copies the repository's `.worktreeinclude` entries, and keeps the
+  chat associated with that worktree. Do not create a second terminal worktree for this path.
+- In the Codex CLI or IDE extension, the adapter can provision the worktree, but a shell command
+  cannot move the current chat's workspace. It therefore creates a detached worktree, reports
+  its exact path, and stops. Start Codex in that path and invoke the same resolved workflow again,
+  passing the resolved `branch=` value so branch naming cannot drift.
 
 Stop if repository instructions forbid worktrees. This dotfiles repository does, identifiable by
 its root `.chezmoiroot`; offer to run that task in place instead.
@@ -68,14 +80,51 @@ Then fetch and verify:
 git fetch origin --prune
 git rev-parse --verify --quiet "refs/remotes/origin/<base>"
 git rev-parse --verify --quiet "refs/heads/<branch>"
-git symbolic-ref --quiet --short HEAD
 ```
 
-Show near remote matches and stop when `origin/<base>` is absent. For a new task, require detached
-HEAD and require the task branch not to exist. Codex-managed worktrees normally begin detached;
-create the branch directly from the recorded remote commit:
+Show near remote matches and stop when `origin/<base>` is absent. The task branch must not exist
+for a new task; a resume may find its existing task branch and must validate it in section 5. Do
+not switch branches until the current checkout has passed through section 4; this allows a primary
+checkout to reach its safe Handoff or provisioning path without branching there.
+
+## 4. Enter or provision the worktree
+
+If the current root is already a linked worktree, continue to section 5.
+
+If the current root is the primary checkout, use the entry path that matches the current Codex
+surface:
+
+- For a Codex desktop Local chat, use Handoff to Worktree and select `<base>`. After Codex moves
+  the chat, resume this workflow in the associated worktree. Do not use a shell `cd` as a
+  substitute; it does not move the chat's workspace.
+- For Codex CLI or the IDE extension, create a detached worktree from the recorded remote base:
+
+  ```bash
+  git wt-add -- --detach "<repo-parent>/<repo-name>.worktrees/<slug>" "origin/<base>"
+  ```
+
+  The path is a sibling of the repository, so it does not add an ignored nested directory to the
+  primary checkout. `git wt-add` also provisions the tracked `.worktreeinclude` allowlist. If the
+  alias is unavailable, use `git worktree add --detach` with the same path and start point, and
+  state that ignored files were not provisioned.
+
+  Stop after creation. Report the exact path, the provisioning result, and the continuation
+  command with the resolved `branch=`. The user must start Codex in that directory, or attach the
+  existing CLI/IDE session to it if the surface supports that operation. Never continue by
+  issuing commands against the new path from the primary checkout.
+
+After Handoff or terminal provisioning, verify that the current root is the intended linked
+worktree, that the worktree is detached for a new task, and that its HEAD equals the recorded
+`origin/<base>` commit. If native Handoff selected a different starting commit, stop without
+resetting it and use the explicit CLI/IDE provisioning path instead.
+
+## 5. Establish the task branch
+
+For a new task, the current root must now be a linked worktree with detached HEAD. Create the
+branch directly from the recorded remote commit:
 
 ```bash
+git symbolic-ref --quiet --short HEAD   # must fail for a new task
 git switch -c <branch> origin/<base>
 ```
 
@@ -83,7 +132,7 @@ If already on `<branch>`, treat it only as a resume: reconcile `project-continui
 its objective and starting point match. Stop on any other checked-out branch or on an existing
 task branch with no matching continuity; never silently reuse, reset, or relocate it.
 
-## 4. Verify isolation
+## 6. Verify isolation
 
 After branch creation or resume, verify:
 
@@ -107,13 +156,13 @@ worktree and one made with `git wt-add` can both arrive without it, and a provis
 as `[skipped] .worktreeinclude: manifest not found in source worktree` is silent until the app
 fails to run.
 
-## 5. Implement through publishing
+## 7. Implement through publishing
 
 Read [references/lifecycle.md](references/lifecycle.md) and follow it through the manual-test gate
 and publishing. Do not commit, push, or open a request until the user explicitly reports that the
 manual test passed.
 
-## 6. Leave worktree deletion to Codex
+## 8. Leave worktree deletion to Codex
 
 The skill never deletes its active Codex workspace. The task branch and request always survive.
 
@@ -136,5 +185,6 @@ run `git worktree remove`, delete a branch, archive a chat, or claim the worktre
 ## Resume
 
 Resume in the same physical Codex worktree. In the app, return or hand the chat back to its
-associated worktree. In CLI or the IDE extension, start Codex in that exact directory and continue
-from `project-continuity`.
+associated worktree. In CLI or the IDE extension, start Codex in that exact directory and invoke
+the same resolved workflow with its recorded `branch=` value, then continue from
+`project-continuity`.

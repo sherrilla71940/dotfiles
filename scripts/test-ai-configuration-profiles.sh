@@ -329,12 +329,34 @@ mkdir -p "$default_destination"
   --exclude=scripts \
   --no-tty \
   --force >/dev/null
-assert_contains "$default_destination/.claude/CLAUDE.md" 'The active context is `company`.'
-assert_contains "$default_destination/.agents/skills/git-commit-action/SKILL.md" '| **Language** | `en` · `zhtw`      | `zhtw`'
+assert_contains "$default_destination/.claude/CLAUDE.md" 'The active context is `personal`.'
+assert_not_contains "$default_destination/.claude/CLAUDE.md" 'The active context is `company`.'
+assert_contains "$default_destination/.agents/skills/git-commit-action/SKILL.md" '| **Language** | `en` · `zhtw`      | `en`'
+assert_contains "$default_destination/.agents/skills/worktree-task-workflow/references/invocation.md" 'commit and request text only | `en`'
 assert_contains "$repository_root/AGENTS.md" 'dotfiles repository always uses the'
 assert_contains "$repository_root/AGENTS.md" '`personal` context while work is performed here'
 assert_contains "$default_destination/.claude/CLAUDE.md" '## Project continuity'
 printf 'profile tests: missing-key defaults OK\n'
+
+# The documented work-machine workflow sets ai_context only and leaves continuity to its default.
+# Cover that shape explicitly: the four-combination loop always writes both keys, so it cannot show
+# that an unset ai_continuity still resolves to on alongside an explicit company context.
+company_only="$work_directory/company-only.yaml"
+printf 'ai_context: company\n' > "$company_only"
+company_only_destination="$work_directory/render-company-only"
+mkdir -p "$company_only_destination"
+"$chezmoi_bin" apply \
+  --config="$config_file" \
+  --source="$repository_root" \
+  --destination="$company_only_destination" \
+  --exclude=scripts \
+  --override-data-file="$company_only" \
+  --no-tty \
+  --force >/dev/null
+assert_contains "$company_only_destination/.claude/CLAUDE.md" 'The active context is `company`.'
+assert_contains "$company_only_destination/.agents/skills/git-commit-action/SKILL.md" '| **Language** | `en` · `zhtw`      | `zhtw`'
+assert_contains "$company_only_destination/.claude/CLAUDE.md" '## Project continuity'
+printf 'profile tests: explicit company with default continuity OK\n'
 
 invalid_context="$work_directory/invalid-context.yaml"
 printf 'ai_context: unsupported\nai_continuity: on\n' > "$invalid_context"
@@ -352,5 +374,54 @@ if "$chezmoi_bin" apply --config="$config_file" --source="$repository_root" \
   fail 'unsupported ai_continuity rendered successfully'
 fi
 printf 'profile tests: invalid selector rejection OK\n'
+
+# Render the other operating system's branch. .chezmoiignore drops the wrong VS Code tree and the
+# wrong worktree helper per OS, so on one machine half of those templates are never exercised and
+# the host-specific assertions above are dead code for the other half. Overriding .chezmoi.os
+# renders both branches from either host, which is the only way this repository sees its macOS VS
+# Code body validated on Windows, or its Windows body validated on a Mac.
+assert_absent() {
+  [[ ! -e "$1" ]] || fail "$2"
+}
+
+check_os_branch() {
+  local os_name="$1" destination="$work_directory/render-os-$1"
+  local override="$work_directory/os-$1.yaml"
+  printf 'ai_context: personal\nai_continuity: "on"\nchezmoi:\n  os: %s\n' "$os_name" > "$override"
+  mkdir -p "$destination"
+  "$chezmoi_bin" apply \
+    --config="$config_file" \
+    --source="$repository_root" \
+    --destination="$destination" \
+    --exclude=scripts \
+    --override-data-file="$override" \
+    --no-tty \
+    --force >/dev/null
+
+  local settings
+  if [[ "$os_name" == darwin ]]; then
+    settings="$destination/Library/Application Support/Code/User/settings.json"
+    assert_absent "$destination/AppData" "darwin render produced a Windows AppData tree"
+    assert_file "$destination/.local/share/git-worktree-provision.sh"
+    assert_absent "$destination/.local/share/git-worktree-provision.ps1" \
+      "darwin render kept the PowerShell worktree helper"
+  else
+    settings="$destination/AppData/Roaming/Code/User/settings.json"
+    assert_absent "$destination/Library" "windows render produced a macOS Library tree"
+    assert_file "$destination/.local/share/git-worktree-provision.ps1"
+    assert_absent "$destination/.local/share/git-worktree-provision.sh" \
+      "windows render kept the POSIX worktree helper"
+  fi
+
+  assert_file "$settings"
+  assert_jsonc_structure "$settings" 4
+  assert_contains "$settings" 'Use English for summary and for scope when present.'
+  assert_file "$destination/.claude/CLAUDE.md"
+  assert_contains "$destination/.claude/CLAUDE.md" 'The active context is `personal`.'
+}
+
+check_os_branch darwin
+check_os_branch windows
+printf 'profile tests: cross-platform render branches OK\n'
 
 printf 'profile tests: all checks passed\n'

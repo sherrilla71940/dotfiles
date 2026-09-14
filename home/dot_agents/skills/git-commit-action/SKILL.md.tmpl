@@ -1,3 +1,4 @@
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 ---
 name: git-commit-action
 description: "Create one or more Conventional Commits from the current git diff — batches unrelated changes into separate atomic commits by default, with safe per-group staging. Use when the user asks to commit changes, draft commit messages, or invokes /git-commit-action. Supports draft vs. commit modes, batch vs. single grouping, scope filters (all/staged), and English or Traditional Chinese messages."
@@ -25,7 +26,7 @@ Turn the current logical diff into atomic Conventional Commits — one per logic
 | **Mode**     | `commit` · `draft` | `commit` | Actually create commits, or only preview?           |
 | **Grouping** | `batch` · `single` | `batch`  | One commit per logical change, or one commit total? |
 | **Scope**    | `all` · `staged`   | `all`    | Which files are candidates?                         |
-| **Language** | `en` · `zhtw`      | `en`     | Message description/body language?                  |
+| **Language** | `en` · `zhtw`      | `{{ $profile.artifact_language }}`     | Message description/body language?                  |
 
 Example invocations (0–4 flags, any order):
 
@@ -52,12 +53,12 @@ Example invocations (0–4 flags, any order):
 
 ### Language
 
-- `en` (default) — aliases `eng`, `english`. Description/body in English.
+- `{{ $profile.artifact_language }}` (default for the active context) — aliases `eng`, `english` when the value is `en`. Description/body in English when `en` is selected.
 - `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan). Load the `natural-zhtw` skill as well as `git-commit-reference`: the reference file keeps only the commit-specific rules and delegates the zh-TW wording rules to `natural-zhtw`.
 
 ## Workflow
 
-1. Parse `$ARGUMENTS` for Mode, Grouping, Scope, Language, and hints. Apply defaults for omitted axes (`commit`, `batch`, `all`, `en`).
+1. Parse `$ARGUMENTS` for Mode, Grouping, Scope, Language, and hints. Apply defaults for omitted axes (`commit`, `batch`, `all`, `{{ $profile.artifact_language }}`). An explicit `en` or `zhtw` argument overrides this context-derived language default.
 2. Inspect repository state with `git status --porcelain`.
 3. Determine the candidate file set from Scope:
    - `all`: staged + unstaged + untracked.

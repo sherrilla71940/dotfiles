@@ -1,6 +1,8 @@
 [user]
 	email = sherrilla71940@gmail.com
 	name = Aaron Sherrill
+[core]
+	excludesFile = {{ .chezmoi.homeDir }}/.config/git/ignore
 {{ if eq .chezmoi.os "windows" }}
 [alias]
 	wt-add = "!powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.local/share/git-worktree-provision.ps1\" add"

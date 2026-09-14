@@ -11,6 +11,11 @@ why an approach was rejected, what a backend did that nobody expected, which beh
 what is blocking, and what to do next. That is also why it has no `Completed` section — there is
 no point caching what the authoritative store can already tell you.
 
+The machine-local `ai_continuity` selector controls automatic instructions and hooks, not this
+skill's availability. With `ai_continuity = "off"`, startup/stop reporting and automatic state
+handling are suppressed, but an explicit request to start, resume, checkpoint, hand off, or clean
+up continuity can still invoke the skill.
+
 It exists for one move: a client hits its usage limit mid-task, and another client picks the work
 up in the same directory rather than being re-briefed from scratch.
 
@@ -27,6 +32,22 @@ Worktrees only matter when you want two independent tasks side by side.
 The receiving client detects the state on its first task turn, reconciles it against Git, and
 resumes. Say "continue from project continuity" only to force that, or if the global bootstrap
 did not load.
+
+### When to export the session
+
+At a client switch or handoff, the agent reports one of three labels:
+
+- `Session export: not needed` — continuity and Git are enough.
+- `Session export: recommended` — the task can continue, but the conversation contains useful
+  details such as rejected approaches, UI behavior, screenshots, external research, or a long
+  debugging trail. Paste the source client's export if you want to preserve those details.
+- `Session export: required` — the receiving agent cannot safely determine the next action. Provide
+  the source client's export or answer the focused clarification it requests.
+
+For Claude Code, the source-client command is `/export`. Other clients may require an equivalent
+transcript or a summary. Treat exports as private, redact secrets, and paste them only as
+supplemental context; Git and `state.md` remain authoritative. Do not put exports in the repository
+or `.project-continuity/`.
 
 If you need to work on something else before finishing, the unfinished task is parked rather
 than overwritten — it moves to `.project-continuity/parked/<slug>.md` and moves back when you

@@ -41,8 +41,10 @@ to report that a configuration file is generated.
 
 ### Comment language by repository type
 
-Application and project repositories use zh-tw comments, while user-level configuration—such
-as dotfiles, editor settings, personal skills, instructions, and AI configuration—uses English.
+Application and project repositories use the active AI context's default comment language:
+personal context uses English, while company context uses Traditional Chinese (`zh-TW`).
+Repository and project instructions take precedence. User-level configuration—such as dotfiles,
+editor settings, personal skills, instructions, and AI configuration—uses English unconditionally.
 The split prevents a company-project convention from leaking into personal configuration and
 keeps personal files consistent with their surrounding ecosystem.
 

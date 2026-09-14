@@ -1,0 +1,17 @@
+{{- $aiContext := "company" -}}
+{{- if hasKey . "ai_context" -}}
+{{-   $aiContext = index . "ai_context" -}}
+{{- end -}}
+{{- $aiContinuity := "on" -}}
+{{- if hasKey . "ai_continuity" -}}
+{{-   $aiContinuity = index . "ai_continuity" -}}
+{{- end -}}
+{{- if not (or (eq $aiContext "personal") (eq $aiContext "company")) -}}
+{{-   fail (printf "invalid ai_context %q: expected personal or company" $aiContext) -}}
+{{- end -}}
+{{- if not (or (eq $aiContinuity "on") (eq $aiContinuity "off")) -}}
+{{-   fail (printf "invalid ai_continuity %q: expected on or off" $aiContinuity) -}}
+{{- end -}}
+ai_context: {{ $aiContext | quote }}
+ai_continuity: {{ $aiContinuity | quote }}
+artifact_language: {{ if eq $aiContext "company" }}"zhtw"{{ else }}"en"{{ end }}

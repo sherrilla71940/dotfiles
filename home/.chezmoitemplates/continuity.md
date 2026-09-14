@@ -1,3 +1,6 @@
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
+{{- if eq $profile.ai_continuity "on" }}
+
 ## Project continuity
 
 Decide whether continuity is needed before the first substantive repository action, and create
@@ -35,3 +38,4 @@ self-contained edits, formatting, and work the diff already explains. That exemp
 starting continuity only. When `.project-continuity/state.md` already exists and tracks the
 current task, still reconcile it before substantive work, and still offer cleanup once that task
 is complete, however light the current turn is.
+{{- end }}

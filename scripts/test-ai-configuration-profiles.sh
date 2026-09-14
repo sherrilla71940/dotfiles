@@ -1,0 +1,352 @@
+#!/usr/bin/env bash
+# Render and check the four machine-local AI profile combinations without touching live targets.
+#
+# No JSONC parser is installed on the host, so the VS Code checks carry a small string-aware one:
+# comments and trailing commas are removed outside string literals and the result is parsed as
+# JSON. That keeps the managed settings file JSONC -- its comments label the active commit-message
+# block -- while still catching structural errors that balanced delimiters alone would miss.
+set -euo pipefail
+
+repository_root="$(git rev-parse --show-toplevel)"
+chezmoi_bin="$(command -v chezmoi || true)"
+if [[ -z "$chezmoi_bin" ]]; then
+  printf 'profile tests: chezmoi is required\n' >&2
+  exit 1
+fi
+
+if ! command -v cat >/dev/null 2>&1 && [[ -n "${LOCALAPPDATA:-}" ]]; then
+  local_app_data="$LOCALAPPDATA"
+  if command -v cygpath >/dev/null 2>&1; then
+    local_app_data="$(cygpath -u "$local_app_data")"
+  fi
+  for candidate in "$local_app_data"/Programs/Git/usr/bin "$local_app_data"/Git/usr/bin; do
+    if [[ -x "$candidate/cat.exe" ]]; then
+      PATH="$candidate:$PATH"
+      export PATH
+      break
+    fi
+  done
+fi
+command -v cat >/dev/null 2>&1 || { printf 'profile tests: cat is required\n' >&2; exit 1; }
+command -v jq >/dev/null 2>&1 || { printf 'profile tests: jq is required\n' >&2; exit 1; }
+
+work_directory="$(mktemp -d)"
+trap 'rm -rf "$work_directory"' EXIT
+config_file="$work_directory/chezmoi.toml"
+printf '[data]\n' > "$config_file"
+
+fail() {
+  printf 'profile tests: %s\n' "$1" >&2
+  exit 1
+}
+
+assert_file() {
+  [[ -f "$1" ]] || fail "missing file: $1"
+}
+
+assert_contains() {
+  local file="$1" needle="$2"
+  grep -Fq -- "$needle" "$file" || fail "'$needle' not found in $file"
+}
+
+assert_not_contains() {
+  local file="$1" needle="$2"
+  ! grep -Fq -- "$needle" "$file" || fail "unexpected '$needle' in $file"
+}
+
+# Parse the rendered VS Code settings as JSONC instead of only balancing delimiters. The file is
+# deliberately JSONC: its comments label which commit-message block is active, and dozens of string
+# values carry "//" inside URLs, so a strict JSON parse and a naive comment strip both report false
+# failures. Tokenise with string awareness, drop comments and trailing commas, then parse -- which
+# catches structural errors that balanced brackets cannot -- and confirm both contexts ship the same
+# number of commit-message instructions.
+assert_jsonc_structure() {
+  local file="$1" expected_instructions="$2"
+  python - "$file" "$expected_instructions" <<'PY'
+import json
+import sys
+
+path, expected = sys.argv[1], int(sys.argv[2])
+text = open(path, encoding="utf-8").read()
+backslash = chr(92)
+newline = chr(10)
+
+
+def copy_string(source, index, sink):
+    sink.append(source[index])
+    index += 1
+    while index < len(source):
+        sink.append(source[index])
+        if source[index] == backslash:
+            sink.append(source[index + 1])
+            index += 2
+            continue
+        if source[index] == '"':
+            return index + 1
+        index += 1
+    raise SystemExit("unterminated string in %s" % path)
+
+
+stripped = []
+i = 0
+while i < len(text):
+    char = text[i]
+    following = text[i + 1] if i + 1 < len(text) else ""
+    if char == '"':
+        i = copy_string(text, i, stripped)
+        continue
+    if char == "/" and following == "/":
+        while i < len(text) and text[i] != newline:
+            i += 1
+        continue
+    if char == "/" and following == "*":
+        i += 2
+        while i + 1 < len(text) and not (text[i] == "*" and text[i + 1] == "/"):
+            i += 1
+        i += 2
+        continue
+    stripped.append(char)
+    i += 1
+
+source = "".join(stripped)
+cleaned = []
+i = 0
+while i < len(source):
+    if source[i] == '"':
+        i = copy_string(source, i, cleaned)
+        continue
+    if source[i] == ",":
+        j = i + 1
+        while j < len(source) and source[j].isspace():
+            j += 1
+        if j < len(source) and source[j] in "}]":
+            i += 1
+            continue
+    cleaned.append(source[i])
+    i += 1
+
+try:
+    data = json.loads("".join(cleaned))
+except ValueError as error:
+    raise SystemExit("invalid JSONC in %s: %s" % (path, error))
+
+key = "github.copilot.chat.commitMessageGeneration.instructions"
+if key not in data:
+    raise SystemExit("missing %s in %s" % (key, path))
+if len(data[key]) != expected:
+    raise SystemExit(
+        "expected %d commit-message instructions in %s, found %d"
+        % (expected, path, len(data[key]))
+    )
+PY
+}
+
+assert_json() {
+  python - "$@" <<'PY'
+import json
+import sys
+
+for path in sys.argv[1:]:
+    with open(path, encoding="utf-8") as stream:
+        json.load(stream)
+PY
+}
+
+# Check what the rendered continuity helper does, not what it says. Text assertions cannot show
+# that a disabled hook stays silent and leaves the working tree alone, and those two properties are
+# the whole point of continuity off: the client must see no output, the tracked state file must not
+# change, and .git/info/exclude must not gain the private-state entry the enabled helper adds.
+assert_hook_behavior() {
+  local continuity="$1" hook="$2"
+  local fixture state exclude payload output
+  local state_before exclude_before state_after exclude_after
+
+  fixture="$(mktemp -d)"
+  git -C "$fixture" init -q
+  git -C "$fixture" config user.email test@example.com
+  git -C "$fixture" config user.name test
+  git -C "$fixture" config core.autocrlf false
+  printf 'fixture\n' > "$fixture/tracked.txt"
+  git -C "$fixture" add tracked.txt
+  git -C "$fixture" commit -qm initial
+
+  mkdir -p "$fixture/.project-continuity"
+  state="$fixture/.project-continuity/state.md"
+  printf '# Project Continuity\n\n## Objective\n\nKeep the fixture task open.\n\n## Next actions\n\n1. Keep the task open.\n' > "$state"
+  exclude="$(git -C "$fixture" rev-parse --path-format=absolute --git-path info/exclude)"
+  mkdir -p "$(dirname "$exclude")"
+  touch "$exclude"
+
+  state_before="$(cksum < "$state")"
+  exclude_before="$(cksum < "$exclude")"
+  payload="$(jq -cn --arg cwd "$fixture" '{session_id:"profile-test",cwd:$cwd,hook_event_name:"SessionStart",source:"startup"}')"
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1 || true)"
+  state_after="$(cksum < "$state")"
+  exclude_after="$(cksum < "$exclude")"
+  rm -rf "$fixture"
+
+  [[ "$state_before" == "$state_after" ]] ||
+    fail "continuity $continuity: hook rewrote continuity state"
+
+  if [[ "$continuity" == off ]]; then
+    [[ -z "$output" ]] || fail 'continuity off: hook produced output'
+    [[ "$exclude_before" == "$exclude_after" ]] ||
+      fail 'continuity off: hook changed .git/info/exclude'
+  else
+    [[ -n "$output" ]] || fail 'continuity on: hook reported nothing for tracked state'
+  fi
+}
+
+render_profile() {
+  local context="$1" continuity="$2" destination="$3"
+  local override="$work_directory/$context-$continuity.yaml"
+  printf 'ai_context: %s\nai_continuity: %s\n' "$context" "$continuity" > "$override"
+  mkdir -p "$destination"
+  "$chezmoi_bin" apply \
+    --config="$config_file" \
+    --source="$repository_root" \
+    --destination="$destination" \
+    --exclude=scripts \
+    --override-data-file="$override" \
+    --no-tty \
+    --force >/dev/null
+}
+
+check_profile() {
+  local context="$1" continuity="$2" destination="$3"
+  local claude="$destination/.claude/CLAUDE.md"
+  local codex="$destination/.codex/AGENTS.md"
+  local copilot="$destination/.copilot/instructions/core.instructions.md"
+  local commit_skill="$destination/.agents/skills/git-commit-action/SKILL.md"
+  local lifecycle_hook="$destination/.local/share/maintain-project-continuity.sh"
+  local project_continuity="$destination/.agents/skills/project-continuity/SKILL.md"
+  local invocation="$destination/.agents/skills/worktree-task-workflow/references/invocation.md"
+  local publishing="$destination/.agents/skills/worktree-task-workflow/references/publish.md"
+  local settings
+
+  assert_file "$claude"
+  assert_file "$codex"
+  assert_file "$copilot"
+  assert_file "$commit_skill"
+  assert_file "$project_continuity"
+  assert_file "$invocation"
+  assert_file "$publishing"
+  [[ "$(head -n 1 "$codex")" != '---' ]] ||
+    fail "Codex adapter unexpectedly rendered frontmatter ($context/$continuity)"
+
+  if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -s)" == CYGWIN* ]]; then
+    settings="$destination/AppData/Roaming/Code/User/settings.json"
+  else
+    settings="$destination/Library/Application Support/Code/User/settings.json"
+  fi
+  assert_file "$settings"
+
+  assert_contains "$claude" "Edit source-of-truth files"
+  assert_contains "$claude" "The active context is \`$context\`."
+  if [[ "$context" == company ]]; then
+    assert_not_contains "$claude" 'The active context is `personal`.'
+    assert_contains "$claude" "Traditional Chinese comments by default"
+    assert_not_contains "$claude" "use English comments by default"
+    assert_contains "$commit_skill" '| **Language** | `en` · `zhtw`      | `zhtw`'
+    assert_contains "$invocation" 'commit and request text only | `zhtw`'
+    assert_contains "$publishing" 'active context default `zhtw`'
+    assert_contains "$settings" 'Use zh-TW for summary and for scope when present.'
+    assert_not_contains "$settings" 'Use English for summary and for scope when present.'
+  else
+    assert_not_contains "$claude" 'The active context is `company`.'
+    assert_contains "$claude" "use English comments by default"
+    assert_not_contains "$claude" "Traditional Chinese comments by default"
+    assert_contains "$commit_skill" '| **Language** | `en` · `zhtw`      | `en`'
+    assert_contains "$invocation" 'commit and request text only | `en`'
+    assert_contains "$publishing" 'active context default `en`'
+    assert_contains "$settings" 'Use English for summary and for scope when present.'
+    assert_not_contains "$settings" 'Use zh-TW for summary and for scope when present.'
+  fi
+
+  assert_contains "$claude" 'comments are written in English unconditionally'
+  assert_contains "$project_continuity" 'State language is independent of conversation language.'
+  assert_contains "$project_continuity" 'Session export: required'
+  assert_not_contains "$commit_skill" '{{'
+  assert_not_contains "$invocation" '{{'
+  assert_not_contains "$publishing" '{{'
+  assert_contains "$commit_skill" 'explicit `en` or `zhtw` argument overrides'
+  assert_contains "$invocation" 'explicit `en` or `zhtw` value for `lang` overrides'
+  assert_jsonc_structure "$settings" 4
+  assert_json "$destination/.claude/settings.json" "$destination/.codex/hooks.json"
+
+  # The worktree launch check is independent of continuity and must survive both states. Gating the
+  # whole SessionStart array once removed it alongside the continuity hook, which silently disabled
+  # the warning that another session already occupies a working tree.
+  assert_contains "$destination/.claude/settings.json" 'check-worktree-launch'
+
+  # Continuity is disabled inside the helper rather than by unwiring hooks, so the wiring is
+  # byte-identical in both states. That keeps Codex's per-entry hook trust, which is keyed by path
+  # and content hash, valid across a toggle.
+  assert_contains "$destination/.claude/settings.json" 'maintain-project-continuity.sh'
+  assert_contains "$destination/.codex/hooks.json" 'maintain-project-continuity.sh'
+
+  if [[ "$continuity" == on ]]; then
+    assert_contains "$claude" '## Project continuity'
+    assert_contains "$codex" '## Project continuity'
+    assert_contains "$copilot" '## Project continuity'
+    assert_not_contains "$lifecycle_hook" 'deliberate no-op'
+  else
+    assert_not_contains "$claude" '## Project continuity'
+    assert_not_contains "$codex" '## Project continuity'
+    assert_not_contains "$copilot" '## Project continuity'
+    assert_contains "$lifecycle_hook" 'deliberate no-op'
+  fi
+  assert_hook_behavior "$continuity" "$lifecycle_hook"
+
+  local source_count rendered_count
+  source_count="$(find "$repository_root/home/dot_agents/skills" -type f ! -name '.*' | wc -l | tr -d ' ')"
+  rendered_count="$(find "$destination/.agents/skills" -type f | wc -l | tr -d ' ')"
+  [[ "$source_count" == "$rendered_count" ]] ||
+    fail "skill file count changed: source=$source_count rendered=$rendered_count ($context/$continuity)"
+}
+
+for context in personal company; do
+  for continuity in on off; do
+    destination="$work_directory/render-$context-$continuity"
+    render_profile "$context" "$continuity" "$destination"
+    check_profile "$context" "$continuity" "$destination"
+    printf 'profile tests: %s + continuity %s OK\n' "$context" "$continuity"
+  done
+done
+
+# Verify missing-key defaults against an empty machine-local config, independent of the selectors
+# configured on the machine running this test.
+default_destination="$work_directory/render-defaults"
+mkdir -p "$default_destination"
+"$chezmoi_bin" apply \
+  --config="$config_file" \
+  --source="$repository_root" \
+  --destination="$default_destination" \
+  --exclude=scripts \
+  --no-tty \
+  --force >/dev/null
+assert_contains "$default_destination/.claude/CLAUDE.md" 'The active context is `company`.'
+assert_contains "$default_destination/.agents/skills/git-commit-action/SKILL.md" '| **Language** | `en` · `zhtw`      | `zhtw`'
+assert_contains "$repository_root/AGENTS.md" 'dotfiles repository always uses the'
+assert_contains "$repository_root/AGENTS.md" '`personal` context while work is performed here'
+assert_contains "$default_destination/.claude/CLAUDE.md" '## Project continuity'
+printf 'profile tests: missing-key defaults OK\n'
+
+invalid_context="$work_directory/invalid-context.yaml"
+printf 'ai_context: unsupported\nai_continuity: on\n' > "$invalid_context"
+if "$chezmoi_bin" apply --config="$config_file" --source="$repository_root" \
+    --destination="$work_directory/invalid-context" --exclude=scripts \
+    --override-data-file="$invalid_context" --no-tty --force >/dev/null 2>&1; then
+  fail 'unsupported ai_context rendered successfully'
+fi
+
+invalid_continuity="$work_directory/invalid-continuity.yaml"
+printf 'ai_context: personal\nai_continuity: unsupported\n' > "$invalid_continuity"
+if "$chezmoi_bin" apply --config="$config_file" --source="$repository_root" \
+    --destination="$work_directory/invalid-continuity" --exclude=scripts \
+    --override-data-file="$invalid_continuity" --no-tty --force >/dev/null 2>&1; then
+  fail 'unsupported ai_continuity rendered successfully'
+fi
+printf 'profile tests: invalid selector rejection OK\n'
+
+printf 'profile tests: all checks passed\n'

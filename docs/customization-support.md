@@ -50,6 +50,35 @@ cosmetic. It cannot be configured away: `home/.chezmoitemplates/vscode/settings.
 the same duplication for rules with `chat.instructionsFilesLocations`, and VS Code exposes
 `chat.promptFilesLocations` for prompt files, but there is no equivalent setting for skills.
 
+## AI profile dimensions
+
+Claude Code, Codex, and the managed VS Code Copilot commit-message instruction use two independent
+machine-local chezmoi data values: `ai_context` (`personal` or `company`) and `ai_continuity`
+(`on` or `off`). Missing values default to `company` and `on`; unsupported values fail during
+rendering. The rendered configuration is the shared baseline plus one context layer, with the
+continuity instructions and automatic hooks added independently when enabled.
+
+This dotfiles repository is an explicit exception: its root `AGENTS.md` is a repository
+instruction that overrides the machine default and requires the effective context to be
+`personal` while work is performed here.
+
+Personal context defaults applicable artifact language to English (`en`). Company context defaults
+it to Traditional Chinese (`zh-TW`, `zhtw` in existing command interfaces), and recommends or
+loads `natural-zhtw` where that language is produced. Explicit language arguments and repository
+instructions take precedence. User-level configuration and customization source remains English
+in both contexts; application/project comment language follows the active context unless the
+repository or project says otherwise. Continuity state remains English.
+
+Turning continuity off removes the always-loaded continuity instructions and turns the shared
+lifecycle hook into a no-op: it prints nothing and changes neither continuity state nor
+`.git/info/exclude`. The hook stays wired in both states, so the independent worktree launch check
+keeps working and Codex does not have to re-approve its hook entries after a toggle. The
+`project-continuity` skill stays installed, so an explicit continuity request can still invoke it.
+Worktree workflow and worktree manifest remain independently available in both contexts and do not
+toggle continuity. Broad Copilot integration—skill discovery, repository instructions, and agent
+plugins—is unchanged and deferred. See [ADR-0014](./decisions/0014-machine-local-ai-configuration-profiles.md)
+for the design boundaries.
+
 ### Surfaces outside this table
 
 This repository does not manage complete product or account state:

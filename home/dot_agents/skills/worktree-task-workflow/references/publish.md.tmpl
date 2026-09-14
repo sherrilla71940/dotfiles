@@ -1,1 +1,2 @@
-{{ includeTemplate "skills/worktree-task-workflow/publish.md" -}}
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
+{{ includeTemplate "skills/worktree-task-workflow/publish.md" (dict "langDefault" $profile.artifact_language) -}}

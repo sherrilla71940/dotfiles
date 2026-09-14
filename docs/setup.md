@@ -196,6 +196,31 @@ reload their configuration.
 If adoption changed the source, review and commit those portable changes so they follow the
 other machines. Do not commit machine-specific values or credentials.
 
+## Select the machine-local AI profile
+
+After initialization, choose the two independent profile dimensions with `chezmoi edit-config`:
+
+```toml
+[data]
+ai_context = "company"        # personal or company; default: company
+ai_continuity = "on"           # on or off; default: on
+```
+
+Personal context defaults applicable artifact language to English (`en`); company context defaults
+it to Traditional Chinese (`zh-TW`, `zhtw` where an existing command interface uses that value).
+Explicit requests, repository instructions, and explicit `en` or `zhtw` arguments still win.
+Continuity is independent: `on` includes its instructions and automatic Claude/Codex hooks, while
+`off` leaves the skill installed but suppresses those automatic startup/stop behaviors and their
+state handling. Missing `ai_context` uses `company`; missing `ai_continuity` uses `on`;
+unsupported values fail during rendering. This dotfiles repository is the exception: root
+`AGENTS.md` requires the effective context to be `personal` while working here.
+
+Preview the selected result with `chezmoi diff` before applying. These values are machine-local,
+not synchronized in the repository, and machine-wide in v1. Start new Claude Code, Codex, or VS
+Code sessions after applying; already-running sessions retain their startup context. Worktree
+workflow and manifest skills remain independently available in every combination. A profile CLI
+and broad Copilot integration are intentionally deferred.
+
 ## Application installation and login
 
 Chezmoi can write configuration before an application exists. Each application discovers its
@@ -325,9 +350,11 @@ That hook is Claude-only, because it shells out to `claude agents --json` and sp
 `EnterWorktree`. Project-continuity reporting used to live in it too and no longer does; it is
 described next.
 
-`home/dot_local/share/maintain-project-continuity.sh` adds the deterministic reporting that the
-skill cannot do for itself. On `SessionStart` it reports whether continuity exists and, when it
-does, names the objective it tracks, so the decision about whether this is the same task is made
+When `ai_continuity` is `on`, the script rendered from
+`home/dot_local/share/maintain-project-continuity.sh.tmpl` adds the
+deterministic reporting that the skill cannot do for itself. On `SessionStart` it reports whether
+continuity exists and, when it does, names the objective it tracks, so the decision about whether
+this is the same task is made
 against a shown fact rather than from recall; it also ensures `.project-continuity/` is excluded
 from Git. On `Stop` it compares the recorded branch and HEAD against the checkout and reports
 drift, and it offers cleanup once every tracking section is empty. HEAD is reported two ways. A
@@ -336,6 +363,13 @@ recorded commit that has left the history - rebased, reset, or belonging to anot
 ancestor but more than one commit behind means a checkpoint opportunity passed without the file
 being rewritten; one commit behind is work in flight and stays silent, because a notice after
 every commit is one readers learn to ignore. The script never reads or copies the transcript.
+
+With `ai_continuity = "off"`, the hook entries stay wired but the script renders as a deliberate
+no-op: it drains the event payload, prints nothing, and creates, updates, reconciles, and excludes
+nothing. Leaving the wiring alone is what keeps the independent worktree launch check in Claude's
+`SessionStart` array active, and it keeps Codex's per-entry hook trust valid across a toggle, since
+that trust is keyed by each entry's path and content hash. The `project-continuity` skill remains
+installed for explicit continuity requests.
 
 It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
 run it**. They share hook event names, stdin fields (`cwd`, `hook_event_name`, `session_id`,

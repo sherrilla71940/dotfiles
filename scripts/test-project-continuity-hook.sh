@@ -194,6 +194,23 @@ case "$both_message" in
   *) printf 'expected combined branch-then-HEAD notice, got: %s\n' "$both_message" >&2; exit 1 ;;
 esac
 
+# A Verification line may carry code spans of its own after the value. Reading the last span
+# rather than the first reported a branch the file never recorded, and the hook then cried drift
+# on every response of a session that had done nothing wrong. Found by a fixture run.
+{
+  printf '# Project Continuity\n\n## Objective\n\nExercise the Stop notices.\n\n'
+  printf '## Verification\n\n'
+  printf -- '- Branch: `%s` (created off `master`; repo has no `main`)\n' "$fixture_branch"
+  printf -- '- HEAD: `%s`\n' "$fixture_head"
+} > "$state_file"
+append_section 'Next actions' '1. Keep the task open.'
+annotated_message="$(notice_message "$(stop_notice)")"
+if [[ -n "$annotated_message" ]]; then
+  printf 'an annotated Branch line must not read as drift, got: %s\n' "$annotated_message" >&2
+  exit 1
+fi
+
+
 # A detached HEAD has no branch name, which is how the Codex app runs its managed worktrees. It
 # must not read as branch drift.
 git -C "$fixture" checkout -q --detach HEAD

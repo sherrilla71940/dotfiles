@@ -15,13 +15,15 @@ macOS.
 
 ## What this repository provides
 
-- **Claude Code, Codex, and GitHub Copilot share many of the same AI instructions and skills, but
-  each expects them in different files and formats.** The repository writes shared content once
-  and renders the client-specific wrapper each tool requires, while tool-specific content stays
-  separate. `~/.claude/CLAUDE.md`, for example, combines the working agreement shared with Codex
-  and Copilot with an additional Claude-only section at render time. Where the exact same file can
-  serve multiple tools, as with shared skills, the repository uses symlinks instead of rendering
-  copies.
+- **Claude Code, Codex, and GitHub Copilot share many AI instructions and skills, but each expects
+  different files and formats.** The repository keeps canonical source material in one place and
+  composes it at render time: the always-on baseline, the selected personal or company context,
+  optional continuity guidance, and platform- or client-specific branches. Thin adapters then
+  render the resulting content into each tool's native format. Some content is shared verbatim,
+  some is conditional, and some remains client-specific. Where a complete file can be shared,
+  such as portable skills, symlinks avoid duplicate copies. `~/.claude/CLAUDE.md`, for example,
+  combines the shared baseline, selected context, optional continuity guidance, and a Claude-only
+  section at render time.
 - **One computer can support both personal and company work without maintaining two separate
   configuration sets.** Two machine-local selectors drive render-time composition: a shared baseline,
   either the personal or company context, and project-continuity instructions when enabled. The same

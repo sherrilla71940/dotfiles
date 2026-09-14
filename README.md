@@ -2,13 +2,14 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-This repository is a cross-platform AI developer environment and developer-tooling system managed
-with [chezmoi](https://www.chezmoi.io). It coordinates Claude Code, Codex, GitHub Copilot, and
-VS Code from one canonical source while preserving each client's native format and
-application-owned settings.
+> **TL;DR:** A chezmoi-managed, cross-platform developer environment that renders one source into
+> native configuration for AI clients, shells, editors, and tools. Each computer can choose personal
+> or company AI conventions and independently enable private project handoff continuity. Shared
+> skills stay canonical, while application-owned settings are preserved.
 
-It also includes machine-local personal/company profiles, independent project-continuity controls,
-cross-platform worktree tooling, and regression validation for rendered configuration.
+This repository is a personal, cross-platform AI development environment and developer-tooling
+system managed with [chezmoi](https://www.chezmoi.io). It manages shell, editor, tool, and AI-client
+configuration from one source across Windows and macOS.
 
 ## What this repository provides
 
@@ -18,30 +19,30 @@ cross-platform worktree tooling, and regression validation for rendered configur
   working agreement shared with Codex and Copilot with an additional Claude-only section at
   render time. Where the exact same file can serve multiple tools, as with shared skills, the
   repository uses symlinks instead of rendering copies.
-- **One machine has to serve both personal and company work, and the conventions differ.** Two
-  machine-local selectors choose the context and whether automatic project continuity is enabled.
-  Project continuity is private, working-tree-local handoff state: it records the objective,
-  current phase, next action, blockers, and assumptions in `.project-continuity/state.md` so a new
-  AI session can resume without reconstructing the task. When enabled, Claude Code and Codex load
-  continuity guidance and their session-start/session-stop helpers may report or maintain that
-  state. When disabled, those automatic behaviors are quiet and state-neutral, but the installed
-  continuity skill remains available for explicit requests.
-
-  The four combinations compose from the same source files rather than four copied profile trees,
-  so company work gets Traditional Chinese commit messages, comments, and the branch and
-  merge-request text written by the worktree-task-workflow skill when publishing, while personal
-  work stays English — and a repository's own instructions still outrank whatever the machine is
-  set to.
+- **One computer can support both personal and company work without maintaining two separate
+  configuration sets.** Two machine-local selectors drive render-time composition: a shared baseline,
+  either the personal or company context, and project-continuity instructions when enabled. The same
+  canonical skills, instructions, and rules therefore produce the appropriate workflow for the current
+  context, while thin client adapters render each tool's native format. `ai_context` controls
+  context-specific conventions and artifact-language defaults. `ai_continuity` controls a separate
+  feature: a private task-handoff mechanism stored in `.project-continuity/state.md`, whether its
+  instructions are always loaded, and whether its session-start/session-stop helpers automatically
+  report or update the handoff state. A new AI session can use that state to resume without
+  reconstructing the task. When continuity is off, those automatic reports and updates stop, but the
+  continuity skill remains available for explicit requests. Changing either selector affects newly
+  rendered configuration and newly started sessions, while repository and project instructions still
+  take precedence.
 - **Configuration drifts between machines, and the same setting lives at a different path on
   each operating system.** Templates keep one managed configuration consistent across
   platforms. A new machine clones this repository and renders every managed file with a
   single chezmoi command; the tools those files configure are installed by their own scripts,
   kept out of the apply path so a routine apply never installs software.
-- **Some managed files are also rewritten by the applications that consume them.** One settings
-  file can hold both what should follow your machines and what the application records about
-  itself, so writing it wholesale destroys the second. Take Claude Code's `settings.json`:
-  the repository owns a handful of durable keys and merges them over whatever Claude wrote,
-  leaving your model, effort and theme untouched.
+- **Some settings files have two owners: the repository and the application that uses them.** A
+  managed file is one that chezmoi renders from this repository, but the application may also
+  write its own preferences into that same file. Replacing the file wholesale would erase those
+  application-owned values. Claude Code's `settings.json` is the example: the repository manages
+  only a small set of durable keys, and chezmoi merges those keys into the existing file while
+  preserving Claude's model, effort level, theme, permissions, and other local settings.
 
 ## AI client architecture at a glance
 
@@ -234,8 +235,9 @@ different context or continuity values. There is no profile CLI yet. Broad Copil
 ### What a selector changes
 
 Both selectors are machine-local and are never committed. The resolver validates them, then feeds
-three separate things: which context layer is composed in, whether continuity guidance and
-reporting are active, and which language the supported artifacts default to.
+three separate things: which context layer is composed in, whether project-continuity instructions
+and automatic session-start/session-stop reporting or state updates are active, and which language
+the supported artifacts default to.
 
 ```mermaid
 flowchart TD

@@ -24,14 +24,19 @@ It solves four problems:
   the repository owns a handful of durable keys and merges them over whatever Claude wrote,
   leaving your model, effort and theme untouched.
 - **One machine has to serve both personal and company work, and the conventions differ.** Two
-  machine-local selectors pick a context and decide whether project continuity is active. The four
-  combinations compose from the same source files rather than four copied profile trees, so company
-  work gets Traditional Chinese commit messages, comments, and the branch and merge-request text
-  written by the worktree-task-workflow skill when publishing, while personal work
-  stays English — and a repository's own instructions still outrank whatever the machine is set to.
-  Continuity is an independent switch: turning it off removes the always-loaded guidance and makes
-  the shared lifecycle hook a no-op, without uninstalling the skill or disturbing the unrelated
-  worktree checks that share its hook.
+  machine-local selectors choose the context and whether automatic project continuity is enabled.
+  Project continuity is private, working-tree-local handoff state: it records the objective,
+  current phase, next action, blockers, and assumptions in `.project-continuity/state.md` so a new
+  AI session can resume without reconstructing the task. When enabled, Claude Code and Codex load
+  continuity guidance and their session-start/session-stop helpers may report or maintain that
+  state. When disabled, those automatic behaviors are quiet and state-neutral, but the installed
+  continuity skill remains available for explicit requests.
+
+  The four combinations compose from the same source files rather than four copied profile trees,
+  so company work gets Traditional Chinese commit messages, comments, and the branch and
+  merge-request text written by the worktree-task-workflow skill when publishing, while personal
+  work stays English — and a repository's own instructions still outrank whatever the machine is
+  set to.
 
 None of that is taken on trust. A commit hook re-renders the staged source and fails if shared
 rule bodies diverge between clients, a skill disappears because of a filename attribute,
@@ -40,6 +45,10 @@ PowerShell status lines produce different output — one of the few pieces inten
 maintained as two implementations.
 
 ## AI client architecture at a glance
+
+This diagram focuses on the AI-client and profile-composition subsystem. It is not a complete
+inventory of every managed target: shells, Git, Windows Terminal, general VS Code settings, and
+repository tooling use the simpler source-to-target flow described after the diagram.
 
 One source repository becomes coordinated configuration for four clients on Windows or macOS.
 Read it left to right: canonical bodies, a thin adapter per client, rendered targets, then the

@@ -30,8 +30,10 @@ macOS.
   context-specific conventions and artifact-language defaults. `ai_continuity` controls a separate
   feature: a private task-handoff mechanism stored in `.project-continuity/state.md`, whether its
   instructions are always loaded, and whether its session-start/session-stop helpers automatically
-  report or update the handoff state. A new AI session can use that state to resume without
-  reconstructing the task. When continuity is off, those automatic reports and updates stop, but the
+  report or update the handoff state. The state records the current objective, phase, next action,
+  blockers, and assumptions. A new Claude Code or Codex session can use it to resume the task after
+  the previous session reaches its token limit, ends unexpectedly, or pauses for days or weeks—instead
+  of starting from scratch. When continuity is off, those automatic reports and updates stop, but the
   continuity skill remains available for explicit requests. Changing either selector affects newly
   rendered configuration and newly started sessions, while repository and project instructions still
   take precedence.

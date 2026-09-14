@@ -42,18 +42,28 @@ ai_context = "company"        # personal or company; default: personal
 ai_continuity = "on"           # on or off; default: on
 ```
 
-Missing `ai_context` uses `personal`; missing `ai_continuity` uses `on`. Any other value fails
-clearly during rendering. The selectors compose one baseline with either the personal or company
-context and, independently, continuity instructions and hooks when continuity is on. They affect
-newly rendered configuration and newly started sessions; an already-running session keeps its
-startup context. The values are local to the machine and are not committed or synchronized by
-this repository. When working in this dotfiles repository, root `AGENTS.md` overrides the machine
-context and requires the effective
+The four supported combinations are personal + continuity on, personal + continuity off, company +
+continuity on, and company + continuity off. Missing `ai_context` uses `personal`; missing
+`ai_continuity` uses `on`. Any other value fails clearly during rendering. Personal context resolves
+the applicable artifact-language default to English (`en`); company resolves it to Traditional
+Chinese (`zh-TW`, represented as `zhtw` where an existing interface uses that value). Explicit
+user or repository instructions and explicit language arguments take precedence.
+
+The selectors compose one baseline with either the personal or company context and, independently,
+continuity instructions and hooks when continuity is on. They affect newly rendered configuration
+and newly started sessions; an already-running session keeps its startup context. The values are
+local to the machine and are not committed or synchronized by this repository. When working in
+this dotfiles repository, root `AGENTS.md` overrides the machine context and requires the effective
 context to be `personal`.
 
 After editing the config, use `chezmoi diff` to preview the selected render. Review it before
 `chezmoi apply`, then restart the affected client sessions. A dedicated profile CLI is deferred;
 the worktree skills remain installed and independently invokable in every profile.
+
+From the repository root, `bash scripts/dotfiles doctor` reports source identity, the resolved
+profile, unapplied target drift, Claude shared-skill link health, and required tool versions. It is
+repository tooling because it checks this checkout and live chezmoi state; it is not rendered into
+the home directory as a machine command.
 
 Check which case applies by reading the whole source filename, not only its suffix:
 
@@ -174,7 +184,7 @@ instead. A fresh machine therefore starts with no `ask` rules.
 
 `enabledPlugins` fails it too, and the merge cannot express a disable, so pinning a plugin
 made turning it off locally impossible. Plugins are installed software rather than
-configuration, so `scripts/bootstrap-*` installs them the way it installs any other tool.
+configuration, so `scripts/bootstrap/bootstrap-*` installs them the way it installs any other tool.
 Which plugins are enabled after that is yours.
 
 The durable keys live as readable JSON in
@@ -197,7 +207,7 @@ owns.
 changed locally and now want on every machine does not appear there. List the candidates:
 
 ```bash
-./scripts/claude-settings-drift.sh
+./scripts/diagnostics/claude-settings-drift.sh
 ```
 
 Most of what it lists is meant to stay local. Before promoting a key, check it against the
@@ -206,7 +216,7 @@ admission criterion in
 stable enough not to change mid-session, and not written by the application. `theme`,
 `verbose`, `tui`, `permissions`, and `enabledPlugins` were released deliberately, so re-pinning
 one reverses that decision. Plugins do not belong in the settings at all — add them to the
-`claude plugin install` list in `scripts/bootstrap-*`.
+`claude plugin install` list in `scripts/bootstrap/bootstrap-*`.
 
 For a key that does qualify, copy the value into
 `home/.chezmoitemplates/claude/settings-durable.json`, then apply and commit:

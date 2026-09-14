@@ -36,7 +36,7 @@ The columns group surfaces only when they read the same personal configuration:
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
-| Marketplace plugins | installed by `scripts/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
+| Marketplace plugins | installed by `scripts/bootstrap/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
 | User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
 | General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
 
@@ -266,7 +266,7 @@ So name a new skill from the instruction that covers its topic, the way
 Without that, expect it to sit unused however good its description is, and prefer folding its
 content into an existing rule to adding a skill nothing reaches.
 
-`scripts/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
+`scripts/diagnostics/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
 is worth re-measuring rather than assuming. Read a zero as a lower bound: a skill marked
 `user-invocable: false`, or one whose guidance was followed without a tool call, looks the same
 there as one that was ignored.
@@ -345,14 +345,14 @@ loading Claude-only instructions. Keep those exclusions when changing VS Code se
 
 User-scoped MCP configuration shares `~/.claude.json` with authentication, project state,
 and caches, so chezmoi must not overwrite that file. Add a non-secret definition to
-`scripts/claude-user-mcp-servers.json`, then run the platform installer:
+`scripts/manifests/claude-user-mcp-servers.json`, then run the platform installer:
 
 ```bash
-bash scripts/install-claude-mcp.sh
+bash scripts/install/install-claude-mcp.sh
 ```
 
 ```powershell
-powershell -File scripts/install-claude-mcp.ps1
+powershell -File scripts/install/install-claude-mcp.ps1
 ```
 
 The installer adds missing definitions with `claude mcp add-json --scope user` and leaves an
@@ -364,7 +364,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
 | Direct user MCP | Chrome DevTools, GitLab, GitHub | the manifest and hand-run installer |
-| Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
+| Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
 
@@ -433,7 +433,7 @@ dotfiles repository. Claude Code is the exception: its plugins are installed by 
 scripts rather than declared, so enabling and disabling them stays a local decision.
 
 - Claude Code: add the plugin to the `claude plugin install` list in both
-  `scripts/bootstrap-macos.sh` and `scripts/bootstrap-windows.ps1`, with its marketplace
+  `scripts/bootstrap/bootstrap-macos.sh` and `scripts/bootstrap/bootstrap-windows.ps1`, with its marketplace
   ahead of it if that marketplace is not registered automatically. The repository installs
   Claude plugins rather than declaring them, so enabling and disabling stays local — see
   [ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md).

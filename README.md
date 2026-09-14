@@ -1,9 +1,9 @@
 # Dotfiles
 
-Personal cross-platform configuration for dotfiles and AI development tooling. The desired
-state lives in Git; [chezmoi](https://www.chezmoi.io) renders it into the live files each
-machine reads, resolving what is shared, what differs per operating system, and what belongs
-to a single tool.
+Cross-platform personal developer-environment configuration managed with
+[chezmoi](https://www.chezmoi.io), including shell, editor, tool, and AI-client configuration.
+The desired state lives in Git; chezmoi renders it into the live files each machine reads,
+resolving what is shared, what differs per operating system, and what belongs to a single tool.
 
 It solves four problems:
 
@@ -26,7 +26,8 @@ It solves four problems:
 - **One machine has to serve both personal and company work, and the conventions differ.** Two
   machine-local selectors pick a context and decide whether project continuity is active. The four
   combinations compose from the same source files rather than four copied profile trees, so company
-  work gets Traditional Chinese commit messages, comments and worktree text while personal work
+  work gets Traditional Chinese commit messages, comments, and the branch and merge-request text
+  written by the worktree-task-workflow skill when publishing, while personal work
   stays English — and a repository's own instructions still outrank whatever the machine is set to.
   Continuity is an independent switch: turning it off removes the always-loaded guidance and makes
   the shared lifecycle hook a no-op, without uninstalling the skill or disturbing the unrelated
@@ -38,7 +39,7 @@ Codex's file gains frontmatter, a cross-reference points to a missing heading, o
 PowerShell status lines produce different output — one of the few pieces intentionally
 maintained as two implementations.
 
-## Architecture at a glance
+## AI client architecture at a glance
 
 One source repository becomes coordinated configuration for four clients on Windows or macOS.
 Read it left to right: canonical bodies, a thin adapter per client, rendered targets, then the
@@ -108,6 +109,12 @@ flowchart LR
     agentsTarget --> codexClient
     agentsTarget --> copilotClient
 ```
+
+The rest of the repository follows the same source-to-target path without an AI-client adapter:
+shell sources render to `~/.bashrc`, `~/.zshrc`, and `~/.profile`; Git sources render to
+`~/.gitconfig`; Windows Terminal sources render to its platform settings; and VS Code sources
+render its keybindings, MCP configuration, and settings into the OS-specific user profile. The
+OS-specific path wrappers only choose the destination; they do not duplicate those source bodies.
 
 Note the edge that is deliberately missing: `rules` never reaches the Codex adapter. Codex has no
 import mechanism and no path-scoping equivalent, so it receives the always-on core only, as one
@@ -184,15 +191,13 @@ machine-local selectors in chezmoi's config file (`chezmoi edit-config`):
 
 ```toml
 [data]
-ai_context = "company"        # personal or company; default: personal
-ai_continuity = "on"           # on or off; default: on
+ai_context = "company"        # explicit work-machine selection
+ai_continuity = "on"           # explicit continuity selection
 ```
 
-The four supported combinations are personal + continuity on, personal + continuity off,
-company + continuity on, and company + continuity off. Missing `ai_context` uses `personal`;
-missing `ai_continuity` uses `on`. Unsupported values fail during rendering;
-they do not silently produce a partial profile. Selector values are not stored in this repository,
-so each Windows or macOS machine can choose its own profile.
+The [machine-local selector guide](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
+is the canonical reference for the four combinations, missing-key defaults, invalid-value behavior,
+and the fact that selector values are local to each Windows or macOS machine.
 
 The active context supplies artifact-language defaults: personal uses English (`en`) and company
 uses Traditional Chinese (`zh-TW`, represented as `zhtw` where a command accepts that value).
@@ -264,6 +269,9 @@ Use this one-line setup only when no existing shell, editor, or AI-client config
 to be preserved. On Windows, first enable Developer Mode or provide symbolic-link privileges as
 described in [the setup prerequisites](./docs/setup.md#enable-windows-symlink-creation).
 
+This command downloads and executes a remote installer; use it only after deciding that you trust
+the source and have reviewed the URL/script policy for the machine.
+
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
@@ -302,12 +310,18 @@ repository's own scripts are convenient.
 Edit the source, preview with `chezmoi diff`, run `chezmoi apply`, then commit.
 `chezmoi status` is empty once the change has landed.
 
+From the repository root, run `bash scripts/dotfiles doctor` for one health report covering
+chezmoi source identity, the resolved machine profile, unapplied target drift, Claude's shared-skill
+links, and the required tool versions. It stays under `scripts/` because it diagnoses the source
+checkout and live chezmoi state; it is repository tooling, not a configuration command rendered
+into every home directory.
+
 The exception is everything the repository does not manage, which is most of what an
 application records about itself. Claude's `settings.json` is the clearest case: the repository
 owns the keys that should be identical everywhere, and leaves the rest — your model, theme,
 permissions and the like — on the machine. Change those from inside the client, with `/config`
 or `/model` or `/plugin`, and there is nothing to apply or commit. Run
-`scripts/claude-settings-drift.sh` for the current split;
+`scripts/diagnostics/claude-settings-drift.sh` for the current split;
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) covers the general procedure.
 
 ### Or describe what you want to an AI assistant
@@ -361,18 +375,14 @@ home/                            chezmoi source state
   .README.md                     how to read this tree (repo-only, never deployed)
   dot_bashrc  dot_zshrc.tmpl  dot_bash_profile   shells
   AppData/ · Library/            VS Code, one per OS
-scripts/bootstrap-*.{sh,ps1}     one-time new-machine setup: links the chezmoi source
-                                 directory, enables the hook, installs the tools (run by hand)
-scripts/install-claude-mcp.*     adds declared Model Context Protocol (MCP) servers to Claude
-scripts/claude-user-mcp-servers.json  the MCP manifest those installers read
-scripts/claude-settings-drift.sh lists Claude settings changed locally but not in the repo
-scripts/claude-config-usage.sh   reads local session transcripts to report which managed
-                                 skills and commands actually get invoked, and which never do
-scripts/test-ai-configuration-profiles.sh
-                                  renders and checks the profile combinations and both OS branches
+scripts/dotfiles                 repository tooling entry point (`bash scripts/dotfiles doctor`)
+scripts/bootstrap/                one-time new-machine setup (run by hand)
+scripts/install/                  Claude MCP installers
+scripts/manifests/                MCP and VS Code extension manifests
+scripts/diagnostics/              doctor, Claude settings drift, and session-usage reports
+scripts/tests/                    profile, continuity, and worktree regression suites
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/git-hooks/markdown-anchors.awk  resolves documentation cross-references
-scripts/vscode-extensions.txt    extension manifest (installed by bootstrap, or on request)
 docs/decisions/                  architecture decisions and reconsideration triggers
 ```
 
@@ -384,12 +394,12 @@ only when its feature is retired or equivalent coverage replaces it.
 
 | Change | Run |
 | --- | --- |
-| Windows worktree provisioning implementation | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-git-worktree-provision.ps1` |
-| macOS worktree provisioning implementation | `bash scripts/test-git-worktree-provision.sh` |
+| Windows worktree provisioning implementation | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-git-worktree-provision.ps1` |
+| macOS worktree provisioning implementation | `bash scripts/tests/test-git-worktree-provision.sh` |
 | Shared worktree provisioning contract or safety boundary | Both worktree provisioning suites |
-| Project-continuity lifecycle hooks or recovery contract | `bash scripts/test-project-continuity-hook.sh` |
-| AI profile selectors, composition, language defaults, or continuity toggle | `bash scripts/test-ai-configuration-profiles.sh` |
-| `.chezmoiignore` OS gating, either VS Code settings tree, or either worktree helper | `bash scripts/test-ai-configuration-profiles.sh` — it renders both the darwin and windows branches from whichever host you are on, so the other platform's templates are not left unchecked |
+| Project-continuity lifecycle hooks or recovery contract | `bash scripts/tests/test-project-continuity-hook.sh` |
+| AI profile selectors, composition, language defaults, or continuity toggle | `bash scripts/tests/test-ai-configuration-profiles.sh` |
+| `.chezmoiignore` OS gating, either VS Code settings tree, or either worktree helper | `bash scripts/tests/test-ai-configuration-profiles.sh` — it renders both the darwin and windows branches from whichever host you are on, so the other platform's templates are not left unchecked |
 
 These suites create disposable repositories and run manually when their implementation or
 contract changes. The pre-commit hook remains focused on fast source rendering and structural

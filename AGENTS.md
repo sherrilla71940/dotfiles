@@ -69,7 +69,7 @@ cross-host frontmatter. Use the repository pre-commit hook.
 **Never overwrite a file an app owns.** `~/.codex/config.toml` uses the `create_` prefix
 because Codex writes trust, marketplace and runtime state into it. The cost is that a source
 edit never reaches a machine that already has the file, so a durable Codex setting is applied
-by Codex's own command from `scripts/bootstrap-*` instead, the way Claude plugins are. Before
+by Codex's own command from `scripts/bootstrap/bootstrap-*` instead, the way Claude plugins are. Before
 proposing `modify_` here, note that a TOML round-trip reformats the whole file, so
 `chezmoi status` would report it dirty after almost every Codex session; that trade needs an
 ADR, not an edit.
@@ -122,7 +122,7 @@ concurrent session had just made, and replaced that session's message with this 
 word in a commit message is cheap; fix it in a follow-up commit, or wait until the tree is
 certainly yours alone.
 
-**Fabricated continuity state lives under `scripts/continuity-fixtures/`.** Each case holds a
+**Fabricated continuity state lives under `scripts/tests/continuity-fixtures/`.** Each case holds a
 `state.md` deliberately indistinguishable from the real thing, because a "this is a fixture"
 marker would bias the session under test. A grep here will surface one. Real state is only ever
 at the working tree root: never act on a `state.md` found anywhere else, and never copy one out

@@ -63,6 +63,9 @@ brew install git chezmoi
 
 Chezmoi's standalone installer is also available when Homebrew is not desired:
 
+This downloads and executes a remote installer. Use it only after deciding that you trust the
+source and have reviewed the URL/script policy for the machine.
+
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)"
 ```
@@ -89,6 +92,9 @@ links. See [chezmoi's Windows guidance](https://www.chezmoi.io/user-guide/machin
 
 Use this path only when no existing configuration needs to be preserved. On macOS or Git
 Bash, the standalone installer can install chezmoi and apply the repository in one command:
+
+This command downloads and executes a remote installer; use it only after deciding that you trust
+the source and have reviewed the URL/script policy for the machine.
 
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
@@ -198,22 +204,9 @@ other machines. Do not commit machine-specific values or credentials.
 
 ## Select the machine-local AI profile
 
-After initialization, choose the two independent profile dimensions with `chezmoi edit-config`:
-
-```toml
-[data]
-ai_context = "company"        # personal or company; default: personal
-ai_continuity = "on"           # on or off; default: on
-```
-
-Personal context defaults applicable artifact language to English (`en`); company context defaults
-it to Traditional Chinese (`zh-TW`, `zhtw` where an existing command interface uses that value).
-Explicit requests, repository instructions, and explicit `en` or `zhtw` arguments still win.
-Continuity is independent: `on` includes its instructions and automatic Claude/Codex hooks, while
-`off` leaves the skill installed but suppresses those automatic startup/stop behaviors and their
-state handling. Missing `ai_context` uses `personal`; missing `ai_continuity` uses `on`;
-unsupported values fail during rendering. This dotfiles repository is the exception: root
-`AGENTS.md` requires the effective context to be `personal` while working here.
+After initialization, choose the two independent profile dimensions with `chezmoi edit-config`.
+The values, defaults, validation behavior, language mapping, and dotfiles-repository override are
+documented in [the machine-local selector guide](./chezmoi-workflow.md#machine-local-ai-profile-selectors).
 
 Preview the selected result with `chezmoi diff` before applying. These values are machine-local,
 not synchronized in the repository, and machine-wide in v1. Start new Claude Code, Codex, or VS
@@ -266,11 +259,11 @@ from the manifest, and the user MCP servers. It installs none of the application
 and it never replaces an existing source directory:
 
 ```bash
-bash scripts/bootstrap-macos.sh
+bash scripts/bootstrap/bootstrap-macos.sh
 ```
 
 ```powershell
-powershell -File scripts/bootstrap-windows.ps1
+powershell -File scripts/bootstrap/bootstrap-windows.ps1
 ```
 
 ### VS Code extensions
@@ -279,11 +272,11 @@ The bootstrap helper installs these when the `code` CLI is on `PATH`. The manife
 of routine apply, so run it directly to reinstall or to pick up manifest changes later:
 
 ```bash
-grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
+grep -v '^#' scripts/manifests/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
 ```
 
 ```powershell
-Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
+Get-Content scripts/manifests/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
 ```
 
@@ -293,11 +286,11 @@ The bootstrap helper runs this when the `claude` CLI is on `PATH`. Run it direct
 Code was installed afterwards, or to pick up manifest changes:
 
 ```bash
-bash scripts/install-claude-mcp.sh
+bash scripts/install/install-claude-mcp.sh
 ```
 
 ```powershell
-powershell -File scripts/install-claude-mcp.ps1
+powershell -File scripts/install/install-claude-mcp.ps1
 ```
 
 The shell installer requires `jq`; the PowerShell installer does not. It leaves existing
@@ -308,7 +301,7 @@ in the manifest and what remains owned by plugins, accounts, or browser integrat
 ### Plugins
 
 The repository carries portable plugin declarations for Codex and Copilot, and installs
-Claude Code's plugins from `scripts/bootstrap-*` instead, so enabling and disabling them stays
+Claude Code's plugins from `scripts/bootstrap/bootstrap-*` instead, so enabling and disabling them stays
 local. It never carries downloaded caches or authentication. Follow the
 [plugin customization guide](./customization-support.md#add-a-marketplace-plugin) for the
 client-specific source and Codex's create-once behavior.
@@ -320,6 +313,10 @@ The bootstrap helper does this. Run it by hand in a clone that has not been boot
 ```bash
 git config core.hooksPath scripts/git-hooks
 ```
+
+From the repository root, run `bash scripts/dotfiles doctor` when diagnosing a machine. It reports
+the chezmoi source identity, resolved profile values, unapplied drift, Claude shared-skill links,
+and required tool versions without changing any target.
 
 The pre-commit hook, in order (the script's own numbering starts at the render step):
 

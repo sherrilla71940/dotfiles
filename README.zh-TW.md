@@ -13,11 +13,11 @@
 
 ## 這個儲存庫提供什麼
 
-- **三個 AI 工具需要使用部分相同的設定，但各自要求不同的檔案與格式。** 共用內容只寫一份，
-  再分別產生為每個用戶端能接受的格式；工具專屬內容則維持分開。例如，`~/.claude/CLAUDE.md`
-  會在產生時組合 Claude、Codex 與 Copilot 共用的工作約定，再加上 Claude 專屬區段。
-  如果多個工具可以直接使用同一個檔案，例如共用技能，儲存庫會使用 symlink，而不是
-  產生多份內容。
+- **Claude Code、Codex 和 GitHub Copilot 會使用許多相同的 AI 指示與技能，但各自要求不同的檔案
+  與格式。** 儲存庫只維護一份共用內容，再為各用戶端產生所需的專屬包裝；工具專屬內容則維持
+  分開。例如，`~/.claude/CLAUDE.md` 會在產生時組合 Claude、Codex 與 Copilot 共用的工作約定，
+  再加上 Claude 專屬區段。如果多個工具可以直接使用同一個檔案，例如共用技能，儲存庫會使用
+  symlink，而不是產生多份內容。
 - **同一台電腦可以同時支援個人與公司工作，不需要維護兩套分開的設定。** 兩個只在本機生效的
   選擇器會在產生設定時，組合共用基線、personal 或 company 情境，以及啟用時才加入的專案
   連續性指示。同一套共用技能、指示與規則來源，因此能依目前情境產生相應的工作流程，再由各
@@ -46,8 +46,8 @@ Git、Windows Terminal、一般 VS Code 設定，以及儲存庫工具，會走�
 本儲存庫會在 Windows 或 macOS 上，為四個用戶端產生彼此協調的設定。請從左到右閱讀：
 單一真實來源、每個用戶端的薄型轉接層、產生的目標，最後是讀取這些檔案的用戶端。
 
-技能只在一處維護。轉接層只加入各用戶端理解的 frontmatter 或包裝，因此只適用於
-單一工具的規則不會被改寫成另一份工具中立的版本。
+共用技能與規則本文只在一處維護。轉接層只加入各用戶端理解的中繼資料標頭（frontmatter）或
+包裝，因此只適用於單一工具的規則不會被改寫成另一份工具中立的版本。
 
 ~~~mermaid
 flowchart LR
@@ -123,7 +123,7 @@ Shell 來源會產生 `~/.bashrc`、`~/.zshrc` 與 `~/.profile`；Git 來源會�
 - **共用技能**只存在於 `home/dot_agents/skills`，並產生在 `~/.agents/skills`。Codex
   與 Copilot 直接探索該目錄；Claude Code 只會查看 `~/.claude/skills`，所以儲存庫
   會在那裡建立指向相同檔案的 symlink。技能本文仍然只有一份。
-- **用戶端入口**在同一項能力需要為不同用戶端提供不同入口時使用。`worktree-task-workflow` 在
+- **用戶端專屬入口**在同一項能力需要為不同用戶端提供不同入口時使用。`worktree-task-workflow` 在
   `dot_agents` 有受 Codex gate 控制的 `SKILL.md`，在 `dot_claude` 有 Claude 的
   `SKILL.md`；兩者都從 `.chezmoitemplates` 取得相同的參考本文，因此即使 frontmatter
   不同，指引仍不會分歧。

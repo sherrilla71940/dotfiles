@@ -15,12 +15,13 @@ macOS.
 
 ## What this repository provides
 
-- **Three AI tools need overlapping configuration, but each expects it in a different file and
-  format.** Shared content is written once and rendered into the form each client accepts,
-  while tool-specific content stays separate. `~/.claude/CLAUDE.md`, for example, combines the
-  working agreement shared with Codex and Copilot with an additional Claude-only section at
-  render time. Where the exact same file can serve multiple tools, as with shared skills, the
-  repository uses symlinks instead of rendering copies.
+- **Claude Code, Codex, and GitHub Copilot share many of the same AI instructions and skills, but
+  each expects them in different files and formats.** The repository writes shared content once
+  and renders the client-specific wrapper each tool requires, while tool-specific content stays
+  separate. `~/.claude/CLAUDE.md`, for example, combines the working agreement shared with Codex
+  and Copilot with an additional Claude-only section at render time. Where the exact same file can
+  serve multiple tools, as with shared skills, the repository uses symlinks instead of rendering
+  copies.
 - **One computer can support both personal and company work without maintaining two separate
   configuration sets.** Two machine-local selectors drive render-time composition: a shared baseline,
   either the personal or company context, and project-continuity instructions when enabled. The same
@@ -57,9 +58,9 @@ Read it left to right: canonical bodies, a thin adapter per client, rendered tar
 clients that read them.
 
 
-Skills are canonical in one place. The adapters add only the frontmatter or wrapper each client
-understands, which is why a rule that names one tool's machinery never gets reworded into a
-tool-neutral twin.
+Shared skills and rule bodies are canonical in one place. The adapters add only the client-specific
+metadata header (`frontmatter`) or wrapper each client understands, which is why a rule that names
+one tool's machinery never gets reworded into a tool-neutral twin.
 
 ```mermaid
 flowchart LR
@@ -136,7 +137,8 @@ Skills come in three tiers, which is why the diagram has two skill sources:
 - **Shared skills** live once in `home/dot_agents/skills` and render to `~/.agents/skills`. Codex
   and Copilot discover that directory directly; Claude reaches the same files through symlinks in
   `~/.claude/skills`, so there is still only one body to edit.
-- **Client front doors** exist where one capability needs a different entry point per client.
+- **Client-specific entry points** exist where one capability needs a different entry point per
+  client.
   `worktree-task-workflow` has a Codex-gated `SKILL.md` under `dot_agents` and a Claude `SKILL.md`
   under `dot_claude`, but both pull the same reference bodies out of `.chezmoitemplates`, so the
   guidance cannot drift even though the front matter differs.

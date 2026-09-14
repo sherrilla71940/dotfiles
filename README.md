@@ -3,13 +3,15 @@
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
 > **TL;DR:** A chezmoi-managed, cross-platform developer environment that renders one source into
-> native configuration for AI clients, shells, editors, and tools. Each computer can choose personal
-> or company AI conventions and independently enable private project handoff continuity. Shared
-> skills stay canonical, while application-owned settings are preserved.
+> native configuration for AI clients—including instructions, skills, rules where supported, and
+> client settings—as well as shells, editors, and tools. Each computer can choose personal or
+> company AI conventions and independently enable private project handoff continuity. Shared skills
+> stay canonical, while application-owned settings are preserved.
 
 This repository is a personal, cross-platform AI development environment and developer-tooling
 system managed with [chezmoi](https://www.chezmoi.io). It manages shell, editor, tool, and AI-client
-configuration from one source across Windows and macOS.
+configuration—including instructions, skills, rules, and settings—from one source across Windows and
+macOS.
 
 ## What this repository provides
 

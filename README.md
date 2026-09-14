@@ -78,6 +78,175 @@ A skill or instruction meant for one tool alone is a plain file in that tool's o
 into a tool-neutral twin: a rule only one tool can follow either stays in that tool's file, or
 says plainly which tool it applies to.
 
+## AI client architecture
+
+Two questions come up about this repository, and they need different pictures. The first diagram
+answers "what does changing a selector actually change?". The second answers "how does one source
+body reach four clients?".
+
+### What a selector changes
+
+Both selectors are machine-local and are never committed. The resolver validates them, then feeds
+three separate things: which context layer is composed in, whether continuity guidance and
+reporting are active, and which language the supported artifacts default to.
+
+```mermaid
+flowchart TD
+    config["chezmoi config file<br/>machine-local, never committed"]
+    config --> context["ai_context<br/>personal or company, default company"]
+    config --> continuitySelector["ai_continuity<br/>on or off, default on"]
+
+    context --> resolver["ai-profile.yaml<br/>validates; unsupported values fail the render"]
+    continuitySelector --> resolver
+
+    resolver --> layer["context layer<br/>profiles/personal.md or profiles/company.md"]
+    resolver --> gate["continuity gate"]
+    resolver --> language["artifact_language<br/>en or zhtw"]
+
+    layer --> instructions["always-loaded instructions<br/>composed in core.md"]
+    gate --> instructions
+    gate --> helper["maintain-project-continuity.sh<br/>reports when on, no-op when off"]
+
+    language --> commitSkill["git-commit-action"]
+    language --> worktreeText["worktree invocation and publishing"]
+    language --> vscodeCommit["VS Code Copilot commit messages"]
+
+    repository["repository AGENTS.md or CLAUDE.md"] -.->|"outranks the machine context"| instructions
+```
+
+Three details in that picture are easy to get wrong:
+
+- **Artifact language reaches skills and VS Code, not just the instruction files.** Those three
+  leaves are the whole supported surface; an explicit `en` or `zhtw` argument still overrides them.
+- **Continuity off changes instructions and helper behaviour, never hook wiring.** The hooks stay
+  registered in both states, which keeps the independent worktree launch check active and keeps
+  Codex's per-entry hook trust valid across a toggle.
+- **Repository instructions outrank the machine context.** That is why this repository's own
+  `AGENTS.md` pins the `personal` context for work performed here without touching the selector.
+
+User-level configuration and customization comments stay English in both contexts, and continuity
+state is written in English regardless of the conversation language.
+
+### How one source reaches four clients
+
+Skills are canonical in one place. The adapters add only the frontmatter or wrapper each client
+understands, which is why a rule that names one tool's machinery never gets reworded into a
+tool-neutral twin.
+
+```mermaid
+flowchart LR
+    subgraph sourceState["Canonical source"]
+        core["core.md, context layer, continuity.md"]
+        rules["rules bodies<br/>path-scoped"]
+        vscodeBody["managed VS Code settings body"]
+        sharedSkills["dot_agents/skills<br/>shared skills, one copy each"]
+        clientSkills["client-only skills<br/>and client front doors"]
+    end
+
+    subgraph adapters["Thin adapters"]
+        claudeAdapter["Claude<br/>CLAUDE.md, rules with paths:"]
+        codexAdapter["Codex<br/>one literal AGENTS.md, no frontmatter"]
+        copilotAdapter["Copilot<br/>instructions with applyTo:"]
+        pathWrapper["OS path wrapper"]
+        skillAdapter["symlink adapters"]
+        clientSkillAdapter["per-client skill trees"]
+    end
+
+    subgraph renderedTargets["Rendered targets"]
+        claudeTarget["~/.claude"]
+        codexTarget["~/.codex<br/>config.toml stays app-owned"]
+        copilotTarget["~/.copilot"]
+        vscodeTarget["VS Code settings.json"]
+        agentsTarget["~/.agents/skills"]
+    end
+
+    subgraph clients["Clients"]
+        claudeClient["Claude Code"]
+        codexClient["Codex"]
+        copilotClient["GitHub Copilot"]
+        vscodeClient["VS Code"]
+    end
+
+    core --> claudeAdapter
+    core --> codexAdapter
+    core --> copilotAdapter
+    rules --> claudeAdapter
+    rules --> copilotAdapter
+    sharedSkills --> skillAdapter
+    clientSkills --> clientSkillAdapter
+    vscodeBody --> pathWrapper
+
+    claudeAdapter --> claudeTarget
+    codexAdapter --> codexTarget
+    copilotAdapter --> copilotTarget
+    skillAdapter --> agentsTarget
+    skillAdapter -.->|"symlinks"| claudeTarget
+    clientSkillAdapter --> claudeTarget
+    clientSkillAdapter --> copilotTarget
+    pathWrapper --> vscodeTarget
+
+    claudeTarget --> claudeClient
+    codexTarget --> codexClient
+    copilotTarget --> copilotClient
+    vscodeTarget --> vscodeClient
+    agentsTarget --> codexClient
+    agentsTarget --> copilotClient
+```
+
+Note the edge that is deliberately missing: `rules` never reaches the Codex adapter. Codex has no
+import mechanism and no path-scoping equivalent, so it receives the always-on core only, as one
+literal file with no YAML frontmatter.
+
+Skills come in three tiers, which is why the diagram has two skill sources:
+
+- **Shared skills** live once in `home/dot_agents/skills` and render to `~/.agents/skills`. Codex
+  and Copilot discover that directory directly; Claude reaches the same files through symlinks in
+  `~/.claude/skills`, so there is still only one body to edit.
+- **Client front doors** exist where one capability needs a different entry point per client.
+  `worktree-task-workflow` has a Codex-gated `SKILL.md` under `dot_agents` and a Claude `SKILL.md`
+  under `dot_claude`, but both pull the same reference bodies out of `.chezmoitemplates`, so the
+  guidance cannot drift even though the front matter differs.
+- **Client-only skills** belong to one client and are never shared: `claude-worktree-memory` for
+  Claude Code, `remember` for Copilot. Copilot also carries its own `.agent.md` agents.
+
+Worktree workflow and worktree manifest stay independently available in every combination; neither
+is a profile toggle. Shared helper scripts render to `~/.local/share` so Claude Code and Codex can
+run the same file.
+
+## Choose the AI configuration profile
+
+The rendered Claude Code, Codex, and managed VS Code Copilot configuration has two independent,
+machine-local selectors in chezmoi's config file (`chezmoi edit-config`):
+
+```toml
+[data]
+ai_context = "company"        # personal or company; default: company
+ai_continuity = "on"           # on or off; default: on
+```
+
+The four supported combinations are personal + continuity on, personal + continuity off,
+company + continuity on, and company + continuity off. Missing `ai_context` uses `company`;
+missing `ai_continuity` uses `on`. Unsupported values fail during rendering;
+they do not silently produce a partial profile. Selector values are not stored in this repository,
+so each Windows or macOS machine can choose its own profile.
+
+The active context supplies artifact-language defaults: personal uses English (`en`) and company
+uses Traditional Chinese (`zh-TW`, represented as `zhtw` where a command accepts that value).
+Explicit language arguments, repository instructions, and direct user requests take precedence.
+User-level dotfiles and AI configuration remain English in both contexts. Worktree skills remain
+installed and independently available in both contexts; they may use continuity when it is on but
+are not profile toggles.
+
+This dotfiles repository is the deliberate exception: its root `AGENTS.md` is a repository
+instruction that forces the effective context to `personal`, so work here remains English even on
+a machine whose default context is `company`.
+
+After changing a selector, preview the result with `chezmoi diff`, apply only after reviewing that
+preview, and start new client sessions. Already-running sessions retain their startup context.
+The selectors are machine-wide in v1, so simultaneous sessions on one machine cannot safely use
+different context or continuity values. There is no profile CLI yet. Broad Copilot integration
+(discovery, repository instructions, and agent plugins) is also outside this version's scope.
+
 ## Choose a setup path
 
 ### Empty machine
@@ -174,7 +343,7 @@ Check that distinction before dropping one into a single-client setup.
 ```
 home/                            chezmoi source state
   .chezmoidata.yaml              rule globs, one place
-  .chezmoitemplates/             SHARED bodies (core.md, rules/, vscode/, claude/)
+  .chezmoitemplates/             SHARED bodies (core.md, profiles/, rules/, vscode/, claude/)
   dot_claude/                    CLAUDE.md, rules, settings, hooks, commands, agents,
                                  skills (Claude-only ones, plus links to the shared set)
   dot_codex/                     AGENTS.md, config.toml  (skills come from dot_agents)
@@ -190,6 +359,8 @@ scripts/claude-user-mcp-servers.json  the MCP manifest those installers read
 scripts/claude-settings-drift.sh lists Claude settings changed locally but not in the repo
 scripts/claude-config-usage.sh   reads local session transcripts to report which managed
                                  skills and commands actually get invoked, and which never do
+scripts/test-ai-configuration-profiles.sh
+                                  renders and checks all four machine-local profile combinations
 scripts/git-hooks/pre-commit     validates the source state before each commit
 scripts/git-hooks/markdown-anchors.awk  resolves documentation cross-references
 scripts/vscode-extensions.txt    extension manifest (installed by bootstrap, or on request)
@@ -208,6 +379,7 @@ only when its feature is retired or equivalent coverage replaces it.
 | macOS worktree provisioning implementation | `bash scripts/test-git-worktree-provision.sh` |
 | Shared worktree provisioning contract or safety boundary | Both worktree provisioning suites |
 | Project-continuity lifecycle hooks or recovery contract | `bash scripts/test-project-continuity-hook.sh` |
+| AI profile selectors, composition, language defaults, or continuity toggle | `bash scripts/test-ai-configuration-profiles.sh` |
 
 These suites create disposable repositories and run manually when their implementation or
 contract changes. The pre-commit hook remains focused on fast source rendering and structural

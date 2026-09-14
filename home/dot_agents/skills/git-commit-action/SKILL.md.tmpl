@@ -53,8 +53,10 @@ Example invocations (0–4 flags, any order):
 
 ### Language
 
-- `{{ $profile.artifact_language }}` (default for the active context) — aliases `eng`, `english` when the value is `en`. Description/body in English when `en` is selected.
+- `en` — aliases `eng`, `english`. Description/body in English.
 - `zhtw` — aliases `zh-tw`, `chinese`, `mandarin`, `mandarin chinese`, `chin`. Description/body in **Traditional** Chinese (zh-TW, Taiwan). Load the `natural-zhtw` skill as well as `git-commit-reference`: the reference file keeps only the commit-specific rules and delegates the zh-TW wording rules to `natural-zhtw`.
+
+When the invocation omits a language, use the active context default `{{ $profile.artifact_language }}`. An explicit `en` or `zhtw` argument overrides it.
 
 ## Workflow
 

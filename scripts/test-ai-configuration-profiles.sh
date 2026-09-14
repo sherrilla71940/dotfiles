@@ -270,6 +270,10 @@ check_profile() {
   assert_not_contains "$invocation" '{{'
   assert_not_contains "$publishing" '{{'
   assert_contains "$commit_skill" 'explicit `en` or `zhtw` argument overrides'
+  # Both language values stay documented whichever one the context selects. Templating the value
+  # into the bullet label once produced two zhtw bullets and no en bullet at all.
+  assert_contains "$commit_skill" '- `en` — aliases `eng`, `english`.'
+  assert_contains "$commit_skill" '- `zhtw` — aliases `zh-tw`, `chinese`'
   assert_contains "$invocation" 'explicit `en` or `zhtw` value for `lang` overrides'
   assert_jsonc_structure "$settings" 4
   assert_json "$destination/.claude/settings.json" "$destination/.codex/hooks.json"

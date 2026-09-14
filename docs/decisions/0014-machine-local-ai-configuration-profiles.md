@@ -28,7 +28,7 @@ Use exactly these machine-local selectors in the chezmoi configuration file's `[
 
 | Selector | Supported values | Missing-key default |
 | --- | --- | --- |
-| `ai_context` | `personal`, `company` | `company` |
+| `ai_context` | `personal`, `company` | `personal` |
 | `ai_continuity` | `on`, `off` | `on` |
 
 The values do not live in the repository. Chezmoi's shared templates read them from each
@@ -41,9 +41,13 @@ The context selects the default language for applicable artifacts:
 - `company` selects Traditional Chinese for Taiwan (`zh-TW`, represented as `zhtw` where an
   existing interface uses that value).
 
-The dotfiles repository is a deliberate repository-level exception. Its root `AGENTS.md` treats
-the effective context as `personal`, so changes to this user-level configuration remain English
-without changing the machine-wide selector used by other repositories.
+A personal machine can omit `ai_context` entirely. A work machine opts in by setting
+`ai_context = "company"` with `chezmoi edit-config`, which keeps the company choice explicit and
+machine-local rather than inherited by every machine that clones this repository.
+
+The dotfiles repository is a deliberate repository-level exception either way. Its root
+`AGENTS.md` treats the effective context as `personal`, so changes to this user-level
+configuration remain English even on a machine explicitly set to `company`.
 
 Explicit language arguments remain authoritative. The default applies to `git-commit-action`,
 the worktree workflow's invocation and publishing guidance, and the managed VS Code Copilot
@@ -141,3 +145,13 @@ the test on a structural error that balanced delimiters alone would not catch.
   continuity off prints nothing and changes neither the state file nor `.git/info/exclude`.
 - Run `bash scripts/test-ai-configuration-profiles.sh` from Git Bash or macOS Bash, then run the
   repository pre-commit hook for staged-source rendering and cross-client structural checks.
+
+## Revisions
+
+- 2026-09-14: the missing-key default for `ai_context` changed from `company` to `personal`. The
+  original value preserved the previous unconditional zh-TW comment rule for application
+  repositories, but it also meant that a machine which had never been configured produced
+  Traditional Chinese artifacts, including on a personal machine and on a fresh clone. Making
+  `personal` the fallback keeps the company choice explicit and machine-local, which is the point
+  of the selector. Nothing else in this record changed: the composition model, the continuity
+  semantics, the worktree independence, and the rejected alternatives all still hold.

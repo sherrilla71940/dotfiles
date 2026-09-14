@@ -38,11 +38,11 @@ state. Run `chezmoi edit-config` and set these values under `[data]` when needed
 
 ```toml
 [data]
-ai_context = "company"        # personal or company; default: company
+ai_context = "company"        # personal or company; default: personal
 ai_continuity = "on"           # on or off; default: on
 ```
 
-Missing `ai_context` uses `company`; missing `ai_continuity` uses `on`. Any other value fails
+Missing `ai_context` uses `personal`; missing `ai_continuity` uses `on`. Any other value fails
 clearly during rendering. The selectors compose one baseline with either the personal or company
 context and, independently, continuity instructions and hooks when continuity is on. They affect
 newly rendered configuration and newly started sessions; an already-running session keeps its

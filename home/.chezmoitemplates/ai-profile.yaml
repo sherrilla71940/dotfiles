@@ -1,4 +1,4 @@
-{{- $aiContext := "company" -}}
+{{- $aiContext := "personal" -}}
 {{- if hasKey . "ai_context" -}}
 {{-   $aiContext = index . "ai_context" -}}
 {{- end -}}

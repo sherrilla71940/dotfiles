@@ -54,7 +54,7 @@ the same duplication for rules with `chat.instructionsFilesLocations`, and VS Co
 
 Claude Code, Codex, and the managed VS Code Copilot commit-message instruction use two independent
 machine-local chezmoi data values: `ai_context` (`personal` or `company`) and `ai_continuity`
-(`on` or `off`). Missing values default to `company` and `on`; unsupported values fail during
+(`on` or `off`). Missing values default to `personal` and `on`; unsupported values fail during
 rendering. The rendered configuration is the shared baseline plus one context layer, with the
 continuity instructions and automatic hooks added independently when enabled.
 

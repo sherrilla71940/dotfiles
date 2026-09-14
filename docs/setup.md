@@ -202,7 +202,7 @@ After initialization, choose the two independent profile dimensions with `chezmo
 
 ```toml
 [data]
-ai_context = "company"        # personal or company; default: company
+ai_context = "company"        # personal or company; default: personal
 ai_continuity = "on"           # on or off; default: on
 ```
 
@@ -211,7 +211,7 @@ it to Traditional Chinese (`zh-TW`, `zhtw` where an existing command interface u
 Explicit requests, repository instructions, and explicit `en` or `zhtw` arguments still win.
 Continuity is independent: `on` includes its instructions and automatic Claude/Codex hooks, while
 `off` leaves the skill installed but suppresses those automatic startup/stop behaviors and their
-state handling. Missing `ai_context` uses `company`; missing `ai_continuity` uses `on`;
+state handling. Missing `ai_context` uses `personal`; missing `ai_continuity` uses `on`;
 unsupported values fail during rendering. This dotfiles repository is the exception: root
 `AGENTS.md` requires the effective context to be `personal` while working here.
 

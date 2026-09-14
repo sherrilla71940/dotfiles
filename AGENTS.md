@@ -20,7 +20,8 @@ application reads. `chezmoi apply` makes targets match the source state. The rep
 
 ## Profile context in this repository
 
-The machine-wide AI profile defaults to `company`, but this dotfiles repository always uses the
+The machine-wide AI profile defaults to `personal`, and a work machine opts in by setting
+`ai_context = "company"` explicitly. Either way, this dotfiles repository always uses the
 `personal` context while work is performed here. Treat that as a repository instruction with
 priority over the machine-local context selector: keep artifact defaults and application/project
 comments in English, and do not change the machine selector just to work on this repository.

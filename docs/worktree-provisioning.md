@@ -211,10 +211,21 @@ along with the directory, which is why that path is never used.
 
 ### Codex worktree task workflow
 
-The Codex adapter of `worktree-task-workflow` starts only after the chat is already in a linked
-worktree. In the Codex app, choose Worktree when starting the chat or use Handoff from Local. In
-the CLI or IDE extension, start Codex in a worktree created with `git wt-add`; changing only a
-shell's directory does not move an existing chat's workspace.
+The Codex adapter of `worktree-task-workflow` supports both ways a task can enter isolation. In a
+[Codex desktop Local chat](https://learn.chatgpt.com/docs/environments/git-worktrees), use the
+native Handoff control to move the chat to Worktree after the skill has resolved the task and base.
+Codex creates the managed detached worktree, copies the
+repository's `.worktreeinclude` entries, and keeps the chat associated with it. In the CLI or IDE
+extension, the adapter creates a detached sibling worktree with `git wt-add` when it starts from
+the primary checkout, then stops with the exact continuation path. Start Codex in that path and
+invoke the resolved workflow again; changing only a shell's directory does not move an existing
+chat's workspace.
+
+If the desktop Handoff selects a different starting commit than the requested
+`origin/<base>`, the adapter stops rather than resetting the worktree. Use the explicit
+`git wt-add -- --detach <path> origin/<base>` route in that case. This preserves the distinction
+between Codex-managed worktrees and worktrees created by the terminal wrapper while giving CLI
+and IDE sessions a safe automatic entry point.
 
 Codex-managed worktrees begin detached. After fetching, the skill creates the task branch from
 the requested `origin/<base>` inside that clean worktree, so the selected starting branch does not

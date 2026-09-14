@@ -35,6 +35,7 @@ agent session.
 | [0009](./0009-own-windows-terminal-actions-and-keybindings.md) | Accepted | Own the Windows Terminal actions and keybindings arrays for a Shift+Enter newline |
 | [0010](./0010-normalize-the-working-tree-to-lf.md) | Accepted | Normalize the whole working tree to LF so chezmoi diff shows only real changes |
 | [0011](./0011-fix-the-continuity-state-path.md) | Accepted | Fix the continuity state path at `.project-continuity/` and keep both privacy layers |
+| [0012](./0012-support-codex-worktree-entry-points.md) | Accepted | Support native Codex Handoff and safe CLI/IDE worktree provisioning |
 
 ## Template
 

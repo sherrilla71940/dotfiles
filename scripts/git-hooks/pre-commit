@@ -246,10 +246,10 @@ if [[ "$statusline_changed" == true ]]; then
   fi
 fi
 
-# 7. Every markdown link with a #fragment must resolve to a real heading, whether it points
-#    into another file or at a heading in the same one. Anchor rot
-#    is silent: the link still renders and only fails when a reader clicks it. The guides and
-#    the decision records cross-reference each other this way, so one renamed heading can
+# 7. Every relative markdown link must resolve: the file it names must exist, and a #fragment
+#    must match a real heading, in another file or in the same one. Both failures are silent --
+#    the link still renders and only fails when a reader clicks it. The guides and the decision
+#    records cross-reference each other both ways, so one renamed heading or one moved file can
 #    break several files at once. Only run when markdown is staged.
 docs_changed=false
 while IFS= read -r changed; do
@@ -259,15 +259,15 @@ done < <(git diff --cached --name-only)
 if [[ "$docs_changed" == true ]]; then
   anchor_awk="$staged/scripts/git-hooks/markdown-anchors.awk"
   if [[ ! -f "$anchor_awk" ]]; then
-    printf 'pre-commit: markdown-anchors.awk is missing; skipping the anchor check.\n' >&2
+    printf 'pre-commit: markdown-anchors.awk is missing; skipping the link check.\n' >&2
   else
     mapfile -t md_files < <(cd "$staged" && find . -type f -name '*.md' | sed 's|^\./||')
     if anchor_out="$(cd "$staged" && awk -f "$anchor_awk" "${md_files[@]}" 2>&1)"; then
-      printf 'pre-commit: markdown anchors OK (%s links).\n' "$anchor_out"
+      printf 'pre-commit: markdown links OK (%s checked).\n' "$anchor_out"
     else
-      printf 'pre-commit: markdown links point at headings that do not exist.\n' >&2
+      printf 'pre-commit: markdown links name files or headings that do not exist.\n' >&2
       printf '%s\n' "$anchor_out" >&2
-      fail "fix the links above, or restore the headings they name."
+      fail "fix the links above, or restore what they name."
     fi
   fi
 fi

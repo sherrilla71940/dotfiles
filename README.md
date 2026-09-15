@@ -343,6 +343,55 @@ branches in place, is what each step does without being asked:
 - **Cleanup removes the worktree, never the branch.** The task branch outlives its directory for
   review and CI, and every removal path that would delete a ref is deliberately unused.
 
+Those properties compose. Nothing in the workflow is aware of any other task, so what limits how
+many run at once is the machine and your own attention:
+
+```mermaid
+flowchart TB
+    subgraph live["Sessions — disposable"]
+        s1["Claude session"]
+        s2["Claude session"]
+        s3["Codex session"]
+    end
+
+    subgraph repoA["Repository A — one clone"]
+        wa1["worktree<br/>feat/offset-matching/frontend<br/>its own state.md"]
+        wa2["worktree<br/>feat/plan-review/frontend<br/>its own state.md"]
+        ma["main checkout<br/>its own state.md"]
+        ex[".git/info/exclude<br/>one entry, repository-wide"]
+    end
+
+    subgraph repoB["Repository B — separate clone"]
+        wb1["worktree<br/>fix/import-csv/backend<br/>its own state.md"]
+    end
+
+    s1 -.->|"starts in"| wa1
+    s2 -.->|"starts in"| wa2
+    s3 -.->|"starts in"| wb1
+
+    ex -.-> wa1
+    ex -.-> wa2
+    ex -.-> ma
+
+    gate{{"your manual test"}}
+    out["one branch and one request per task"]
+
+    wa1 --> gate
+    wa2 --> gate
+    wb1 --> gate
+    gate --> out
+```
+
+Two things in that picture are easy to miss. **Sessions are disposable and worktrees are not** — a
+session ending leaves the directory, the branch, and the state file exactly as they were, and any
+supported client can pick the task up by starting in that path. And **one `.git/info/exclude` entry
+covers every worktree of a clone**, because it lives in the repository's common directory and the
+anchored pattern resolves against each working tree's own root; worktrees created later are
+protected without a per-worktree step.
+
+The manual-test gate is the part that does not parallelize. Agents fan out; verification converges
+on you.
+
 The skill has a Claude adapter and a Codex adapter, because neither client alone gives an isolated
 session on a branch taken from an arbitrary remote base. [The worktree provisioning
 guide](./docs/worktree-provisioning.md#claude-worktree-task-workflow) explains how each one gets

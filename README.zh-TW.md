@@ -310,6 +310,52 @@ flowchart TD
 - **清理移除的是 worktree，不是分支。** 任務分支會留得比目錄久，供 review 與 CI 使用；所有會刪掉
   ref 的操作路徑都刻意不使用。
 
+這些特性是可以疊加的。工作流程本身完全不知道有其他任務存在，所以能同時跑幾個，取決於機器和你自己
+的注意力：
+
+```mermaid
+flowchart TB
+    subgraph live["工作階段——用完即丟"]
+        s1["Claude 工作階段"]
+        s2["Claude 工作階段"]
+        s3["Codex 工作階段"]
+    end
+
+    subgraph repoA["儲存庫 A——同一個 clone"]
+        wa1["worktree<br/>feat/offset-matching/frontend<br/>自己的 state.md"]
+        wa2["worktree<br/>feat/plan-review/frontend<br/>自己的 state.md"]
+        ma["主要 checkout<br/>自己的 state.md"]
+        ex[".git/info/exclude<br/>一條設定，整個儲存庫適用"]
+    end
+
+    subgraph repoB["儲存庫 B——另一個 clone"]
+        wb1["worktree<br/>fix/import-csv/backend<br/>自己的 state.md"]
+    end
+
+    s1 -.->|"在這裡啟動"| wa1
+    s2 -.->|"在這裡啟動"| wa2
+    s3 -.->|"在這裡啟動"| wb1
+
+    ex -.-> wa1
+    ex -.-> wa2
+    ex -.-> ma
+
+    gate{{"你的人工測試"}}
+    out["每個任務一條分支、一個 request"]
+
+    wa1 --> gate
+    wa2 --> gate
+    wb1 --> gate
+    gate --> out
+```
+
+這張圖有兩個地方很容易被忽略。**工作階段是用完即丟的，worktree 不是**——工作階段結束後，目錄、
+分支與狀態檔都原封不動地留著，任何一個支援的用戶端只要從那個路徑啟動，就能接手這個任務。另外，
+**一條 `.git/info/exclude` 設定就涵蓋這個 clone 的每一個 worktree**，因為它放在儲存庫的共用目錄，
+而錨定的樣式會對照每個工作樹自己的根目錄；之後才建立的 worktree 也一樣受保護，不需要另外再設定。
+
+人工測試關卡就是無法平行化的那一段。agent 可以散開來跑，驗證最後還是收斂到你身上。
+
 這個技能有 Claude 與 Codex 兩個轉接層，因為沒有任何一個用戶端能單獨做到「從任意遠端 base 開分支，
 再給你一個隔離的工作階段」。[worktree 佈建指南](./docs/worktree-provisioning.md#claude-worktree-task-workflow)
 說明兩者各自怎麼達成，以及適用哪些安全界線。

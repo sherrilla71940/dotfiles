@@ -13,7 +13,8 @@ home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
 ```
 
 把 dotfiles 放進 Git 追蹤只是最簡單的一步。真正值得一看的是這個儲存庫**在哪裡停手**，以及是什麼
-讓它停下來：下面每一條界線，都由一道在 commit 落地前就會跑的檢查守著，而不是靠人記得要小心。
+讓它停在那裡：下面每一條界線都由某個機制守著——chezmoi 的合併、Git 的排除規則、一道會讓 commit
+失敗的檢查——而不是靠人記得要小心。
 
 ## 這個儲存庫解決的問題
 
@@ -70,7 +71,7 @@ Windows Terminal 會自行重新產生設定檔。Codex 會把信任與 marketpl
 
 | 情境 | 從這裡開始 |
 | --- | --- |
-| 沒有東西需要保留 | [全新電腦](./docs/setup.md#empty-machine)——單行 chezmoi 入口 |
+| 沒有東西需要保留 | [全新電腦](./docs/setup.md#empty-machine)——前置條件，以及下面那行命令做了什麼 |
 | 已經有設定 | [已有設定的電腦](./docs/setup.md#existing-configuration)——先初始化、檢閱 `chezmoi diff`、採用要保留的項目，再套用 |
 | 完整建置一台電腦 | [新電腦設定順序](./docs/setup.md#new-machine-in-order)——設定、應用程式、bootstrap、驗證 |
 
@@ -81,8 +82,7 @@ sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
 
 這會下載並執行遠端安裝程式，所以執行前請先確認你信任該 URL 與這台電腦的腳本政策，並把
-`sherrilla71940` 換成你自己的 fork。電腦上只要已經有 Shell、編輯器或 AI 用戶端設定，就該從設定
-指南開始，而不是從這一行開始。
+`sherrilla71940` 換成你自己的 fork。這一行只適用於沒有東西可以弄丟的電腦。
 
 套用設定只是建置電腦的其中一步。完整流程還包含安裝並登入應用程式、執行平台 bootstrap，以及啟用
 儲存庫驗證。除非設定使用目錄 junction，Windows 另外還需要
@@ -104,7 +104,7 @@ Chezmoi 把 `home/` 下的檔案視為**來源狀態**：也就是你應該編�
 `modify_` 與 `symlink_` 等前綴則決定 chezmoi 怎麼處理目標檔案。新增或重新命名來源檔案前，請先閱讀
 [chezmoi 工作流程](./docs/chezmoi-workflow.md)。
 
-下圖把每一條從受追蹤來源到實際目標的路徑都畫出來。實線箭頭代表「產生為」，虛線箭頭代表「從另一個
+下圖說明每一類受追蹤的來源，各自怎麼走到它的實際目標。實線箭頭代表「產生為」，虛線箭頭代表「從另一個
 位置讀到同一份檔案」——正因為有後者，才不必把內容複製一份給第二個宿主。
 
 ```mermaid
@@ -164,7 +164,8 @@ flowchart LR
   載入的核心，因為 Codex 既不支援 import，也沒有路徑範圍指示。
 - **一個可攜式技能就是一份實體檔案。** 它放在 `home/dot_agents/skills/`，產生到 `~/.agents/skills`，
   Codex、Copilot 與 VS Code 都能原生找到。Claude Code 只從 `~/.claude/skills` 讀個人技能，所以改用
-  個別 symlink 連到同一份檔案。`.codex-only` marker 則擋住那個不該到處載入的技能。
+  個別 symlink 連到同一份檔案。`.codex-only` marker 則是擋住共用的那一份，不讓它被當初沒有要給的
+  宿主自動叫用；真的需要自己版本的用戶端，會拿到一份原生副本，而不是 symlink。
 - **VS Code 是編輯器宿主，不是第四個 Copilot。** 它的設定、keybindings 與 MCP 檔案使用作業系統專用的
   包裝器；Copilot 的指示、agent 與技能則放在各自宿主支援的位置。
 
@@ -174,7 +175,7 @@ flowchart LR
 | --- | --- |
 | 永遠載入的工作約定 | 一份共用本文，直接嵌入 Claude 的 `CLAUDE.md`、Codex 的 `AGENTS.md` 與 Copilot 指示。情境層與連續性區塊由本機選擇器決定要不要組進來，所以同一份來源在個人電腦與公司電腦上會產生不同的工作約定。 |
 | 路徑範圍規則 | `home/.chezmoidata.yaml` 中的一份本文與一個 glob，再由 Claude 與 Copilot 的薄型 frontmatter 包裝器產生。Codex 沒有對等的路徑範圍輸出。 |
-| 可攜式技能 | `home/dot_agents/skills/` 下的一個實體技能目錄，只產生一份到共用探索目標，Claude 再透過 symlink 讀到同一份。如果某個技能不該被 Claude 或 Copilot 自動叫用，就用 `.codex-only` marker 搭配原生 metadata 擋掉。 |
+| 可攜式技能 | `home/dot_agents/skills/` 下的一個實體技能目錄，只產生一份到共用探索目標，Claude 再透過 symlink 讀到同一份。`.codex-only` marker 搭配原生 metadata 則用來閘門一個以 Codex 為對象的技能：Codex 會隱式叫用它，Copilot 找得到但不能自動叫用，Claude 則不會有 symlink，因為它有自己的原生轉接層。 |
 | 用戶端專屬技能、agent、命令與 MCP 檔案 | 放在相關用戶端的原生來源目錄中，絕不改寫成容易誤導的「工具中立」複本。 |
 | VS Code 檔案 | `home/.chezmoitemplates/vscode/` 下的共用本文，再各自包裝一次，產生 Windows 與 macOS 使用者設定檔的目標。 |
 
@@ -236,7 +237,7 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 flowchart TD
     subgraph resolve["執行任何 Git 命令之前"]
         A["確認 invocation<br/>base · 任務或推導 · 素材 · 選項"]
-        B["先把每份素材讀完<br/>docx · pdf · pptx · xlsx 技能、文字、圖片<br/>依專案素材規則分類"]
+        B["先把每份素材讀完<br/>文件技能 · 文字 · 圖片<br/>網頁擷取 · 設計整合"]
         C{"有給任務嗎？"}
         D["從素材推導出一個任務<br/>用素材本身的語言"]
         E["拿任務跟素材<br/>互相核對"]
@@ -253,7 +254,7 @@ flowchart TD
         H{"執行 app 需要<br/>被忽略的檔案嗎？"}
         I["worktree-manifest 技能<br/>提出樣式 · 排除機密<br/>取得核准 · 詢問放在哪裡"]
         J["進入並驗證<br/>根目錄 · 分支 · base commit"]
-        K["啟動 project-continuity<br/>目標 · 決策 · 素材路徑"]
+        K["啟動 project-continuity<br/>目標 · 決策 · 素材"]
         L["實作"]
         M{"agent-test"}
         N["typecheck · lint · 重點測試<br/>build · 執行期或瀏覽器驗證"]
@@ -295,9 +296,9 @@ flowchart TD
   建立功能表達不出來的。
 - **每個任務都有自己的目錄、分支與連續性檔案。** 機器撐得住幾個就開幾個；任務之間不共用 index、
   `HEAD`，也不共用交接紀錄。
-- **工作階段在任務中途結束幾乎沒有成本。** 連續性 checkpoint 在該 worktree 裡，而且會記下放在
-  worktree 外面的素材路徑，新的工作階段進到同一個路徑就能從記錄的下一步接續——包括上一個工作階段
-  是被用量上限中斷的情況。
+- **工作階段在任務中途結束幾乎沒有成本。** 連續性 checkpoint 在該 worktree 裡，而且每一份素材都會
+  記下來——路徑是因為它可能放在 worktree 外面，URL 則是因為之後的工作階段得重新抓一次——新的工作
+  階段進到同一個路徑就能從記錄的下一步接續，包括上一個工作階段是被用量上限中斷的情況。
 - **佈建被靜靜略過時會被指出來，不會被吞掉。** `git wt-add` 有可能成功卻什麼都沒複製。這套流程會
   用實際建置並執行 app 來確認這到底有沒有影響；真的需要 manifest 時，也會先問 `.worktreeinclude`
   該放在哪裡，而不是把一個不相干的根目錄檔案硬塞進這次任務的 request。
@@ -422,6 +423,11 @@ modified、untracked 的檔案數、已使用的 context 比例，還有**五小
 共用的 `AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` 與其他儲存庫指示檔仍然可以追蹤。
 這套忽略規則防的是誤追蹤；它不會把檔案複製進 worktree，也不會加密任何東西。
 
+這個全域檔案只是兩層防護的其中一層，這也是為什麼連續性在兩個地方都出現。全域檔案涵蓋這台電腦上的
+每一個儲存庫；而在單一儲存庫裡，連續性技能還會把 `/.project-continuity/` 寫進 `.git/info/exclude`，
+因為那個檔案放在 Git 的共用目錄，所以這一條設定就同時涵蓋主要 checkout 與每一個 worktree，包括之後
+才建立的。
+
 憑證絕不 commit。MCP 設定裡放的是端點，以及在支援的情況下放 `${input:figma-api-key}` 或
 `${GITHUB_MCP_TOKEN}` 這類佔位符——不是實際的值。每個用戶端都在本機登入，並把工作階段、log、快取、
 已安裝的 plugin 與金鑰都留在 `home/` 之外。
@@ -472,8 +478,8 @@ pre-commit hook 會把 staged 的來源產生到暫存目錄——絕不寫進�
 - Claude 與 Copilot 產生出來的共用規則本文逐位元組相同；
 - Codex 產生出來的 `AGENTS.md` 沒有 YAML frontmatter；
 - Bash 與 PowerShell 兩份狀態列實作在任一份變動時仍然一致；以及
-- 每一個帶 `#fragment` 的 Markdown 連結都對得到真正存在的標題，因為 anchor 失效不會有任何徵兆，
-  要等讀者點下去才會發現。
+- 每一個相對路徑的 Markdown 連結：它指的檔案要真的存在，帶 `#fragment` 時也要對得到真正存在的
+  標題。這兩種失效都不會有任何徵兆，連結照樣顯示，要等讀者點下去才會發現。
 
 以下的長期測試在對應的受保護行為變動時，手動執行：
 
@@ -512,7 +518,7 @@ scripts/install/                   Claude MCP 安裝程式
 scripts/manifests/                 MCP 與 VS Code 擴充功能宣告
 scripts/diagnostics/               doctor、設定使用狀況與設定落差報告
 scripts/tests/                     profile、連續性與 worktree 測試
-scripts/git-hooks/                 pre-commit 與 Markdown anchor 驗證
+scripts/git-hooks/                 pre-commit 與 Markdown 連結驗證
 docs/                              設定、工作流程、自訂與 ADR 指南
 ```
 

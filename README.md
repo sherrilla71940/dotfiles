@@ -14,8 +14,8 @@ home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
 ```
 
 Tracking dotfiles in Git is the easy part. What is worth reading about is where this repository
-**stops**, and what stops it: every boundary below is held by a check that runs before a commit
-can land, not by remembering to be careful.
+**stops**, and what holds it there: each boundary below is enforced by a mechanism — a chezmoi
+merge, a Git exclude, a check that fails the commit — rather than by remembering to be careful.
 
 ## Why this exists
 
@@ -78,7 +78,7 @@ applying it, especially on a machine that already has shell, editor, or AI-clien
 
 | Situation | Start here |
 | --- | --- |
-| Nothing to preserve | [Empty machine](./docs/setup.md#empty-machine) — one-line chezmoi entry point |
+| Nothing to preserve | [Empty machine](./docs/setup.md#empty-machine) — prerequisites and what the one-liner below does |
 | Existing configuration | [Existing configuration](./docs/setup.md#existing-configuration) — initialize, review `chezmoi diff`, adopt, then apply |
 | Full machine build | [New machine, in order](./docs/setup.md#new-machine-in-order) — configuration, applications, bootstrap, validation |
 
@@ -89,8 +89,8 @@ sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
 ```
 
 That downloads and runs a remote installer, so review the URL and the machine's script policy
-before running it, and replace `sherrilla71940` with your own fork. Any machine that already has
-shell, editor, or AI-client settings should start from the guide instead, not from this line.
+before running it, and replace `sherrilla71940` with your own fork. This line is only for a
+machine with nothing to lose.
 
 Applying configuration is only one step of a machine build. The complete sequence also installs
 and authenticates the applications, runs the platform bootstrap, and enables repository
@@ -118,7 +118,7 @@ rendering, and prefixes such as `create_`, `modify_`, and `symlink_` control how
 target. Read [the chezmoi workflow](./docs/chezmoi-workflow.md) before adding or renaming a
 source file.
 
-The map below traces every path from a tracked source to a live target. Solid arrows mean "renders
+The map below traces how each kind of tracked source reaches its live target. Solid arrows mean "renders
 into". Dotted arrows mean "reads the same file from another location", which is why no content is
 duplicated to reach a second host.
 
@@ -181,7 +181,8 @@ Three details explain most of the structure:
 - **A portable skill is one real file.** It lives under `home/dot_agents/skills/` and renders to
   `~/.agents/skills`, where Codex, Copilot, and VS Code find it natively. Claude Code reads
   personal skills only from `~/.claude/skills`, so it reaches the same file through an individual
-  symlink. A `.codex-only` marker gates the one skill that must not load everywhere.
+  symlink. A `.codex-only` marker stops the shared copy of a skill being auto-invoked by a host it
+  was not written for; a client needing its own version carries a native one instead of a symlink.
 - **VS Code is the editor host, not a fourth Copilot.** Its settings, keybindings, and MCP files
   use OS-specific wrappers, while Copilot instructions, agents, and skills stay in the locations
   their own host supports.
@@ -192,7 +193,7 @@ Three details explain most of the structure:
 | --- | --- |
 | Always-on working agreement | One shared body, inlined into Claude `CLAUDE.md`, Codex `AGENTS.md`, and Copilot instructions. The context layer and the continuity block are composed in or out by machine-local selectors, so one source yields a different agreement on a personal machine and a company one. |
 | Path-scoped rules | One body and one glob in `home/.chezmoidata.yaml`, with thin Claude and Copilot frontmatter wrappers. Codex has no equivalent path-scoped output. |
-| Portable skills | One real skill directory under `home/dot_agents/skills/`, rendered once to the shared discovery target and reached by Claude through a symlink. A `.codex-only` marker plus native metadata gates a skill that Claude and Copilot must not invoke automatically. |
+| Portable skills | One real skill directory under `home/dot_agents/skills/`, rendered once to the shared discovery target and reached by Claude through a symlink. A `.codex-only` marker plus native metadata gates a Codex-targeted skill: Codex invokes it implicitly, Copilot discovers it but cannot invoke it automatically, and Claude gets no symlink because it carries its own adapter. |
 | Client-specific skills, agents, commands, and MCP files | Native files under the relevant client source directory, never rewritten into a misleading "tool-neutral" copy. |
 | VS Code files | Shared bodies under `home/.chezmoitemplates/vscode/`, wrapped once for the Windows and macOS user-profile paths. |
 
@@ -261,7 +262,7 @@ own:
 flowchart TD
     subgraph resolve["Before any Git command"]
         A["resolve the invocation<br/>base · task or inference · materials · flags"]
-        B["read every material first<br/>docx · pdf · pptx · xlsx skills, text, images<br/>classify them under the project-material rule"]
+        B["read every material first<br/>document skills · text · images<br/>web fetch · design integration"]
         C{"task supplied?"}
         D["infer one task<br/>in the materials' language"]
         E["cross-check the task<br/>against the materials"]
@@ -278,7 +279,7 @@ flowchart TD
         H{"ignored files<br/>needed to run?"}
         I["worktree-manifest skill<br/>propose patterns · exclude secrets<br/>get approval · ask where it lands"]
         J["enter and verify<br/>root · branch · base commit"]
-        K["start project-continuity<br/>objective · decisions · material paths"]
+        K["start project-continuity<br/>objective · decisions · materials"]
         L["implement"]
         M{"agent-test"}
         N["typecheck · lint · focused tests<br/>build · runtime or browser pass"]
@@ -325,8 +326,9 @@ branches in place, is what each step does without being asked:
 - **Every task gets its own directory, branch, and continuity file.** Run as many at once as the
   machine allows; no two tasks share an index, a `HEAD`, or a handoff record.
 - **A session ending mid-task costs almost nothing.** Continuity is checkpointed inside the
-  worktree and records the paths of materials that live outside it, so a new session enters the
-  same path and resumes from the recorded next action — including after the usage limit that ended
+  worktree and records every material — a path because it may live outside the worktree, a URL
+  because a later session has to fetch it again — so a new session enters the same path and
+  resumes from the recorded next action — including after the usage limit that ended
   the previous one.
 - **A silent provisioning skip is surfaced, not swallowed.** `git wt-add` can succeed while
   copying nothing. The workflow settles whether that matters by building and running the app, and
@@ -467,6 +469,12 @@ Shared `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, and other re
 instructions stay trackable. The ignore policy prevents accidental tracking; it does not copy
 files into worktrees and does not encrypt anything.
 
+That global file is one of two layers, which is why continuity appears in both. It covers every
+repository on the machine. Inside a repository, the continuity skill also writes
+`/.project-continuity/` into `.git/info/exclude`, and because that file lives in the common Git
+directory the single entry covers the main checkout and every worktree, including ones created
+later.
+
 Never commit credentials. MCP configuration holds endpoints and, where supported, placeholders
 such as `${input:figma-api-key}` or `${GITHUB_MCP_TOKEN}` — never their values. Authenticate each
 client locally and keep sessions, logs, caches, installed plugins, and keys out of `home/`.
@@ -524,8 +532,8 @@ directory — and checks:
 - byte-identical shared rule bodies between Claude and Copilot;
 - the absence of YAML frontmatter in Codex's rendered `AGENTS.md`;
 - parity between the Bash and PowerShell status-line implementations when either changes; and
-- every Markdown `#fragment` link against the headings that actually exist, because anchor rot is
-  silent until a reader clicks.
+- every relative Markdown link: the file it names must exist, and a `#fragment` must match a real
+  heading. Both fail silently, staying rendered until a reader clicks.
 
 Durable suites run by hand when their protected behavior changes:
 
@@ -565,7 +573,7 @@ scripts/install/                   Claude MCP installers
 scripts/manifests/                 MCP and VS Code extension declarations
 scripts/diagnostics/               doctor, config-usage, and settings-drift reports
 scripts/tests/                     profile, continuity, and worktree suites
-scripts/git-hooks/                 pre-commit and Markdown-anchor validation
+scripts/git-hooks/                 pre-commit and Markdown link validation
 docs/                              setup, workflow, customization, and ADR guides
 ```
 

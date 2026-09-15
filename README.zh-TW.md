@@ -1,9 +1,12 @@
-# Dotfiles
+# 個人跨平台開發環境：Agentic 工作流程
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **快速摘要：** 這是一套供 AI 輔助開發使用的個人跨平台開發環境工具組，以
-> [chezmoi](https://www.chezmoi.io) 管理。Git 追蹤單一份來源，再由 chezmoi 產生成 Claude Code、
+> 以 Git 追蹤的 dotfiles、AI 用戶端整合，以及支援 Claude Code、Codex、GitHub Copilot 與其他工具的
+> 開發工作流程。
+>
+> **快速摘要：** 這是一套以 [chezmoi](https://www.chezmoi.io) 管理的個人跨平台開發環境。Git 追蹤一份來源，
+> 再由 chezmoi 產生成 Claude Code、
 > Codex、GitHub Copilot、VS Code、Shell、Git 與 Windows Terminal 實際讀取的原生檔案。每條共用
 > 規則只留一份本文，不會變成三份各自飄移的副本；每個 worktree 各自的任務狀態能跨工作階段保留，
 > 讓平行的任務彼此隔離；而且絕不覆寫應用程式自己管理的設定。

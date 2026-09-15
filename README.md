@@ -1,9 +1,12 @@
-# Dotfiles
+# Personal Cross-Platform Developer Environment for Agentic Workflows
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **TL;DR:** A personal, cross-platform developer environment kit for AI-assisted development,
-> managed with [chezmoi](https://www.chezmoi.io). One Git-tracked source renders into the native
+> Git-tracked dotfiles, AI-client integrations, and development workflows for Claude Code, Codex,
+> GitHub Copilot, and more.
+>
+> **TL;DR:** A personal, cross-platform developer environment managed with [chezmoi](https://www.chezmoi.io).
+> One Git-tracked source renders into the native
 > files that Claude Code, Codex, GitHub Copilot, VS Code, the shells, Git, and Windows Terminal
 > actually read. It keeps one body per shared rule instead of three drifting copies, preserves
 > per-worktree task state across sessions so parallel tasks stay isolated, and never overwrites a

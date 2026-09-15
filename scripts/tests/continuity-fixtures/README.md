@@ -3,7 +3,7 @@
 `test-project-continuity-hook.sh` covers the parts of continuity a shell script can
 decide: does the hook find the state file, does it compute drift, does it emit the
 cleanup notice. What it cannot cover is the part that actually carries risk — whether
-an agent reading [the skill](../../home/dot_agents/skills/project-continuity/SKILL.md)
+an agent reading [the skill](../../../home/dot_agents/skills/project-continuity/SKILL.md)
 takes the branch the skill mandates when the situation is a judgment call.
 
 These fixtures are that test. Each case is the prompt to give a fresh session, the branch the

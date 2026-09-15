@@ -110,7 +110,7 @@ Chezmoi 把 `home/` 下的檔案視為**來源狀態**：也就是你應該編�
 ```mermaid
 flowchart LR
     subgraph source["Git 追蹤的來源（`home/`）"]
-        core["共用核心<br/>+ 情境層<br/>+ 連續性"]
+        core["共用核心<br/>personal 與 company 情境層<br/>連續性區塊"]
         rules["共用的路徑範圍規則本文"]
         skills["可攜式與受主機閘門管理的技能"]
         native["用戶端原生檔案<br/>agents、commands、MCP、settings"]
@@ -119,7 +119,7 @@ flowchart LR
     end
 
     subgraph render["Chezmoi 組合"]
-        instructionAdapters["原生指示包裝器"]
+        instructionAdapters["原生指示包裝器<br/>由本機選擇器決定<br/>用哪個情境層、要不要連續性"]
         ruleAdapters["路徑範圍規則包裝器<br/>Claude：paths<br/>Copilot：applyTo"]
         skillDelivery["技能交付<br/>實體檔案、symlink、主機閘門"]
         osAdapters["Windows/macOS<br/>VS Code 包裝器"]

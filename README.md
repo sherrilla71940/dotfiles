@@ -125,7 +125,7 @@ duplicated to reach a second host.
 ```mermaid
 flowchart LR
     subgraph source["Git-tracked source (`home/`)"]
-        core["shared core<br/>+ context layer<br/>+ continuity"]
+        core["shared core<br/>personal and company context layers<br/>continuity block"]
         rules["shared scoped-rule bodies"]
         skills["portable and host-gated skills"]
         native["client-native files<br/>agents, commands, MCP, settings"]
@@ -134,7 +134,7 @@ flowchart LR
     end
 
     subgraph render["Chezmoi composition"]
-        instructionAdapters["native instruction wrappers"]
+        instructionAdapters["native instruction wrappers<br/>machine-local selectors choose<br/>the context layer and continuity"]
         ruleAdapters["scoped-rule wrappers<br/>Claude: paths<br/>Copilot: applyTo"]
         skillDelivery["skill delivery<br/>real files, symlinks, host gates"]
         osAdapters["Windows/macOS<br/>VS Code wrappers"]

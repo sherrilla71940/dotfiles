@@ -58,7 +58,7 @@ into". Dotted arrows mean "links to or discovers an existing target", so content
 to reach a second host.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart LR
     subgraph source["Git-tracked source — home/"]
         core["Shared instruction bodies<br/>Personal or company context<br/>Optional continuity"]
@@ -206,7 +206,7 @@ verification, and the user manual-test gate.** The worktree path and removal ste
 Claude-specific; the Codex differences are in the linked guide.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart TD
     subgraph resolve["Before creating anything"]
         A["Confirm the request<br/>base, task, materials, options"]
@@ -285,7 +285,7 @@ duplicated.
 state.**
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart LR
     subgraph taskA["Repository A — Worktree 1: Task A handoff"]
         claudeA["Claude Code<br/>starts Task A"]

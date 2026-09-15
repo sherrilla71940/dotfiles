@@ -49,7 +49,7 @@ chezmoi 怎麼把可重用來源與用戶端專屬來源，產生各用戶端自
 現有目標」——因此不必複製內容，就能交付給第二個宿主。
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart LR
     subgraph source["Git 追蹤的來源 — home/"]
         core["共用指示本文<br/>personal 或 company 情境<br/>選用的連續性"]
@@ -186,7 +186,7 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 移除步驟是 Claude adapter 專用；Codex 的差異寫在下方連結的指南裡。
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart TD
     subgraph resolve["開始建立任何東西之前"]
         A["確認任務請求<br/>起始分支、任務、素材、選項"]
@@ -259,7 +259,7 @@ flowchart TD
 **圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
 flowchart LR
     subgraph taskA["儲存庫 A — Worktree 1：任務 A 接續"]
         claudeA["Claude Code<br/>開始任務 A"]

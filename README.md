@@ -58,9 +58,10 @@ into". Dotted arrows mean "links to or discovers an existing target", so content
 to reach a second host.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart LR
     subgraph source["Git-tracked source — home/"]
-        core["Shared instruction bodies<br/>Personal or company context<br/>Optional continuity instructions"]
+        core["Shared instruction bodies<br/>Personal or company context<br/>Optional continuity"]
         rules["Shared path-scoped rules"]
         skills["Portable and host-gated skills"]
         claudeNative["Claude-only sources<br/>Skills, agents, commands, MCP, settings"]
@@ -71,10 +72,10 @@ flowchart LR
     end
 
     subgraph render["Chezmoi composition"]
-        instructionAdapters["Render each client's native instructions<br/>Select context and continuity per machine"]
-        ruleAdapters["Add each client's scope metadata<br/>Claude uses paths<br/>Copilot uses applyTo"]
-        skillDelivery["Deliver skills with files<br/>symlinks, and host gates"]
-        osAdapters["Render the Windows or macOS<br/>VS Code profile"]
+        instructionAdapters["Native instruction wrappers<br/>Select context and continuity"]
+        ruleAdapters["Scope wrappers<br/>Claude: paths<br/>Copilot: applyTo"]
+        skillDelivery["Skill delivery<br/>Files, links, host gates"]
+        osAdapters["OS-specific wrappers<br/>VS Code paths"]
     end
 
     subgraph targets["Live targets"]
@@ -205,40 +206,41 @@ verification, and the user manual-test gate.** The worktree path and removal ste
 Claude-specific; the Codex differences are in the linked guide.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart TD
     subgraph resolve["Before creating anything"]
-        A["Confirm the task request<br/>starting branch, task, materials, and options"]
-        B["Read every supplied material<br/>before creating a worktree"]
-        C{"Was a task supplied?"}
-        D["Derive one task<br/>from the supplied materials"]
-        E["Check the task against<br/>the supplied materials"]
-        F["Show the plan before proceeding<br/>task, branch, worktree, and options"]
-        Z["Stop and ask for a task<br/>or ask to infer one"]
+        A["Confirm the request<br/>base, task, materials, options"]
+        B["Read supplied materials<br/>before creating anything"]
+        C{"Task supplied?"}
+        D["Infer one task<br/>from the materials"]
+        E["Cross-check the task<br/>against the materials"]
+        F["Show the plan<br/>task, branch, worktree, options"]
+        Z["Stop and ask for a task<br/>or whether to infer one"]
         A --> B --> C
-        C -->|"No, infer from materials"| D
-        C -->|"Yes"| E
-        C -->|"No, do not infer"| Z
+        C -->|"Infer from materials"| D
+        C -->|"Use supplied task"| E
+        C -->|"Do not infer"| Z
         D --> F
         E --> F
     end
 
     subgraph isolate["In the isolated worktree"]
-        G["Create an isolated worktree<br/>from the selected starting branch"]
-        H{"Are ignored local files<br/>needed to run the project?"}
-        I["Review missing files<br/>exclude secrets and get approval"]
-        J["Enter the worktree and verify<br/>the directory, branch, and starting commit"]
-        K["Record the task context<br/>objective, decisions, materials, and next action"]
+        G["Create an isolated worktree<br/>from the selected branch"]
+        H{"Ignored files<br/>needed?"}
+        I["Review missing files<br/>exclude secrets, get approval"]
+        J["Enter and verify<br/>path, branch, starting commit"]
+        K["Record task context<br/>objective, decisions, materials, next action"]
         L["Implement the change"]
-        M{"Run automated agent verification?"}
-        N["Run automated checks<br/>typecheck, lint, focused tests, and build"]
-        N2["For UI changes, when enabled<br/>the agent automatically runs a real browser test"]
-        N3["Verify the running application<br/>with a real route or runtime check"]
+        M{"Run agent verification?"}
+        N["Run automated checks<br/>typecheck, lint, tests, build"]
+        N2["For UI changes<br/>agent runs a real browser test"]
+        N3["Verify the running app<br/>real route or runtime check"]
         O{{"You run the manual test<br/>before publishing"}}
-        P["Diagnose the failure, fix it,<br/>and run verification again"]
+        P["Fix the failure<br/>run verification again"]
         G --> H
-        H -->|"Yes, files are missing"| I
+        H -->|"Missing files"| I
         I --> J
-        H -->|"No, or already provisioned"| J
+        H -->|"No missing files"| J
         J --> K --> L --> M
         M -->|"Yes"| N
         N --> N2 --> N3
@@ -248,9 +250,9 @@ flowchart TD
         P --> M
     end
 
-    subgraph publish["After you approve the result"]
+    subgraph publish["After you approve"]
         Q["Create the commit<br/>using the active profile"]
-        R["Push the branch<br/>and open a pull or merge request"]
+        R["Push the branch<br/>open a pull or merge request"]
         S["Remove the worktree when appropriate<br/>keep the branch and request"]
         Q --> R --> S
     end
@@ -273,24 +275,25 @@ branch-preserving cleanup.
 state.**
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart LR
-    subgraph taskA["Repository A — Worktree 1: Cross-client handoff"]
-        claudeA["Claude Code starts Task A"]
-        workA["Repository A, Worktree 1<br/>Task branch and continuity state"]
-        codexA["Codex resumes Task A<br/>from the same worktree"]
+    subgraph taskA["Repository A — Worktree 1: Task A handoff"]
+        claudeA["Claude Code<br/>starts Task A"]
+        workA["Repository A / Worktree 1<br/>Task branch + continuity state"]
+        codexA["Codex<br/>continues Task A from state"]
         claudeA -->|"Checkpoints Task A"| workA
-        workA -->|"The AI session reaches its token limit<br/>continuity state remains for Codex"| codexA
+        workA -->|"Session reaches token limit<br/>state remains; no manual handoff"| codexA
     end
 
-    subgraph taskB["Repository A — Worktree 2: Parallel task"]
-        claudeB["Another Claude Code session<br/>starts Task B"]
-        workB["Repository A, Worktree 2<br/>Separate task branch and continuity state"]
+    subgraph taskB["Repository A — Worktree 2: Task B in parallel"]
+        claudeB["Claude Code<br/>starts Task B"]
+        workB["Repository A / Worktree 2<br/>Independent branch + continuity state"]
         claudeB -->|"Starts independently"| workB
     end
 
-    subgraph taskC["Repository B — Worktree 1: Separate repository"]
-        copilotC["GitHub Copilot session<br/>follows the continuity protocol"]
-        workC["Repository B, Worktree 1<br/>Task branch and continuity state"]
+    subgraph taskC["Repository B — Worktree 1: Task C"]
+        copilotC["GitHub Copilot<br/>follows continuity protocol"]
+        workC["Repository B / Worktree 1<br/>Independent branch + continuity state"]
         copilotC -->|"Starts independently"| workC
     end
 

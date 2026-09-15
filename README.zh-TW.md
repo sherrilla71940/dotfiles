@@ -49,9 +49,10 @@ chezmoi 怎麼把可重用來源與用戶端專屬來源，產生各用戶端自
 現有目標」——因此不必複製內容，就能交付給第二個宿主。
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart LR
     subgraph source["Git 追蹤的來源 — home/"]
-        core["共用指示本文<br/>personal 或 company 情境<br/>選用的連續性指示"]
+        core["共用指示本文<br/>personal 或 company 情境<br/>選用的連續性"]
         rules["共用的路徑範圍規則"]
         skills["可攜式與主機閘門技能"]
         claudeNative["Claude 專屬來源<br/>skills、agents、commands、MCP、settings"]
@@ -62,10 +63,10 @@ flowchart LR
     end
 
     subgraph render["Chezmoi 組合"]
-        instructionAdapters["產生各用戶端的原生指示<br/>由每台電腦選擇情境與連續性"]
-        ruleAdapters["加入各用戶端的套用範圍資訊<br/>Claude 使用 paths<br/>Copilot 使用 applyTo"]
-        skillDelivery["交付技能<br/>使用檔案、symlink 與主機閘門"]
-        osAdapters["產生 Windows 或 macOS<br/>使用的 VS Code 設定檔"]
+        instructionAdapters["原生指示包裝器<br/>選擇情境與連續性"]
+        ruleAdapters["套用範圍包裝器<br/>Claude：paths<br/>Copilot：applyTo"]
+        skillDelivery["交付技能<br/>檔案、連結與主機閘門"]
+        osAdapters["作業系統包裝器<br/>VS Code 路徑"]
     end
 
     subgraph targets["Live 目標"]
@@ -185,40 +186,41 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 移除步驟是 Claude adapter 專用；Codex 的差異寫在下方連結的指南裡。
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart TD
     subgraph resolve["開始建立任何東西之前"]
-        A["確認任務請求<br/>起始分支、任務、素材與選項"]
-        B["閱讀所有提供的素材<br/>再建立 worktree"]
+        A["確認任務請求<br/>起始分支、任務、素材、選項"]
+        B["閱讀提供的素材<br/>再建立任何東西"]
         C{"有提供任務嗎？"}
-        D["從提供的素材<br/>推導出一個任務"]
-        E["拿任務與提供的素材<br/>互相核對"]
-        F["先顯示計畫再繼續<br/>任務、分支、worktree 與選項"]
-        Z["停止並要求提供任務<br/>或要求推導任務"]
+        D["從素材推導一個任務"]
+        E["核對任務與素材"]
+        F["顯示計畫<br/>任務、分支、worktree、選項"]
+        Z["停止並要求提供任務<br/>或確認是否要推導"]
         A --> B --> C
-        C -->|"沒有，從素材推導"| D
-        C -->|"有"| E
-        C -->|"沒有，不要推導"| Z
+        C -->|"從素材推導"| D
+        C -->|"使用提供的任務"| E
+        C -->|"不要推導"| Z
         D --> F
         E --> F
     end
 
     subgraph isolate["在隔離的 worktree 裡"]
-        G["建立隔離的 worktree<br/>從選定的起始分支開始"]
-        H{"執行專案需要<br/>被忽略的本機檔案嗎？"}
+        G["建立隔離的 worktree<br/>從選定的分支開始"]
+        H{"需要被忽略的<br/>本機檔案嗎？"}
         I["檢查缺少的檔案<br/>排除機密並取得核准"]
-        J["進入 worktree 並驗證<br/>目錄、分支與起始 commit"]
-        K["記錄任務脈絡<br/>目標、決策、素材與下一步"]
+        J["進入並驗證<br/>路徑、分支與起始 commit"]
+        K["記錄任務脈絡<br/>目標、決策、素材、下一步"]
         L["實作變更"]
-        M{"要執行 agent 自動驗證嗎？"}
-        N["執行自動檢查<br/>typecheck、lint、重點測試與 build"]
-        N2["啟用後，如果變更包含使用者介面<br/>agent 會自動執行真實瀏覽器測試"]
-        N3["驗證正在執行的應用程式<br/>請求真實路由或檢查執行期行為"]
+        M{"執行 agent 驗證？"}
+        N["執行自動檢查<br/>typecheck、lint、測試與 build"]
+        N2["UI 變更時<br/>agent 執行真實瀏覽器測試"]
+        N3["驗證執行中的應用程式<br/>真實路由或執行期檢查"]
         O{{"由你執行人工測試<br/>通過後才能發佈"}}
-        P["找出失敗原因並修正<br/>再次執行驗證"]
+        P["修正失敗<br/>再次執行驗證"]
         G --> H
-        H -->|"有缺少的檔案"| I
+        H -->|"缺少檔案"| I
         I --> J
-        H -->|"沒有，或已經佈建"| J
+        H -->|"沒有缺少檔案"| J
         J --> K --> L --> M
         M -->|"是"| N
         N --> N2 --> N3
@@ -249,24 +251,25 @@ flowchart TD
 **圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}}}%%
 flowchart LR
-    subgraph taskA["儲存庫 A — Worktree 1：跨用戶端接續"]
-        claudeA["Claude Code 開始任務 A"]
-        workA["儲存庫 A 的 Worktree 1<br/>任務分支與連續性狀態"]
-        codexA["Codex 從同一個 worktree<br/>接續任務 A"]
+    subgraph taskA["儲存庫 A — Worktree 1：任務 A 接續"]
+        claudeA["Claude Code<br/>開始任務 A"]
+        workA["儲存庫 A / Worktree 1<br/>任務分支與連續性狀態"]
+        codexA["Codex<br/>從狀態接續任務 A"]
         claudeA -->|"checkpoint 任務 A"| workA
-        workA -->|"AI 工作階段到達 token 上限<br/>連續性狀態留給 Codex"| codexA
+        workA -->|"工作階段到達 token 上限<br/>狀態保留，不需人工交接"| codexA
     end
 
-    subgraph taskB["儲存庫 A — Worktree 2：平行任務"]
-        claudeB["另一個 Claude Code 工作階段<br/>開始任務 B"]
-        workB["儲存庫 A 的 Worktree 2<br/>另一個任務的分支與連續性狀態"]
+    subgraph taskB["儲存庫 A — Worktree 2：任務 B 平行執行"]
+        claudeB["Claude Code<br/>開始任務 B"]
+        workB["儲存庫 A / Worktree 2<br/>獨立分支與連續性狀態"]
         claudeB -->|"獨立啟動"| workB
     end
 
-    subgraph taskC["儲存庫 B — Worktree 1：另一個儲存庫"]
-        copilotC["GitHub Copilot 工作階段<br/>遵循連續性協定"]
-        workC["儲存庫 B 的 Worktree 1<br/>任務分支與連續性狀態"]
+    subgraph taskC["儲存庫 B — Worktree 1：任務 C"]
+        copilotC["GitHub Copilot<br/>遵循連續性協定"]
+        workC["儲存庫 B / Worktree 1<br/>獨立分支與連續性狀態"]
         copilotC -->|"獨立啟動"| workC
     end
 

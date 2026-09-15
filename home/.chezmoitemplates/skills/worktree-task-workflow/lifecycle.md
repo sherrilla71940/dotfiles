@@ -6,8 +6,9 @@ Use the materials and the existing implementation to summarize the required chan
 short plan naming likely files. Resolve genuine contradictions, missing assets, or correctness
 risks before implementing the affected part. Otherwise proceed without a separate plan approval.
 
-Enable `project-continuity` in the task worktree. Record material paths because they may live
-outside it and the manual-test gate can span sessions. Enable it whatever the change's size: a
+Enable `project-continuity` in the task worktree. Record each material — a path because it may
+live outside the worktree, a URL because a later session has to fetch it again — since the
+manual-test gate can span sessions. Enable it whatever the change's size: a
 general exemption for small self-contained edits does not reach this workflow, because what has
 to survive is the gate and the worktree path rather than the diff.
 

@@ -257,7 +257,9 @@ flowchart TD
         K["啟動 project-continuity<br/>目標 · 決策 · 素材"]
         L["實作"]
         M{"agent-test"}
-        N["typecheck · lint · 重點測試<br/>build · 執行期或瀏覽器驗證"]
+        N["typecheck · lint<br/>重點測試 · build"]
+        N2["瀏覽器或執行期驗證<br/>只有工具真的操作過 UI 才算"]
+        N3["啟動 app · 實際請求一個路由<br/>跑到錯誤頁就是失敗，不是通過"]
         O{{"人工測試關卡<br/>由使用者親自測"}}
         P["找出原因 · 修正<br/>checkpoint 連續性"]
         G --> H
@@ -266,8 +268,9 @@ flowchart TD
         H -->|"已佈建或不需要"| J
         J --> K --> L --> M
         M -->|"true"| N
-        M -->|"false"| O
-        N --> O
+        N --> N2 --> N3
+        M -->|"false"| N3
+        N3 --> O
         O -->|"失敗"| P
         P --> O
     end
@@ -303,7 +306,9 @@ flowchart TD
   用實際建置並執行 app 來確認這到底有沒有影響；真的需要 manifest 時，也會先問 `.worktreeinclude`
   該放在哪裡，而不是把一個不相干的根目錄檔案硬塞進這次任務的 request。
 - **人工測試關卡是硬性的。** 在你親自測過並回報之前，不會有任何 commit、push 或 request。計畫被
-  核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。
+  核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。在把步驟交給你之前，流程會先啟動 app
+  並實際請求一個路由，確保你拿到的步驟真的跑得起來；而且除非工具真的操作過 UI，否則絕不會說某個
+  畫面流程「測過了」。
 - **發布時會沿用這台電腦的 profile。** 解析出來的 `lang` 預設就是當前情境的產出語言，所以 commit
   訊息與 request 描述會用對的語言寫出來，而且寫繁體中文前會先載入 `natural-zhtw`。forge 會從
   `origin` 判斷，驗證結果也會誠實歸屬：agent 跑過的檢查就寫成 agent 跑的，人工測試則明確記成由你
@@ -318,8 +323,8 @@ flowchart TD
 flowchart TB
     subgraph live["工作階段——用完即丟"]
         s1["Claude 工作階段"]
-        s2["Claude 工作階段"]
-        s3["Codex 工作階段"]
+        s2["Codex 工作階段"]
+        s3["Claude 工作階段"]
     end
 
     subgraph repoA["儲存庫 A——同一個 clone"]
@@ -334,7 +339,7 @@ flowchart TB
     end
 
     s1 -.->|"在這裡啟動"| wa1
-    s2 -.->|"在這裡啟動"| wa2
+    s2 -.->|"接手 Claude 建立的 worktree"| wa2
     s3 -.->|"在這裡啟動"| wb1
 
     ex -.-> wa1
@@ -350,10 +355,12 @@ flowchart TB
     gate --> out
 ```
 
-這張圖有兩個地方很容易被忽略。**工作階段是用完即丟的，worktree 不是**——工作階段結束後，目錄、
-分支與狀態檔都原封不動地留著，任何一個支援的用戶端只要從那個路徑啟動，就能接手這個任務。另外，
-**一條 `.git/info/exclude` 設定就涵蓋這個 clone 的每一個 worktree**，因為它放在儲存庫的共用目錄，
-而錨定的樣式會對照每個工作樹自己的根目錄；之後才建立的 worktree 也一樣受保護，不需要另外再設定。
+這張圖有三個地方很容易被忽略。**工作階段是用完即丟的，worktree 不是**——工作階段結束後，目錄、
+分支與狀態檔都原封不動地留著。**用戶端不屬於任務身分的一部分**：連續性狀態與用戶端無關，所以
+Claude Code 建立的 worktree 可以由 Codex 接手，兩個用戶端也可以同時各自佔著同一個 clone 的不同
+worktree。另外，**一條 `.git/info/exclude` 設定就涵蓋這個 clone 的每一個 worktree**，因為它放在
+儲存庫的共用目錄，而錨定的樣式會對照每個工作樹自己的根目錄；之後才建立的 worktree 也一樣受保護，
+不需要另外再設定。
 
 人工測試關卡就是無法平行化的那一段。agent 可以散開來跑，驗證最後還是收斂到你身上。
 

@@ -282,7 +282,9 @@ flowchart TD
         K["start project-continuity<br/>objective · decisions · materials"]
         L["implement"]
         M{"agent-test"}
-        N["typecheck · lint · focused tests<br/>build · runtime or browser pass"]
+        N["typecheck · lint<br/>focused tests · build"]
+        N2["browser or runtime pass<br/>only where a tool drives the UI"]
+        N3["start the app · request one real route<br/>an error page is a failure, not a pass"]
         O{{"manual test gate<br/>the user runs it"}}
         P["diagnose · fix<br/>checkpoint continuity"]
         G --> H
@@ -291,8 +293,9 @@ flowchart TD
         H -->|"provisioned, or none needed"| J
         J --> K --> L --> M
         M -->|"true"| N
-        M -->|"false"| O
-        N --> O
+        N --> N2 --> N3
+        M -->|"false"| N3
+        N3 --> O
         O -->|"fails"| P
         P --> O
     end
@@ -336,7 +339,9 @@ branches in place, is what each step does without being asked:
   unrelated root-level file into this task's request.
 - **The manual-test gate is hard.** No commit, push, or request happens until you report that you
   tested it yourself. An approved plan, a reviewed diff, and green automated checks do not open
-  that gate.
+  that gate. Before handing the steps over, the workflow starts the app and requests one real
+  route, so what you are given is known to run — and it never calls a UI flow tested unless a tool
+  actually drove it.
 - **Publishing inherits the machine's profile.** The resolved `lang` defaults to the active
   context's artifact language, so commit messages and the request description come out in the
   right language, with `natural-zhtw` loaded before any Traditional Chinese text. The forge is
@@ -352,8 +357,8 @@ many run at once is the machine and your own attention:
 flowchart TB
     subgraph live["Sessions — disposable"]
         s1["Claude session"]
-        s2["Claude session"]
-        s3["Codex session"]
+        s2["Codex session"]
+        s3["Claude session"]
     end
 
     subgraph repoA["Repository A — one clone"]
@@ -368,7 +373,7 @@ flowchart TB
     end
 
     s1 -.->|"starts in"| wa1
-    s2 -.->|"starts in"| wa2
+    s2 -.->|"resumes what Claude created"| wa2
     s3 -.->|"starts in"| wb1
 
     ex -.-> wa1
@@ -384,12 +389,13 @@ flowchart TB
     gate --> out
 ```
 
-Two things in that picture are easy to miss. **Sessions are disposable and worktrees are not** — a
-session ending leaves the directory, the branch, and the state file exactly as they were, and any
-supported client can pick the task up by starting in that path. And **one `.git/info/exclude` entry
-covers every worktree of a clone**, because it lives in the repository's common directory and the
-anchored pattern resolves against each working tree's own root; worktrees created later are
-protected without a per-worktree step.
+Three things in that picture are easy to miss. **Sessions are disposable and worktrees are not** —
+a session ending leaves the directory, the branch, and the state file exactly as they were. **The
+client is not part of a task's identity**: continuity state is client-neutral, so a worktree Claude
+Code created can be resumed by Codex, and two clients can hold different worktrees of the same
+clone at once. And **one `.git/info/exclude` entry covers every worktree of a clone**, because it
+lives in the repository's common directory and the anchored pattern resolves against each working
+tree's own root; worktrees created later are protected without a per-worktree step.
 
 The manual-test gate is the part that does not parallelize. Agents fan out; verification converges
 on you.

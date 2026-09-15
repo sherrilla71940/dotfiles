@@ -327,48 +327,24 @@ flowchart TD
     O -->|"passes"| Q
 ```
 
-The diagram is only the skeleton. What makes the workflow worth invoking, rather than switching
-branches in place, is what each step does without being asked:
+The diagram is only the skeleton. Three properties make the workflow worth invoking rather than
+switching branches in place:
 
-- **Materials are read before anything exists.** Hand it a handoff note, a spec, a deck, a
-  spreadsheet, a web page, or a Figma link, and each one is read through its matching document
-  skill, web fetch, or design integration before a single Git command runs. An explicit task is
-  cross-checked against them; with `--infer-task` the task is derived from them instead. Anything
-  that cannot be read stops the run with nothing created, naming the missing capability rather
-  than guessing. Fetched content is treated as data: a page that asks to change the task or the
-  branch is reported, never obeyed.
-- **Naming is derived, not invented.** The commit type comes from the shared
-  `git-commit-reference` table, the slug from the task's meaning, and the branch from
-  `type/slug/suffix`. The worktree lands under `.claude/worktrees/` because entering it there
-  raises no approval prompt, and the base is a named remote branch, which no client's own worktree
-  creation can express.
 - **Every task gets its own directory, branch, and continuity file.** Run as many at once as the
   machine allows; no two tasks share an index, a `HEAD`, or a handoff record.
 - **A session ending mid-task costs almost nothing.** Continuity is checkpointed inside the
   worktree and records every material — a path because it may live outside the worktree, a URL
   because a later session has to fetch it again — so a new session enters the same path and
-  resumes from the recorded next action — including after the usage limit that ended
-  the previous one.
-- **A silent provisioning skip is surfaced, not swallowed.** `git wt-add` can succeed while
-  copying nothing. The workflow settles whether that matters by building and running the app, and
-  when a manifest is warranted it asks where `.worktreeinclude` should land instead of folding an
-  unrelated root-level file into this task's request.
-- **Automated verification reaches the browser, not just the build.** With `agent-test` on, the
-  workflow runs typecheck, lint, focused tests and a build, and for visual work drives the real UI
-  through the managed `chrome-devtools` MCP server. Where a driver cannot reach — canvas, map
-  overlays, WebGL, drag gestures — the `browser-collab-testing` skill splits the interactions with
-  you rather than skipping them. Nothing is reported as tested unless a tool actually drove it.
+  resumes from the recorded next action, including after the usage limit that ended the previous
+  one.
 - **The manual-test gate is hard.** No commit, push, or request happens until you report that you
   tested it yourself. An approved plan, a reviewed diff, and green automated checks do not open
-  that gate. Before handing the steps over, the workflow starts the app and requests one real
-  route, so what you are given is known to run.
-- **Publishing inherits the machine's profile.** The resolved `lang` defaults to the active
-  context's artifact language, so commit messages and the request description come out in the
-  right language, with `natural-zhtw` loaded before any Traditional Chinese text. The forge is
-  detected from `origin`, and verification is attributed honestly: agent-run checks named as such,
-  the manual test credited to you.
-- **Cleanup removes the worktree, never the branch.** The task branch outlives its directory for
-  review and CI, and every removal path that would delete a ref is deliberately unused.
+  that gate.
+
+What each step does on the way there — how materials are read, how the branch name is derived, how
+a silent provisioning skip is caught, how verification drives a real browser, and why cleanup never
+deletes a branch — is in [the worktree provisioning
+guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step).
 
 Those properties compose. Nothing in the workflow is aware of any other task, so what limits how
 many run at once is the machine and your own attention.
@@ -415,9 +391,9 @@ Three things in that picture are easy to miss. **Sessions are disposable; the ta
 state are not** — a session ending leaves the directory, the branch, and the state file exactly as
 they were. The directory's own lifetime is client- and policy-dependent, which is why cleanup
 never deletes the branch: archiving a Codex chat can remove the worktree it manages, and Claude's
-periodic sweep has rules of its own. **The client is not part of a task's identity**: continuity state is client-neutral, so a worktree Claude
-Code created can be resumed by Codex, and two clients can hold different worktrees of the same
-clone at once. And **one `.git/info/exclude` entry covers every worktree of a clone**, because it
+periodic sweep has rules of its own. **The client is not part of a task's identity**: continuity
+state is client-neutral, so a worktree Claude Code created can be resumed by Codex, and two
+clients can hold different worktrees of the same clone at once. And **one `.git/info/exclude` entry covers every worktree of a clone**, because it
 lives in the repository's common directory and the anchored pattern resolves against each working
 tree's own root; worktrees created later are protected without a per-worktree step.
 
@@ -425,17 +401,10 @@ The manual-test gate is the part that does not parallelize. Agents fan out; veri
 on you.
 
 The skill has a Claude adapter and a Codex adapter, because neither client alone gives an isolated
-session on a branch taken from an arbitrary remote base. Codex differs at both ends of the diagram:
-it works in a detached sibling worktree, or in one the Codex app manages under
-`$CODEX_HOME/worktrees`, and it never removes its own active worktree — you keep it for review or
-dispose of it through the app. Neither choice deletes the task branch. [The worktree provisioning
-guide](./docs/worktree-provisioning.md#claude-worktree-task-workflow) explains how each adapter
-gets there and which safety boundaries apply.
-
-The `worktree-manifest` skill is what authors that manifest: it inspects candidates, excludes
-credentials, caches, data, and continuity state, and asks for approval before writing
-`.worktreeinclude`. VS Code uses a separate user-level include setting, so the repository manifest
-does not cover every way a worktree can be created.
+session on a branch taken from an arbitrary remote base; they differ in where the worktree lives
+and in who may remove it. A fresh worktree also carries no ignored files, so the
+`worktree-manifest` skill authors the approved `.worktreeinclude` that `git wt-add` provisions
+from. [The worktree provisioning guide](./docs/worktree-provisioning.md) covers both.
 
 This dotfiles repository is itself an exception: it stays in its primary checkout, because chezmoi
 source resolution is tied to that one tree.
@@ -511,35 +480,14 @@ Never commit credentials. MCP configuration holds endpoints and, where supported
 such as `${input:figma-api-key}` or `${GITHUB_MCP_TOKEN}` — never their values. Authenticate each
 client locally and keep sessions, logs, caches, installed plugins, and keys out of `home/`.
 
-## Daily maintenance
+## Working in it day to day
 
-Edit the source state, preview the render, apply only what you reviewed, then commit the source:
-
-```bash
-chezmoi source-path                                        # identify the configured source
-git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # must report this checkout
-chezmoi diff                                               # preview live-target changes
-chezmoi apply -v                                           # apply the reviewed render
-chezmoi status                                             # empty means no unapplied drift
-git diff                                                   # review the source change
-```
-
-The identity check is not ceremony. A plain chezmoi command uses its configured source directory
-whatever the current directory is, so an unverified `apply` can render a different clone over this
-machine's configuration.
-
-Shell aliases shorten the common paths: `dotf` opens the source directory, `dotf-core` edits the
-shared working agreement, `dotf-claude` edits the Claude-specific instructions, and `dotf-diff`
-and `dotf-apply` wrap the two commands above.
-
-Editing a live target directly is not durable. Run `chezmoi source-path <target>` to find its
-source first; if the target is application-owned or partially managed, follow the ownership table
-and use the application's own command for its portion. Do not run `chezmoi add` on a managed
-target, especially a `create_` or `modify_` one.
-
-From the repository root, `bash scripts/dotfiles doctor` reports the chezmoi source identity, the
-resolved profile, unapplied target drift, Claude shared-skill link health, and required tool
-versions without changing a target.
+Edit the source state, preview with `chezmoi diff`, apply only what you reviewed, then commit the
+source. Always confirm first that chezmoi's configured source is this checkout: a plain chezmoi
+command uses that directory whatever the current directory is, so an unverified `apply` can render
+a different clone over this machine's configuration. The commands, the `dotf` shell aliases, and
+`bash scripts/dotfiles doctor` are in [the chezmoi workflow
+guide](./docs/chezmoi-workflow.md#daily-commands).
 
 The repository is also self-describing for coding assistants. The root [`AGENTS.md`](./AGENTS.md)
 tells Codex and Copilot how to find the source of truth, preserve application-owned state, and
@@ -614,10 +562,11 @@ docs/                              setup, workflow, customization, and ADR guide
 | I want to… | Read |
 | --- | --- |
 | Set up a machine or identify what must be installed separately | [docs/setup.md](./docs/setup.md) |
-| Add, change, or remove a general managed file | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
+| Add, change, or remove a general managed file, or run the daily commands | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | Add an AI instruction, skill, agent, prompt, MCP server, or plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | Find out which client surface reads a given customization | [the support table](./docs/customization-support.md#what-the-support-table-answers) |
-| Run an isolated task or provision ignored files in a worktree | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| Run an isolated task, or see what the workflow does at each step | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step) |
+| Provision ignored local files in a worktree | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
 | Understand why the repository uses this structure | [docs/decisions/README.md](./docs/decisions/README.md) |
 | Understand why a rule exists before removing it | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | Let a coding assistant work safely in this repository | [AGENTS.md](./AGENTS.md) |

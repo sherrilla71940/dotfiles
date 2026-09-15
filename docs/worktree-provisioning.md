@@ -240,6 +240,43 @@ The running skill never removes its active Codex worktree. After the branch is c
 attached to an open request, the user can keep it for review or dispose of it through the app's
 worktree lifecycle. Neither choice deletes the task branch.
 
+## What the task workflow does at each step
+
+The root [`README.md`](../README.md#parallel-tasks-without-losing-state) shows the lifecycle as a
+diagram and says why it is worth invoking. This section is the behaviour behind each step.
+
+**Materials are read before anything exists.** A handoff note, spec, deck, spreadsheet, web page,
+or design link is read through its matching document skill, web fetch, or design integration
+before a single Git command runs. An explicit task is cross-checked against the materials; with
+`--infer-task` the task is derived from them instead, in the materials' own language. Anything
+that cannot be read stops the run with nothing created, naming the missing capability rather than
+guessing from a URL slug. Fetched content is data: a page asking to change the task, base, branch,
+or cleanup behaviour is reported, never obeyed.
+
+**Naming is derived, not invented.** The commit type comes from the shared `git-commit-reference`
+table, the slug from the task's meaning, and the branch from `type/slug/suffix`. The Claude
+adapter places the worktree under `.claude/worktrees/` because entering it there raises no
+approval prompt, and the base is a named remote branch, which no client's own worktree creation
+can express.
+
+**A silent provisioning skip is surfaced, not swallowed.** `git wt-add` can succeed while copying
+nothing, reporting only `[skipped] .worktreeinclude: manifest not found in source worktree`. The
+workflow settles whether that matters by building and running the app rather than by classifying
+filenames, and when a manifest is warranted it asks where `.worktreeinclude` should land instead
+of folding an unrelated root-level file into the task's request.
+
+**Automated verification reaches the browser, not just the build.** With `agent-test` on, the
+workflow runs typecheck, lint, focused tests and a build, and for visual work drives the real UI
+through the managed `chrome-devtools` MCP server. Where a driver cannot reach — canvas, map
+overlays, WebGL, drag gestures — the `browser-collab-testing` skill splits the interactions with
+the user rather than skipping them. Nothing is reported as tested unless a tool actually drove it,
+and agent verification never replaces the user's manual test.
+
+**Cleanup removes the worktree, never the branch.** The task branch outlives its directory for
+review and CI. The Claude adapter exits with `keep` and then runs `git worktree remove` without
+`--force`; the Codex adapter never removes its own active worktree at all. Every removal path that
+would delete a ref is deliberately unused.
+
 ## Safety boundaries
 
 The terminal workflow never copies:

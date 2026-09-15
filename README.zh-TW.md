@@ -301,38 +301,19 @@ flowchart TD
     O -->|"通過"| Q
 ```
 
-上圖只是骨架。真正讓這套流程比在原地切分支更值得用的，是每一步不必特別交代就會做到的事：
+上圖只是骨架。真正讓這套流程比在原地切分支更值得用的，有三點：
 
-- **素材會在任何東西被建立之前先讀完。** 交接筆記、規格、簡報、試算表、網頁，甚至 Figma 連結都可以
-  丟進來，每一份都會先用對應的文件技能、網頁擷取或設計整合讀過，然後才會執行第一個 Git 命令。明確
-  給的任務會拿來跟素材核對；用 `--infer-task` 則是反過來從素材推導出任務。只要有一份讀不到，就整個
-  停下來、什麼都不會建立，並且直接說是缺哪一項能力，而不是用猜的。抓回來的內容一律當成資料看待：
-  網頁裡要求改動任務或分支的文字，只會回報給你，不會照做。
-- **命名是推導出來的，不是自己編的。** commit type 取自共用的 `git-commit-reference` 對照表，
-  slug 取自任務本身的意思，分支則是 `type/slug/suffix`。worktree 放在 `.claude/worktrees/` 底下，
-  是因為從那裡進入不會跳出核准提示；而 base 是一個具名的遠端分支——這正是各用戶端自己的 worktree
-  建立功能表達不出來的。
 - **每個任務都有自己的目錄、分支與連續性檔案。** 機器撐得住幾個就開幾個；任務之間不共用 index、
   `HEAD`，也不共用交接紀錄。
 - **工作階段在任務中途結束幾乎沒有成本。** 連續性 checkpoint 在該 worktree 裡，而且每一份素材都會
   記下來——路徑是因為它可能放在 worktree 外面，URL 則是因為之後的工作階段得重新抓一次——新的工作
   階段進到同一個路徑就能從記錄的下一步接續，包括上一個工作階段是被用量上限中斷的情況。
-- **佈建被靜靜略過時會被指出來，不會被吞掉。** `git wt-add` 有可能成功卻什麼都沒複製。這套流程會
-  用實際建置並執行 app 來確認這到底有沒有影響；真的需要 manifest 時，也會先問 `.worktreeinclude`
-  該放在哪裡，而不是把一個不相干的根目錄檔案硬塞進這次任務的 request。
-- **自動驗證做得到瀏覽器，不是只到 build。** 開著 `agent-test` 時，流程會跑 typecheck、lint、
-  重點測試與 build；遇到畫面相關的改動，還會透過受管理的 `chrome-devtools` MCP 伺服器實際操作 UI。
-  driver 碰不到的地方——canvas、地圖圖層、WebGL、拖曳手勢——則由 `browser-collab-testing` 技能跟你
-  分工，而不是直接跳過。除非工具真的操作過，否則什麼都不會被寫成「測過了」。
 - **人工測試關卡是硬性的。** 在你親自測過並回報之前，不會有任何 commit、push 或 request。計畫被
-  核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。在把步驟交給你之前，流程會先啟動 app
-  並實際請求一個路由，確保你拿到的步驟真的跑得起來。
-- **發布時會沿用這台電腦的 profile。** 解析出來的 `lang` 預設就是當前情境的產出語言，所以 commit
-  訊息與 request 描述會用對的語言寫出來，而且寫繁體中文前會先載入 `natural-zhtw`。forge 會從
-  `origin` 判斷，驗證結果也會誠實歸屬：agent 跑過的檢查就寫成 agent 跑的，人工測試則明確記成由你
-  完成。
-- **清理移除的是 worktree，不是分支。** 任務分支會留得比目錄久，供 review 與 CI 使用；所有會刪掉
-  ref 的操作路徑都刻意不使用。
+  核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。
+
+至於過程中每一步實際做了什麼——素材怎麼讀、分支名稱怎麼推導、佈建被靜靜略過時怎麼抓出來、驗證
+怎麼實際操作瀏覽器，以及清理為什麼絕不刪分支——都寫在
+[worktree 佈建指南](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)。
 
 這些特性是可以疊加的。工作流程本身完全不知道有其他任務存在，所以能同時跑幾個，取決於機器和你自己
 的注意力。
@@ -387,15 +368,10 @@ worktree。另外，**一條 `.git/info/exclude` 設定就涵蓋這個 clone 的
 人工測試關卡就是無法平行化的那一段。agent 可以散開來跑，驗證最後還是收斂到你身上。
 
 這個技能有 Claude 與 Codex 兩個轉接層，因為沒有任何一個用戶端能單獨做到「從任意遠端 base 開分支，
-再給你一個隔離的工作階段」。Codex 在上圖的頭尾都不一樣：它在 detached 的同層 worktree 裡工作，或
-在 Codex app 自己管理、位於 `$CODEX_HOME/worktrees` 的那一個裡工作，而且絕不會移除自己正在用的
-worktree——要留著 review 還是透過 app 處理掉，由你決定，兩種都不會刪掉任務分支。
-[worktree 佈建指南](./docs/worktree-provisioning.md#claude-worktree-task-workflow)
-說明兩個轉接層各自怎麼達成，以及適用哪些安全界線。
-
-負責撰寫那份 manifest 的是 `worktree-manifest` 技能：它會檢視候選檔案，排除憑證、快取、資料與
-連續性狀態，並在寫入 `.worktreeinclude` 前先徵求核准。VS Code 使用另一個使用者層級的 include 設定，
-所以儲存庫的 manifest 並未涵蓋每一種建立 worktree 的方式。
+再給你一個隔離的工作階段」；兩者的差別在於 worktree 放在哪裡、以及誰有權移除它。另外，剛建立的
+worktree 不會帶任何被忽略的檔案，所以由 `worktree-manifest` 技能撰寫核准過的 `.worktreeinclude`，
+再由 `git wt-add` 依此佈建。這兩件事都寫在
+[worktree 佈建指南](./docs/worktree-provisioning.md)。
 
 這個 dotfiles 儲存庫本身是例外：它固定留在主要 checkout，因為 chezmoi 的來源解析綁在那一個工作樹上。
 
@@ -463,31 +439,13 @@ modified、untracked 的檔案數、已使用的 context 比例，還有**五小
 `${GITHUB_MCP_TOKEN}` 這類佔位符——不是實際的值。每個用戶端都在本機登入，並把工作階段、log、快取、
 已安裝的 plugin 與金鑰都留在 `home/` 之外。
 
-## 日常維護
+## 日常怎麼用
 
-編輯來源狀態、預覽產生結果、只套用你檢閱過的內容，然後提交來源變更：
-
-```bash
-chezmoi source-path                                        # 確認設定中的來源位置
-git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # 必須是這個 checkout
-chezmoi diff                                               # 預覽目標檔案的變更
-chezmoi apply -v                                           # 套用檢閱過的結果
-chezmoi status                                             # 空的代表沒有未套用的落差
-git diff                                                   # 檢閱來源變更
-```
-
-身分檢查不是形式。chezmoi 命令用的是它設定中的來源目錄，跟你當下在哪個目錄無關，所以沒先確認就
-`apply`，有可能把另一個 clone 的內容蓋到這台電腦的設定上。
-
-Shell 別名可以縮短常用路徑：`dotf` 開啟來源目錄、`dotf-core` 編輯共用工作約定、`dotf-claude` 編輯
-Claude 專屬指示，`dotf-diff` 與 `dotf-apply` 則是上面兩個命令的簡寫。
-
-直接改目標檔案不會持久。請先用 `chezmoi source-path <target>` 找出它的來源；如果目標檔案由應用程式
-管理或只有部分受管理，請依照權責表，那一部分用應用程式自己的命令處理。不要對已受管理的目標執行
-`chezmoi add`，特別是 `create_` 或 `modify_` 的目標。
-
-在儲存庫根目錄執行 `bash scripts/dotfiles doctor`，會回報 chezmoi 來源身分、解析出來的 profile、
-尚未套用的目標落差、Claude 共用技能連結的健康狀態，以及必要工具的版本，而且不會改動任何目標檔案。
+編輯來源狀態、用 `chezmoi diff` 預覽、只套用你檢閱過的內容，然後提交來源變更。動手前一定要先確認
+chezmoi 設定中的來源就是這個 checkout：chezmoi 命令用的是它設定中的來源目錄，跟你當下在哪個目錄
+無關，所以沒先確認就 `apply`，有可能把另一個 clone 的內容蓋到這台電腦的設定上。完整命令、`dotf`
+系列 Shell 別名，以及 `bash scripts/dotfiles doctor`，都寫在
+[chezmoi 工作流程指南](./docs/chezmoi-workflow.md#daily-commands)。
 
 這個儲存庫對編碼助理也是自我說明的。根目錄的 [`AGENTS.md`](./AGENTS.md) 告訴 Codex 與 Copilot 怎麼
 找到真正的來源、怎麼保留由應用程式管理的狀態，以及怎麼把編輯、套用、提交與驗證分開；根目錄的
@@ -558,10 +516,11 @@ docs/                              設定、工作流程、自訂與 ADR 指南
 | 我想要… | 請看 |
 | --- | --- |
 | 設定一台電腦，或確認有哪些東西要另外安裝 | [docs/setup.md](./docs/setup.md) |
-| 新增、修改或移除一般受管理的檔案 | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
+| 新增、修改或移除一般受管理的檔案，或查日常命令 | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | 新增 AI 指示、技能、agent、prompt、MCP 伺服器或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | 查某一項自訂內容是哪個用戶端介面會讀到 | [支援對照表](./docs/customization-support.md#what-the-support-table-answers) |
-| 執行隔離任務，或在 worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| 執行隔離任務，或了解工作流程每一步做了什麼 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step) |
+| 在 worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
 | 了解儲存庫為什麼採用這種結構 | [docs/decisions/README.md](./docs/decisions/README.md) |
 | 在移除某條規則前先了解它為什麼存在 | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | 讓編碼助理安全地在這個儲存庫裡工作 | [AGENTS.md](./AGENTS.md) |

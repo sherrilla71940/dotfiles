@@ -5,9 +5,9 @@
 > **TL;DR:** A personal, cross-platform developer environment kit for AI-assisted development,
 > managed with [chezmoi](https://www.chezmoi.io). One Git-tracked source renders into the native
 > files that Claude Code, Codex, GitHub Copilot, VS Code, the shells, Git, and Windows Terminal
-> actually read. It keeps one body per shared rule instead of three drifting copies, carries task
-> state across sessions and parallel worktrees, and never overwrites a setting the application
-> owns.
+> actually read. It keeps one body per shared rule instead of three drifting copies, preserves
+> per-worktree task state across sessions so parallel tasks stay isolated, and never overwrites a
+> setting the application owns.
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
@@ -24,6 +24,7 @@ merge, a Git exclude, a check that fails the commit — rather than by rememberi
 | [Three AI clients that agree on nothing](#three-ai-clients-that-agree-on-nothing). Different files, formats, and discovery rules, so guidance updated in one leaves the others stale. | One body per rule, composed conditionally by chezmoi templates — the machine's personal-or-company context layer, whether the session-handoff instructions are included, and the operating system — then wrapped in each client's own frontmatter: `paths:` for Claude, `applyTo:` for Copilot, neither for Codex. A pre-commit check compares the rendered Claude and Copilot bodies byte for byte. |
 | [Applications own part of their own configuration](#applications-own-part-of-their-own-configuration). `/config`, Windows Terminal profiles, and Codex trust state all write to files you also want tracked. | Claim keys, not files. The repository owns Claude's hooks, status line, environment, and update channel; the model, effort level, theme, and permissions that `/config` writes stay yours. A modify template deep-merges only the owned keys, so every other key in `settings.json` survives untouched. |
 | [A session can end in the middle of a task](#a-session-can-end-in-the-middle-of-a-task). Usage limits and compaction lose the objective, the decisions, and the next action. | One Git-ignored continuity file per working tree records the objective, decisions, blockers, and next action. Isolated worktrees give each task its own directory, branch, and state, so several run at once and any new session resumes one from where it stopped. |
+| [The same setting lives somewhere different on every machine](#the-same-setting-lives-somewhere-different-on-every-machine). VS Code's user directory, the shell startup file, and Windows Terminal all sit at OS-specific paths. | One body per file, wrapped once per operating system. `home/.chezmoiignore` renders only the branch that matches the machine, so Windows gets the `AppData` tree and macOS the `Library` one from the same source, and the unused tree is never written rather than written and ignored. |
 | [Restored dotfiles are not a working machine](#restored-dotfiles-are-not-a-working-machine). Prerequisites, validation hooks, extensions, plugins, and MCP servers are all still missing. | Platform bootstrap scripts link the checkout, enable the validation hook, install prerequisites, and apply the VS Code extension and Claude MCP manifests. Run them again once the client applications exist, so the plugin, extension, and MCP steps that need a working CLI can finish. |
 
 ### Three AI clients that agree on nothing
@@ -60,6 +61,17 @@ Project continuity records those in `.project-continuity/state.md`: one file per
 ignored by Git, always written in English so a resuming session never has to translate before it
 can work. Git stays authoritative for branch, `HEAD`, and working-tree reality; continuity
 supplies only the context Git cannot hold.
+
+### The same setting lives somewhere different on every machine
+
+VS Code keeps user settings under `AppData` on Windows and `Library/Application Support` on macOS.
+Bash reads `.bashrc` and zsh reads `.zshrc`. Windows Terminal exists on one platform only, and the
+Git aliases that drive worktree provisioning call a PowerShell script on Windows and a Bash script
+on macOS.
+
+Copying files machine by machine lets each one drift on its own schedule. Here each body is
+written once and wrapped per operating system. `home/.chezmoiignore` renders only the branch that
+matches the machine, so the unused tree is never written at all.
 
 ### Restored dotfiles are not a working machine
 
@@ -118,7 +130,7 @@ rendering, and prefixes such as `create_`, `modify_`, and `symlink_` control how
 target. Read [the chezmoi workflow](./docs/chezmoi-workflow.md) before adding or renaming a
 source file.
 
-The map below traces how each kind of tracked source reaches its live target. Solid arrows mean "renders
+**Figure: how each kind of tracked source reaches its live target.** Solid arrows mean "renders
 into". Dotted arrows mean "reads the same file from another location", which is why no content is
 duplicated to reach a second host.
 
@@ -128,7 +140,7 @@ flowchart LR
         core["shared core<br/>personal and company context layers<br/>continuity instructions"]
         rules["shared scoped-rule bodies"]
         skills["portable and host-gated skills"]
-        native["client-native files<br/>agents, commands, MCP, settings"]
+        native["client-native files, one set per client<br/>agents, commands, MCP, settings"]
         vscodeBody["shared VS Code bodies"]
         platform["shell, Git, Terminal,<br/>and helper sources"]
     end
@@ -169,6 +181,7 @@ flowchart LR
     vscodeBody --> osAdapters --> vscode
     platform --> other
 
+    agents -.->|"discovered by"| codex
     agents -.->|"discovered by"| copilot
     agents -.->|"discovered by"| vscode
 ```
@@ -244,7 +257,7 @@ Continuity belongs to one physical working tree, and each tree holds at most one
 - Git remains authoritative. Continuity is context and last-known state, never proof that
   something was finished.
 - The state is Git-ignored for privacy and convenience. It is a local handoff file, not an
-  encrypted store, so it never holds credentials.
+  encrypted store, which is why the workflow forbids putting credentials in it.
 - Unfinished state is parked in `.project-continuity/parked/` before a different task starts, so
   one handoff never overwrites another.
 
@@ -256,7 +269,10 @@ check keeps working and Codex needs no new hook-trust decision after a toggle.
 
 Continuity is scoped to a directory, so isolation is what lets several tasks run at once. The
 `worktree-task-workflow` skill drives one task through its whole lifecycle in a worktree of its
-own:
+own.
+
+**Figure: one task's lifecycle, Claude adapter.** The worktree path and the removal step are
+Claude-specific; the Codex differences are noted after the properties below.
 
 ```mermaid
 flowchart TD
@@ -281,7 +297,7 @@ flowchart TD
         J["enter and verify<br/>root · branch · base commit"]
         K["start project-continuity<br/>objective · decisions · materials"]
         L["implement"]
-        M{"agent-test"}
+        M{"agent-test<br/>optional automated checks"}
         N["typecheck · lint<br/>focused tests · build"]
         N2["drive the real UI in a browser<br/>hand off the clicks a driver cannot make<br/>or a runtime check where there is no UI"]
         N3["start the app · request one real route<br/>an error page is a failure, not a pass"]
@@ -355,7 +371,9 @@ branches in place, is what each step does without being asked:
   review and CI, and every removal path that would delete a ref is deliberately unused.
 
 Those properties compose. Nothing in the workflow is aware of any other task, so what limits how
-many run at once is the machine and your own attention:
+many run at once is the machine and your own attention.
+
+**Figure: several tasks at once, across worktrees and repositories.**
 
 ```mermaid
 flowchart TB
@@ -393,9 +411,11 @@ flowchart TB
     gate --> out
 ```
 
-Three things in that picture are easy to miss. **Sessions are disposable and worktrees are not** —
-a session ending leaves the directory, the branch, and the state file exactly as they were. **The
-client is not part of a task's identity**: continuity state is client-neutral, so a worktree Claude
+Three things in that picture are easy to miss. **Sessions are disposable; the task branch and its
+state are not** — a session ending leaves the directory, the branch, and the state file exactly as
+they were. The directory's own lifetime is client- and policy-dependent, which is why cleanup
+never deletes the branch: archiving a Codex chat can remove the worktree it manages, and Claude's
+periodic sweep has rules of its own. **The client is not part of a task's identity**: continuity state is client-neutral, so a worktree Claude
 Code created can be resumed by Codex, and two clients can hold different worktrees of the same
 clone at once. And **one `.git/info/exclude` entry covers every worktree of a clone**, because it
 lives in the repository's common directory and the anchored pattern resolves against each working
@@ -405,15 +425,17 @@ The manual-test gate is the part that does not parallelize. Agents fan out; veri
 on you.
 
 The skill has a Claude adapter and a Codex adapter, because neither client alone gives an isolated
-session on a branch taken from an arbitrary remote base. [The worktree provisioning
-guide](./docs/worktree-provisioning.md#claude-worktree-task-workflow) explains how each one gets
-there and which safety boundaries apply.
+session on a branch taken from an arbitrary remote base. Codex differs at both ends of the diagram:
+it works in a detached sibling worktree, or in one the Codex app manages under
+`$CODEX_HOME/worktrees`, and it never removes its own active worktree — you keep it for review or
+dispose of it through the app. Neither choice deletes the task branch. [The worktree provisioning
+guide](./docs/worktree-provisioning.md#claude-worktree-task-workflow) explains how each adapter
+gets there and which safety boundaries apply.
 
-A fresh worktree carries no ignored files, so an app can build and still not run. The
-`worktree-manifest` skill inspects candidates, excludes credentials, caches, data, and continuity
-state, and asks for approval before writing `.worktreeinclude`; `git wt-add` and `git wt-copy`
-then provision only the approved patterns. VS Code uses a separate user-level include setting, so
-the repository manifest does not cover every creation path.
+The `worktree-manifest` skill is what authors that manifest: it inspects candidates, excludes
+credentials, caches, data, and continuity state, and asks for approval before writing
+`.worktreeinclude`. VS Code uses a separate user-level include setting, so the repository manifest
+does not cover every way a worktree can be created.
 
 This dotfiles repository is itself an exception: it stays in its primary checkout, because chezmoi
 source resolution is tied to that one tree.
@@ -422,7 +444,7 @@ source resolution is tied to that one tree.
 
 | Surface | Representative contents |
 | --- | --- |
-| Claude Code | Shared `CLAUDE.md`, path-scoped rules, linked skills, Claude-only skills and commands, hooks, themes, a cross-platform status line and notifications, and selected durable settings. |
+| Claude Code | Shared `CLAUDE.md`, path-scoped rules, linked skills, Claude-only skills and commands, hooks, theme definitions, a cross-platform status line and notifications, and selected durable settings. |
 | Codex | Shared `AGENTS.md`, lifecycle hooks, shared and host-gated skills, and create-once configuration defaults. |
 | GitHub Copilot CLI | Shared instructions, Copilot-only agents and skills, settings, and user MCP declarations. |
 | VS Code | Windows and macOS user settings, keybindings, MCP configuration, an extension manifest, and supported Copilot customizations. |
@@ -459,7 +481,7 @@ ownership model:
 
 | Target | Repository owns | Application or user owns |
 | --- | --- | --- |
-| Claude `settings.json` | Durable environment, hooks, status line, and update-channel values, deep-merged by a modify template. | Model, effort level, theme, permissions, plugin enablement, project state, and future keys. |
+| Claude `settings.json` | Durable environment, hooks, status line, and update-channel values, deep-merged by a modify template. | Model, effort level, the selected theme, permissions, plugin enablement, project state, and future keys. |
 | Codex `config.toml` | Defaults for a machine where the file does not yet exist. | Existing trust, runtime, marketplace, and session state. The `create_` attribute prevents wholesale replacement. |
 | Windows Terminal `settings.json` | Selected durable values plus the complete `actions` and `keybindings` arrays. | Generated profiles and other unnamed settings. A claimed array is replaced whole on apply. |
 | VS Code user files | Tracked settings, keybindings, and MCP sources rendered through OS-specific wrappers. | Workspace storage, authentication, extension caches, and runtime data. |

@@ -2,12 +2,14 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **TL;DR:** A personal, cross-platform developer environment for agentic workflows, managed with
-> [chezmoi](https://www.chezmoi.io/). Git tracks dotfiles and AI-client integrations for Claude Code,
+> **TL;DR:** A personal, cross-platform developer environment managed with
+> [chezmoi](https://www.chezmoi.io/). It includes dotfiles and AI-client integrations for Claude Code,
 > Codex, and GitHub Copilot, alongside developer settings for VS Code, Zsh, Git, Windows Terminal,
-> and more. One Git-tracked source tree renders the native files each tool actually reads. It keeps
-> one body per shared rule instead of three drifting copies, preserves per-worktree task state across
-> sessions so parallel tasks stay isolated, and leaves application-owned settings local.
+> and more. Its distinctive layer is a task-oriented **agentic workflow system** for parallel
+> worktrees, cross-client continuity, verification, and handoff. One Git-tracked source tree renders
+> the native files each tool actually reads. It keeps one body per shared rule instead of three
+> drifting copies, preserves per-worktree task state across sessions, and leaves application-owned
+> settings local.
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
@@ -206,7 +208,7 @@ verification, and the user manual-test gate.** The worktree path and removal ste
 Claude-specific; the Codex differences are in the linked guide.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false, "nodeSpacing": 100, "rankSpacing": 60}}}%%
 flowchart TD
     subgraph resolve["Before creating anything"]
         A["Confirm the request<br/>base, task, materials, options"]

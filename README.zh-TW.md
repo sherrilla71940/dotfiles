@@ -2,9 +2,10 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **快速摘要：** 這是一套以 [chezmoi](https://www.chezmoi.io/) 管理的個人跨平台開發環境，支援
-> Agentic 工作流程。Git 追蹤 dotfiles、Claude Code、Codex、GitHub Copilot 的 AI 用戶端整合，以及
-> VS Code、Zsh、Git、Windows Terminal 等開發設定。所有工具的原生檔案都由同一份 Git 追蹤的來源樹產生。
+> **快速摘要：** 這是一套以 [chezmoi](https://www.chezmoi.io/) 管理的個人跨平台開發環境。內容包括
+> dotfiles、Claude Code、Codex、GitHub Copilot 的 AI 用戶端整合，以及 VS Code、Zsh、Git、Windows
+> Terminal 等開發設定。其中最具特色的是以任務為核心的代理式工作流程系統（**agentic workflow system**），
+> 支援平行 worktree、跨用戶端連續性、驗證與交接。所有工具的原生檔案都由同一份 Git 追蹤的來源樹產生。
 > 每條共用規則只保留一份本文，不會變成三份各自飄移的副本；每個 worktree 的任務狀態能跨工作階段保留，
 > 讓平行任務彼此隔離；應用程式自己管理的設定則留在本機。
 
@@ -186,7 +187,7 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 移除步驟是 Claude adapter 專用；Codex 的差異寫在下方連結的指南裡。
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "fontFamily": "system-ui, sans-serif"}, "flowchart": {"useMaxWidth": false, "nodeSpacing": 100, "rankSpacing": 60}}}%%
 flowchart TD
     subgraph resolve["開始建立任何東西之前"]
         A["確認任務請求<br/>起始分支、任務、素材、選項"]

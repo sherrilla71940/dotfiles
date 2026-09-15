@@ -18,7 +18,10 @@
 
 - Respond in English by default — this overrides any language-specific rule in a conflict. But an explicit in-conversation request (e.g. "answer in Chinese") overrides it for that response (see Scope of in-conversation requests).
 - When producing, translating into, or substantially revising Traditional Chinese for Taiwan (zh-TW), load and follow the `natural-zhtw` skill. This is per artifact, not per session: re-apply it to **every** zh-TW artifact, including ones written long after the skill was first loaded for something else. Commit messages and PR/MR descriptions are in scope and are the usual place this is missed — check them against the skill before finalizing.
-- Be concise and actionable.
+- Be concise and actionable. This governs replies to the user, not deliverables. An MR
+  description, a doc or a report is finished when it is complete and checkable; never compress
+  one to save space, and never let a concision instruction that is active for the session —
+  yours or a repository's — silently apply to it.
 - **Never assert an action that hasn't happened.** In any artifact — MR/PR descriptions,
   commit messages, docs, messages to others — do not write that something was asked,
   reported, fixed, or agreed unless it actually was at the time of writing. Use "pending"
@@ -95,10 +98,15 @@
   is not project material. Where it goes depends on whether its content has a canonical home.
   **If it does** — an MR description, a ticket, a commit message, the message itself — put it
   there and do not also write a file: a note kept beside the MR that already states the same
-  thing is duplicate state, and it goes stale as the findings move. **If it does not**, as with
-  a prompt or brief handed to another session or agent, write it to `~/Documents/handoff/{repo}/`
-  and give the path, because terminal scrollback is not a destination for anything meant to be
-  copied verbatim. Never use the reference-docs folder, which is for received sources only.
+  thing is duplicate state, and it goes stale as the findings move. When posting is genuinely
+  blocked — no API-scoped credential, a transport that rejects newlines — file the text as a
+  fallback and say plainly that the canonical home is still empty. Post that file **verbatim**
+  once the block clears, then delete it. Never retype a shorter version at posting time: that
+  is how the two copies come to disagree, and the copy the reader sees is the one nobody
+  reviewed. **If it does not**, as with a prompt or brief handed to another session or agent,
+  write it to `~/Documents/handoff/{repo}/` and give the path, because terminal scrollback is
+  not a destination for anything meant to be copied verbatim. Never use the reference-docs
+  folder, which is for received sources only.
   A filed handoff is a snapshot, so name the commit or state it is pinned to and let a later
   reader judge whether it still applies.
 - Derive `{repo}` from the Git remote's repository name, never the working-directory name,

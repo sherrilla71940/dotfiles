@@ -136,7 +136,7 @@ duplicated to reach a second host.
 
 ```mermaid
 flowchart LR
-    subgraph source["Git-tracked source (`home/`)"]
+    subgraph source["Git-tracked source — home/"]
         core["shared core<br/>personal and company context layers<br/>continuity instructions"]
         rules["shared scoped-rule bodies"]
         skills["portable and host-gated skills"]

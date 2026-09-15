@@ -119,7 +119,7 @@ Chezmoi 把 `home/` 下的檔案視為**來源狀態**：也就是你應該編�
 
 ```mermaid
 flowchart LR
-    subgraph source["Git 追蹤的來源（`home/`）"]
+    subgraph source["Git 追蹤的來源 — home/"]
         core["共用核心<br/>personal 與 company 情境層<br/>連續性指示"]
         rules["共用的路徑範圍規則本文"]
         skills["可攜式與受主機閘門管理的技能"]

@@ -5,7 +5,7 @@
 
 ## Context
 
-The dotfiles repository serves personal and company machines from one cross-platform chezmoi
+The developer environment repository serves personal and company machines from one cross-platform chezmoi
 source tree. The existing Claude Code, Codex, Copilot, skill, hook, and worktree configuration
 already provides the required behavior, but it assumes one context and always-on automatic
 project continuity. The repository needs two independent machine-local choices without creating
@@ -45,7 +45,7 @@ A personal machine can omit `ai_context` entirely. A work machine opts in by set
 `ai_context = "company"` with `chezmoi edit-config`, which keeps the company choice explicit and
 machine-local rather than inherited by every machine that clones this repository.
 
-The dotfiles repository is a deliberate repository-level exception either way. Its root
+The developer environment repository is a deliberate repository-level exception either way. Its root
 `AGENTS.md` treats the effective context as `personal`, so changes to this user-level
 configuration remain English even on a machine explicitly set to `company`.
 

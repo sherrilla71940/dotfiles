@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Repository-local tooling entry point; this is not rendered by chezmoi.
-# Usage: bash scripts/dotfiles <command>
+# Repository-local developer-environment entry point; this is not rendered by chezmoi.
+# Usage: bash scripts/dev-env <command>
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -8,7 +8,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 case "${1:-}" in
   doctor)
     shift
-    exec bash "$script_dir/diagnostics/dotfiles-doctor.sh" "$@"
+    exec bash "$script_dir/diagnostics/dev-env-doctor.sh" "$@"
     ;;
   *)
     printf 'usage: %s doctor\n' "$0" >&2

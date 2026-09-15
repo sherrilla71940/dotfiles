@@ -63,7 +63,7 @@ There are two Codex entry paths:
   its exact path, and stops. Start Codex in that path and invoke the same resolved workflow again,
   passing the resolved `branch=` value so branch naming cannot drift.
 
-Stop if repository instructions forbid worktrees. This dotfiles repository does, identifiable by
+Stop if repository instructions forbid worktrees. This developer environment repository does, identifiable by
 its root `.chezmoiroot`; offer to run that task in place instead.
 
 ## 3. Establish names and the remote base

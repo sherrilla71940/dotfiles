@@ -1,4 +1,4 @@
-# Dotfiles setup
+# Developer environment setup
 
 This guide covers first-time installation on Windows or macOS. Recurring edits, additions,
 removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
@@ -44,7 +44,7 @@ Choose based on the configuration already in the home directory:
 | Any existing settings should survive, or you are unsure | [Existing configuration](#existing-configuration) |
 
 A new computer can already have existing configuration if you used an application before
-installing these dotfiles. When unsure, use the existing-configuration path. It initializes
+installing this developer environment. When unsure, use the existing-configuration path. It initializes
 the repository without changing live files.
 
 Both paths clone into the default chezmoi source directory. Where the Git working tree lives is
@@ -205,7 +205,7 @@ other machines. Do not commit machine-specific values or credentials.
 ## Select the machine-local AI profile
 
 After initialization, choose the two independent profile dimensions with `chezmoi edit-config`.
-The values, defaults, validation behavior, language mapping, and dotfiles-repository override are
+The values, defaults, validation behavior, language mapping, and repository-level override are
 documented in [the machine-local selector guide](./chezmoi-workflow.md#machine-local-ai-profile-selectors).
 
 Preview the selected result with `chezmoi diff` before applying. These values are machine-local,
@@ -314,7 +314,7 @@ The bootstrap helper does this. Run it by hand in a clone that has not been boot
 git config core.hooksPath scripts/git-hooks
 ```
 
-From the repository root, run `bash scripts/dotfiles doctor` when diagnosing a machine. It reports
+From the repository root, run `bash scripts/dev-env doctor` when diagnosing a machine. It reports
 the chezmoi source identity, resolved profile values, unapplied drift, Claude shared-skill links,
 and required tool versions without changing any target.
 

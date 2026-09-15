@@ -333,7 +333,7 @@ assert_contains "$default_destination/.claude/CLAUDE.md" 'The active context is 
 assert_not_contains "$default_destination/.claude/CLAUDE.md" 'The active context is `company`.'
 assert_contains "$default_destination/.agents/skills/git-commit-action/SKILL.md" '| **Language** | `en` · `zhtw`      | `en`'
 assert_contains "$default_destination/.agents/skills/worktree-task-workflow/references/invocation.md" 'commit and request text only | `en`'
-assert_contains "$repository_root/AGENTS.md" 'dotfiles repository always uses the'
+assert_contains "$repository_root/AGENTS.md" 'this repository always uses the'
 assert_contains "$repository_root/AGENTS.md" '`personal` context while work is performed here'
 assert_contains "$default_destination/.claude/CLAUDE.md" '## Project continuity'
 printf 'profile tests: missing-key defaults OK\n'

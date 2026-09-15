@@ -58,7 +58,7 @@ machine-local chezmoi data values: `ai_context` (`personal` or `company`) and `a
 rendering. The rendered configuration is the shared baseline plus one context layer, with the
 continuity instructions and automatic hooks added independently when enabled.
 
-This dotfiles repository is an explicit exception: its root `AGENTS.md` is a repository
+This repository is an explicit exception: its root `AGENTS.md` is a repository
 instruction that overrides the machine default and requires the effective context to be
 `personal` while work is performed here.
 
@@ -95,7 +95,7 @@ This repository does not manage complete product or account state:
   available to the cloud task. It does not receive personal files from this machine's
   `~/.codex/` directory through chezmoi.
 - Copilot cloud features can read supported files committed inside a repository. This
-  dotfiles setup does not copy personal `~/.copilot/` runtime state into GitHub.
+  this setup does not copy personal `~/.copilot/` runtime state into GitHub.
 
 ## Choose where a customization goes
 
@@ -429,7 +429,7 @@ mechanisms differ, so share a server definition only when both clients support i
 
 Here, **declarative** means the repository records which plugin should be enabled, while the
 client downloads and manages the plugin files. The downloaded cache is not copied into the
-dotfiles repository. Claude Code is the exception: its plugins are installed by the bootstrap
+developer environment repository. Claude Code is the exception: its plugins are installed by the bootstrap
 scripts rather than declared, so enabling and disabling them stays a local decision.
 
 - Claude Code: add the plugin to the `claude plugin install` list in both

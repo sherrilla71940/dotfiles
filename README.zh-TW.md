@@ -296,7 +296,7 @@ worktree 不會帶任何被忽略的檔案，所以由 `worktree-manifest` 技�
 再由 `git wt-add` 依此佈建。這兩件事都寫在
 [worktree 佈建指南](./docs/worktree-provisioning.md)。
 
-這個 dotfiles 儲存庫本身是例外：它固定留在主要 checkout，因為 chezmoi 的來源解析綁在那一個工作樹上。
+這個儲存庫本身是例外：它固定留在主要 checkout，因為 chezmoi 的來源解析綁在那一個工作樹上。
 
 ## 還管理了哪些東西
 
@@ -371,7 +371,7 @@ Claude Code 的 `/config` 命令、Windows Terminal 與 Codex 都會把應用程
 編輯來源狀態、用 `chezmoi diff` 預覽、只套用你檢閱過的內容，然後提交來源變更。動手前一定要先確認
 chezmoi 設定中的來源就是這個 checkout：chezmoi 命令用的是它設定中的來源目錄，跟你當下在哪個目錄
 無關，所以沒先確認就 `apply`，有可能把另一個 clone 的內容蓋到這台電腦的設定上。完整命令、`dotf`
-系列 Shell 別名，以及 `bash scripts/dotfiles doctor`，都寫在
+系列 Shell 別名，以及 `bash scripts/dev-env doctor`，都寫在
 [chezmoi 工作流程指南](./docs/chezmoi-workflow.md#daily-commands)。
 
 這個儲存庫對編碼助理也是自我說明的。根目錄的 [`AGENTS.md`](./AGENTS.md) 告訴 Codex 與 Copilot 怎麼

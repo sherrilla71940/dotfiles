@@ -191,10 +191,10 @@
   ],
   // Enable GitHub Copilot Agent Plugins so VS Code loads installed or locally configured plugins.
   "chat.plugins.enabled": true,
-  // Always load this repository's AGENTS.md so Copilot follows the same dotfiles workflow as other agents.
+  // Always load this repository's AGENTS.md so Copilot follows the same developer-environment workflow as other agents.
   "chat.useAgentsMdFile": true,
   "chat.includeReferencedInstructions": true,
-  // Copilot reads several harness-agnostic user folders by default, and this dotfiles repo
+  // Copilot reads several harness-agnostic user folders by default, and this developer environment repo
   // renders the same rules into more than one of them. Without these two settings each
   // shared rule is listed twice, and Copilot also ingests ~/.claude/CLAUDE.md, whose lower
   // half is Claude Code-only (Agent calls, claude-code-guide, the Bash/PowerShell tools).

@@ -29,7 +29,7 @@ same_path() {
   [[ "$left" == "$right" ]]
 }
 
-printf 'dotfiles doctor\n'
+printf 'developer environment doctor\n'
 printf 'repository: %s\n\n' "$repository_root"
 
 source_path="$(chezmoi source-path 2>/dev/null || true)"

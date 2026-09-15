@@ -53,14 +53,14 @@ The selectors compose one baseline with either the personal or company context a
 continuity instructions and hooks when continuity is on. They affect newly rendered configuration
 and newly started sessions; an already-running session keeps its startup context. The values are
 local to the machine and are not committed or synchronized by this repository. When working in
-this dotfiles repository, root `AGENTS.md` overrides the machine context and requires the effective
+this repository, root `AGENTS.md` overrides the machine context and requires the effective
 context to be `personal`.
 
 After editing the config, use `chezmoi diff` to preview the selected render. Review it before
 `chezmoi apply`, then restart the affected client sessions. A dedicated profile CLI is deferred;
 the worktree skills remain installed and independently invokable in every profile.
 
-From the repository root, `bash scripts/dotfiles doctor` reports source identity, the resolved
+From the repository root, `bash scripts/dev-env doctor` reports source identity, the resolved
 profile, unapplied target drift, Claude shared-skill link health, and required tool versions. It is
 repository tooling because it checks this checkout and live chezmoi state; it is not rendered into
 the home directory as a machine command.

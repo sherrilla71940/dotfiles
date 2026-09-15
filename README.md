@@ -324,7 +324,7 @@ and in who may remove it. A fresh worktree also carries no ignored files, so the
 `worktree-manifest` skill authors the approved `.worktreeinclude` that `git wt-add` provisions
 from. [The worktree provisioning guide](./docs/worktree-provisioning.md) covers both.
 
-This dotfiles repository is itself an exception: it stays in its primary checkout, because chezmoi
+This repository is itself an exception: it stays in its primary checkout, because chezmoi
 source resolution is tied to that one tree.
 
 ## What is managed
@@ -408,7 +408,7 @@ Edit the source state, preview with `chezmoi diff`, apply only what you reviewed
 source. Always confirm first that chezmoi's configured source is this checkout: a plain chezmoi
 command uses that directory whatever the current directory is, so an unverified `apply` can render
 a different clone over this machine's configuration. The commands, the `dotf` shell aliases, and
-`bash scripts/dotfiles doctor` are in [the chezmoi workflow
+`bash scripts/dev-env doctor` are in [the chezmoi workflow
 guide](./docs/chezmoi-workflow.md#daily-commands).
 
 The repository is also self-describing for coding assistants. The root [`AGENTS.md`](./AGENTS.md)

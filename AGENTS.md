@@ -7,8 +7,8 @@ anything in this repository. Either way it stays short: it lists only what you c
 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) — read it before adding, changing or
 removing anything.
 
-This is a general user-level dotfiles repository. It manages editor, shell, tool, and AI
-configuration; the AI files are especially sensitive because a mistake can silently change
+This is a general user-level developer environment repository. It manages dotfiles, editor,
+shell, tool, and AI configuration; the AI files are especially sensitive because a mistake can silently change
 how every future agent session behaves.
 
 ## The one thing to understand
@@ -21,7 +21,7 @@ application reads. `chezmoi apply` makes targets match the source state. The rep
 ## Profile context in this repository
 
 The machine-wide AI profile defaults to `personal`, and a work machine opts in by setting
-`ai_context = "company"` explicitly. Either way, this dotfiles repository always uses the
+`ai_context = "company"` explicitly. Either way, this repository always uses the
 `personal` context while work is performed here. Treat that as a repository instruction with
 priority over the machine-local context selector: keep artifact defaults and application/project
 comments in English, and do not change the machine selector just to work on this repository.

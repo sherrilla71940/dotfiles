@@ -125,7 +125,7 @@ duplicated to reach a second host.
 ```mermaid
 flowchart LR
     subgraph source["Git-tracked source (`home/`)"]
-        core["shared core<br/>personal and company context layers<br/>continuity block"]
+        core["shared core<br/>personal and company context layers<br/>continuity instructions"]
         rules["shared scoped-rule bodies"]
         skills["portable and host-gated skills"]
         native["client-native files<br/>agents, commands, MCP, settings"]
@@ -191,7 +191,7 @@ Three details explain most of the structure:
 
 | Content | Representation |
 | --- | --- |
-| Always-on working agreement | One shared body, inlined into Claude `CLAUDE.md`, Codex `AGENTS.md`, and Copilot instructions. The context layer and the continuity block are composed in or out by machine-local selectors, so one source yields a different agreement on a personal machine and a company one. |
+| Always-on working agreement | One shared body, inlined into Claude `CLAUDE.md`, Codex `AGENTS.md`, and Copilot instructions. The context layer and the continuity instructions are composed in or out by machine-local selectors, so one source yields a different agreement on a personal machine and a company one. |
 | Path-scoped rules | One body and one glob in `home/.chezmoidata.yaml`, with thin Claude and Copilot frontmatter wrappers. Codex has no equivalent path-scoped output. |
 | Portable skills | One real skill directory under `home/dot_agents/skills/`, rendered once to the shared discovery target and reached by Claude through a symlink. A `.codex-only` marker plus native metadata gates a Codex-targeted skill: Codex invokes it implicitly, Copilot discovers it but cannot invoke it automatically, and Claude gets no symlink because it carries its own adapter. |
 | Client-specific skills, agents, commands, and MCP files | Native files under the relevant client source directory, never rewritten into a misleading "tool-neutral" copy. |

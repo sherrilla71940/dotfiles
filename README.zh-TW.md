@@ -110,7 +110,7 @@ Chezmoi 把 `home/` 下的檔案視為**來源狀態**：也就是你應該編�
 ```mermaid
 flowchart LR
     subgraph source["Git 追蹤的來源（`home/`）"]
-        core["共用核心<br/>personal 與 company 情境層<br/>連續性區塊"]
+        core["共用核心<br/>personal 與 company 情境層<br/>連續性指示"]
         rules["共用的路徑範圍規則本文"]
         skills["可攜式與受主機閘門管理的技能"]
         native["用戶端原生檔案<br/>agents、commands、MCP、settings"]
@@ -173,7 +173,7 @@ flowchart LR
 
 | 內容 | 表示方式 |
 | --- | --- |
-| 永遠載入的工作約定 | 一份共用本文，直接嵌入 Claude 的 `CLAUDE.md`、Codex 的 `AGENTS.md` 與 Copilot 指示。情境層與連續性區塊由本機選擇器決定要不要組進來，所以同一份來源在個人電腦與公司電腦上會產生不同的工作約定。 |
+| 永遠載入的工作約定 | 一份共用本文，直接嵌入 Claude 的 `CLAUDE.md`、Codex 的 `AGENTS.md` 與 Copilot 指示。情境層與連續性指示由本機選擇器決定要不要組進來，所以同一份來源在個人電腦與公司電腦上會產生不同的工作約定。 |
 | 路徑範圍規則 | `home/.chezmoidata.yaml` 中的一份本文與一個 glob，再由 Claude 與 Copilot 的薄型 frontmatter 包裝器產生。Codex 沒有對等的路徑範圍輸出。 |
 | 可攜式技能 | `home/dot_agents/skills/` 下的一個實體技能目錄，只產生一份到共用探索目標，Claude 再透過 symlink 讀到同一份。`.codex-only` marker 搭配原生 metadata 則用來閘門一個以 Codex 為對象的技能：Codex 會隱式叫用它，Copilot 找得到但不能自動叫用，Claude 則不會有 symlink，因為它有自己的原生轉接層。 |
 | 用戶端專屬技能、agent、命令與 MCP 檔案 | 放在相關用戶端的原生來源目錄中，絕不改寫成容易誤導的「工具中立」複本。 |

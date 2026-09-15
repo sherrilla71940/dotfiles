@@ -72,5 +72,5 @@ application-owned configuration changes are implied by the reorganization.
 ## Related
 
 - [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md)
-- [`README.md`](../../README.md#layout)
+- [`README.md`](../../README.md#repository-layout)
 - [`AGENTS.md`](../../AGENTS.md)

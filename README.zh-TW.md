@@ -2,409 +2,343 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **TL;DR：** 這是一套以 [chezmoi](https://www.chezmoi.io) 管理的個人跨平台 AI 開發環境與開發工具
-> 系統。Git 會追蹤理想的來源狀態，再由 chezmoi 產生 Claude Code、Codex、GitHub Copilot、Shell、
-> 編輯器與工具所需的原生設定，同時支援個人與公司使用情境、可跨工作階段接續的專案工作、只維護
-> 一份的共用技能，以及保留應用程式自行管理的設定。
+> **快速摘要：** 這是一套供 AI 輔助開發與開發工具設定使用的個人跨平台開發環境工具組，透過
+> [chezmoi](https://www.chezmoi.io) 管理。Git 追蹤 `home/` 下的理想來源狀態，chezmoi 再把它產生為
+> 工具組中各工具與應用程式使用的原生目標檔案。目前 AI 用戶端轉接層支援 Claude Code、Codex 與
+> GitHub Copilot；儲存庫也管理編輯器、Shell、Git、終端機與其他開發工具設定。加入新的用戶端與
+> dotfiles 後，來源與轉接層還能繼續擴充。
 
-## 這個儲存庫提供什麼
+## 這個儲存庫解決的問題
 
-- **同一套 AI 設定來源可以服務 Claude Code、Codex 和 GitHub Copilot。** 三者要求的檔案與格式
-  不同，因此 chezmoi template 會組合共用本文與各用戶端的薄型轉接層，再產生每個工具使用的原生
-  檔案。能維持完全相同的內容，例如可攜式技能，則只保留一份共用檔案，再用 symlink 讓 Claude
-  找到它，避免產生重複副本。
-- **同一台電腦可以在個人與公司使用情境之間切換，不需要維護兩套設定。** 只在本機生效的
-  `ai_context` 選擇器會選出情境層與產出物的語言預設值，也會提供應用程式或專案 repo 中
-  程式註解的預設語言。明確的使用者、儲存庫與專案指示仍然優先。
-- **AI 工作可以在工作階段結束或換用其他用戶端後接續。** Project continuity 會把私有的任務
-  交接狀態寫在 `.project-continuity/state.md`，包括目標、目前階段、下一步、阻礙與假設。即使前一
-  個工作階段達到 token 上限、意外中斷，或隔了幾天到幾週，新的 Claude Code、Codex 或 GitHub Copilot
-  工作階段只要在同一個工作目錄，就能使用這份狀態接續工作。Git 仍然是 branch、`HEAD` 與工作目錄
-  實際狀態的依據；連續性狀態則補上交接所需的上下文。只在本機生效的 `ai_continuity` 選擇器會
-  獨立控制是否載入常駐指示與自動生命週期行為；連續性技能仍可在明確要求時使用。
-- **新的電腦可以從版本控管的來源重新建立環境。** Git 追蹤理想的來源狀態，chezmoi 會把它產生到
-  Windows 或 macOS 的實際路徑；另外的 bootstrap 腳本則負責連接儲存庫，並安裝所需的工具、plugin、
-  extension 與 MCP 整合。
-- **應用程式自行管理的設定會保留下來，不會被整個覆寫。** 有些檔案同時包含儲存庫要長期同步的
-  設定鍵，以及應用程式自己寫入的偏好。Chezmoi 會把儲存庫的設定鍵合併到現有檔案；例如 Claude Code
-  的 `settings.json` 仍會保留模型、推理程度、主題、權限和其他本機設定。
+AI 輔助的開發環境涵蓋許多應用程式與平台，因此本工具組使用 Git 與 chezmoi，讓使用者層級的設定
+可以重現。下表整理 AI 用戶端、應用程式自行管理的設定、專案連續性、平行 worktree 與電腦設定
+所遇到的常見問題。原生 AI 用戶端轉接層目前涵蓋 Claude Code、Codex 與 GitHub Copilot；這是目前
+的整合範圍，不代表未來的用戶端、dotfiles 或開發工具受到限制：
 
-## AI 用戶端架構概覽
+| 問題 | 儲存庫的解法 |
+| --- | --- |
+| Claude Code、Codex 與 GitHub Copilot 使用不同的檔案、格式、探索規則與指示範圍。在其中一個用戶端更新指引後，其他用戶端可能變得過時，或把用戶端專屬行為暴露給錯誤的主機。 | 在 Git 中追蹤屬於儲存庫的使用者層級、跨專案 AI 設定：可重用的指示與可攜式技能集中在一份共用來源；用戶端專屬的命令、agent、hook、刻意管理的設定與轉接層，則保留在各自用戶端的原生來源。使用 chezmoi template 條件式且動態地將這些來源產生為各用戶端的原生家目錄檔案；薄型轉接層、主機閘門、連結與 pre-commit 對等檢查，在不複製共用內容的前提下處理用戶端差異。 |
+| AI 工作階段中斷或經過壓縮後，可能遺失任務目標、決策與下一步；平行 Git worktree 也可能缺少執行專案所需、但被忽略的本機檔案。 | 使用專案連續性——每個工作目錄一份私有、由 Git 忽略的任務交接紀錄。它記錄目標、決策、阻礙與下一步，但不取代儲存庫事實。Git 仍是分支、`HEAD` 與工作目錄狀態的依據；切換任務前，先將未完成的狀態停放到 `.project-continuity/parked/`。Worktree 工作流程會為平行任務建立隔離的目錄；如果缺少本機檔案，manifest 技能會先取得核准，再由 `git wt-add` 與 `git wt-copy` 安全地佈建 `.worktreeinclude` 中核准的項目。 |
+| 開發工具會自行管理一部分偏好設定與執行期狀態。例如 Claude Code 的 `/config` 命令可以變更模型、努力程度、主題或權限，Windows Terminal 也可以變更自己的設定檔與偏好；如果追蹤整份設定檔，就會覆寫這些選擇，或迫使每次應用程式變更都回頭同步到來源。個人覆寫與連續性狀態也應留在本機，而共用且持久的儲存庫設定則應保持可見並可追蹤。 | Git 只追蹤刻意由儲存庫管理的設定；chezmoi 的 merge、create-once 與 selective template 會套用這些設定，不取代整份現有檔案：管理 Claude hook、狀態列、環境、更新頻道與選定的持久終端機設定；將模型、努力程度、主題、權限與其他應用程式自行管理的選擇留在本機；Codex 與其他工具也採用相同的選擇性管理方式。使用 Git 的全域排除規則，為精確指定的私有檔案提供安全網，例如 `CLAUDE.local.md`、`AGENTS.override.md`、`.claude/settings.local.json` 與 `.project-continuity/`；同時讓共用的 `AGENTS.md`、`CLAUDE.md` 與儲存庫指示檔保持可追蹤。 |
+| 只還原 dotfiles 並不足以建立可用的開發環境：新電腦可能仍缺少命令列前置條件、驗證 hook、編輯器擴充功能、用戶端 plugin 或 MCP 伺服器宣告，而且有些整合必須等用戶端應用程式安裝後才能執行。 | 執行平台專用的 `scripts/bootstrap/bootstrap-windows.ps1` 或 `scripts/bootstrap/bootstrap-macos.sh` 輔助程式，連接 checkout、啟用驗證、安裝或設定支援工具並套用 manifest。安裝用戶端應用程式後再執行一次，讓延後處理的 plugin、extension 與 MCP 步驟完成。 |
 
-這張圖聚焦於 AI 用戶端與 profile 組合機制。它不是所有受管理目標的完整清單；Shell、
-Git、Windows Terminal、一般 VS Code 設定，以及儲存庫工具，會走下文所述的簡單來源到
-目標流程。
+## 開始使用
 
-本儲存庫會在 Windows 或 macOS 上，為四個用戶端產生彼此協調的設定。請從左到右閱讀：
-單一真實來源、每個用戶端的薄型轉接層、產生的目標，最後是讀取這些檔案的用戶端。
-
-共用技能與規則本文只在一處維護。轉接層只加入各用戶端理解的中繼資料標頭（frontmatter）或
-包裝，因此只適用於單一工具的規則不會被改寫成另一份工具中立的版本。
-
-~~~mermaid
-flowchart LR
-    subgraph sourceState["來源（單一真實來源）"]
-        core["core.md、情境層、continuity.md"]
-        rules["規則本文<br/>依路徑套用"]
-        vscodeBody["受管理的 VS Code 設定本文"]
-        sharedSkills["dot_agents/skills<br/>共用技能，每個只保留一份"]
-        clientSkills["用戶端專屬技能<br/>與用戶端入口"]
-    end
-
-    subgraph adapters["薄型轉接層"]
-        claudeAdapter["Claude<br/>CLAUDE.md、規則帶有 paths:"]
-        codexAdapter["Codex<br/>單一 AGENTS.md，不含 frontmatter"]
-        copilotAdapter["Copilot<br/>指示帶有 applyTo:"]
-        pathWrapper["作業系統路徑轉接層"]
-        skillAdapter["symlink 轉接層"]
-        clientSkillAdapter["各用戶端技能樹"]
-    end
-
-    subgraph renderedTargets["產生的目標"]
-        claudeTarget["~/.claude"]
-        codexTarget["~/.codex<br/>config.toml 由應用程式擁有"]
-        copilotTarget["~/.copilot"]
-        vscodeTarget["VS Code settings.json"]
-        agentsTarget["~/.agents/skills"]
-    end
-
-    subgraph clients["用戶端"]
-        claudeClient["Claude Code"]
-        codexClient["Codex"]
-        copilotClient["GitHub Copilot"]
-        vscodeClient["VS Code"]
-    end
-
-    core --> claudeAdapter
-    core --> codexAdapter
-    core --> copilotAdapter
-    rules --> claudeAdapter
-    rules --> copilotAdapter
-    sharedSkills --> skillAdapter
-    clientSkills --> clientSkillAdapter
-    vscodeBody --> pathWrapper
-
-    claudeAdapter --> claudeTarget
-    codexAdapter --> codexTarget
-    copilotAdapter --> copilotTarget
-    skillAdapter --> agentsTarget
-    skillAdapter -.->|"symlink"| claudeTarget
-    clientSkillAdapter --> claudeTarget
-    clientSkillAdapter --> copilotTarget
-    pathWrapper --> vscodeTarget
-
-    claudeTarget --> claudeClient
-    codexTarget --> codexClient
-    copilotTarget --> copilotClient
-    vscodeTarget --> vscodeClient
-    agentsTarget --> codexClient
-    agentsTarget --> copilotClient
-~~~
-
-儲存庫的其餘部分也遵循相同的來源到目標流程，只是不需要 AI 用戶端轉接層：
-Shell 來源會產生 `~/.bashrc`、`~/.zshrc` 與 `~/.profile`；Git 來源會產生
-`~/.gitconfig`；Windows Terminal 來源會產生平台設定；VS Code 來源則會在對應作業系統的
-使用者設定檔中產生 keybindings、MCP 設定與一般設定。各作業系統的路徑包裝器只負責
-選擇目的地，不會複製來源本文。
-
-請注意圖中刻意省略的連線：`rules` 不會連到 Codex 轉接層。Codex 沒有匯入機制，也沒有
-等同於路徑範圍限制的功能，因此它只會收到一份永遠載入且不含 YAML frontmatter 的單一檔案。
-
-技能分成三個層級，因此圖中有兩個技能來源：
-
-- **共用技能**只存在於 `home/dot_agents/skills`，並產生在 `~/.agents/skills`。Codex
-  與 Copilot 直接探索該目錄；Claude Code 只會查看 `~/.claude/skills`，所以儲存庫
-  會在那裡建立指向相同檔案的 symlink。技能本文仍然只有一份。
-- **用戶端專屬入口**在同一項能力需要為不同用戶端提供不同入口時使用。`worktree-task-workflow` 在
-  `dot_agents` 有受 Codex gate 控制的 `SKILL.md`，在 `dot_claude` 有 Claude 的
-  `SKILL.md`；兩者都從 `.chezmoitemplates` 取得相同的參考本文，因此即使 frontmatter
-  不同，指引仍不會分歧。
-- **用戶端專屬技能**只供單一用戶端使用，不會共用：例如 Claude Code 的
-  `claude-worktree-memory`，以及 Copilot 的 `remember`。Copilot 也有自己的
-  `.agent.md` agents。
-
-Worktree workflow 與 worktree manifest 在每種組合中都獨立可用；它們不受 profile 切換控制。
-共用的輔助腳本會產生在 `~/.local/share`，讓 Claude Code 與 Codex 可以執行同一個檔案。
-
-這些行為都有驗證，不是只靠約定維持。提交 hook 會重新產生已暫存的來源檔案；如果共用規則
-本文分歧、技能因檔名屬性而消失、Codex 檔案出現 frontmatter、交叉參照指向不存在的標題，
-或 Bash 與 PowerShell 的狀態輸出不一致，提交就會失敗。最後一項是少數刻意維護兩套實作的
-內容之一。
-
-## 運作方式
-
-Chezmoi 會把本儲存庫的內容產生為應用程式實際讀取的檔案。`home/` 下的檔案是**來源狀態**：
-這就是應該編輯並提交的設定來源。Chezmoi 寫入家目錄的檔案則是**目標檔案**。
-
-~~~text
-home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
-~~~
-
-因此，請先修改來源檔，再執行 `chezmoi apply`，讓目標檔案與來源狀態一致。直接編輯
-目標檔案不具持久性，下一次 apply 會覆寫它。檔名也帶有特殊意義：`dot_` 會產生開頭的
-`.`，而 `.tmpl` 副檔名代表該檔案會以 template 方式產生；這就是同一份來源可以支援
-Windows 與 macOS 的方式。
-
-[docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) 說明日常操作。
-
-`chezmoi init` 會把本儲存庫複製到它自行選擇的來源目錄。開始前，請先決定是否要讓工作
-目錄位於方便使用一般 `git` 指令與儲存庫腳本的位置。本儲存庫的設定會把工作目錄放在
-`~/dotfiles`，因此需要先自行複製到該位置。[docs/setup.md](./docs/setup.md) 說明設定順序；
-這樣安排的原因請參閱 [ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md)。
-
-## 共用 AI 設定
-
-每個工具都會收到符合自身格式的檔案：Claude 規則帶有 `paths:`，Copilot
-`.instructions.md` 帶有 `applyTo:`，Codex 則收到一份沒有 frontmatter 的單一檔案，
-因為 Codex 既不能匯入其他檔案，也沒有路徑範圍限制功能。沒有任何一份共用檔案能直接服務
-三個工具，因此本文會在產生時轉換，而不是直接連結。
-
-~~~text
-home/.chezmoitemplates/rules/javascript.md   <-- 只維護一份的本文
-home/.chezmoidata.yaml                       <-- 只維護一份的 glob
-
-  -> ~/.claude/rules/javascript.md                        paths: "**/*.{js,jsx,ts,tsx}"
-  -> ~/.copilot/instructions/javascript.instructions.md   applyTo: "**/*.{js,jsx,ts,tsx}"
-~~~
-
-可攜式技能則採用相反做法，因為它們的指示不需要依用戶端改寫。實際檔案只保留一份，位於
-`~/.agents/skills`，由 Codex 與 Copilot 直接讀取；Claude Code 只會查看
-`~/.claude/skills`，因此在那裡建立 symlink。Codex 專用的例外也可以放在
-  `~/.agents/skills`，但儲存庫的 host gate（主機篩選機制）會避免 Claude 與 Copilot 把它當成共用工作流程
-來執行。
-
-只給單一工具使用的技能或指示，會是該工具資料夾中的一般檔案，例如
-`~/.copilot/skills` 中的檔案，不使用 template，也不建立 symlink。任何內容都不會被改寫成
-工具中立的複本：只有單一工具能遵循的規則，就留在該工具的檔案中，或明確寫出適用的工具。
-
-## 選擇 AI 設定 profile
-
-Claude Code、Codex 與受管理的 VS Code Copilot 設定，使用 chezmoi 設定檔中的兩個獨立選擇器；
-它們只在本機生效（`chezmoi edit-config`）：
-
-~~~toml
-[data]
-ai_context = "company"        # 明確選擇工作電腦情境
-ai_continuity = "on"           # 明確選擇連續性設定
-~~~
-
-[本機 AI profile 選擇器指南](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
-是四種組合、缺少鍵時的預設值、無效值行為，以及選擇器只在各台 Windows 或 macOS 電腦上生效
-的完整說明。
-
-選定的情境會提供產出物的語言預設值：personal 使用英文（`en`），company 使用繁體中文
-（`zh-TW`；現有介面接受該值時會表示為 `zhtw`）。明確傳入的語言參數、儲存庫指示與
-使用者直接提出的要求都優先於這項預設值。使用者層級的 dotfiles 與 AI 設定在兩種情境中
-都維持英文。Worktree 技能在兩種情境中都會安裝並可獨立使用；它們可以在連續性啟用時使用
-專案連續性，但不是 profile 開關。
-
-個人電腦可以完全省略 `ai_context`；工作電腦則使用 `chezmoi edit-config` 將它設為
-`company`。本 dotfiles 儲存庫是刻意的例外：根目錄的 `AGENTS.md` 是儲存庫指示，會將在
-本儲存庫中工作時的有效情境固定為 `personal`。因此，即使電腦明確選擇 `company`，這裡的
-工作內容仍會維持英文。
-
-變更選擇器後，請先用 `chezmoi diff` 預覽，確認內容後再套用，並重新啟動 AI 用戶端的工作
-階段。已經執行中的工作階段會保留啟動時載入的情境。V1 的選擇器是整台電腦共用的，因此
-同一台電腦上同時執行的工作階段不能安全地使用不同的情境或連續性設定。目前尚未提供 profile
-CLI；廣泛的 Copilot 整合（技能探索、儲存庫指示與 agent plugin）也不在此版本範圍內。
-
-### 選擇器會改變什麼
-
-兩個選擇器都只存在於本機，不會提交到儲存庫。解析器（resolver）會先驗證它們，再分別決定：
-要組合哪一個情境層、是否啟用專案連續性指示，以及工作階段開始與結束時是否自動回報或更新狀態，
-還有支援的產出物預設使用哪種語言。
-
-情境層也會提供應用程式或專案 repo 中程式註解的預設語言。使用者層級的設定與自訂內容註解
-維持英文；本儲存庫的文件不會隨 `artifact_language` 自動切換語言。
-
-~~~mermaid
-flowchart TD
-    config["chezmoi 設定檔<br/>只在本機生效，不會提交"]
-    config --> context["ai_context<br/>personal 或 company，預設 personal"]
-    config --> continuitySelector["ai_continuity<br/>on 或 off，預設 on"]
-
-    context --> resolver["ai-profile.yaml<br/>驗證選擇器；無效值會使產生失敗"]
-    continuitySelector --> resolver
-
-    resolver --> layer["情境層<br/>profiles/personal.md 或 profiles/company.md"]
-    resolver --> gate["連續性閘門"]
-    resolver --> language["artifact_language<br/>en 或 zhtw"]
-
-    layer --> instructions["永遠載入的指示<br/>在 core.md 中組合"]
-    gate --> instructions
-    gate --> helper["maintain-project-continuity.sh<br/>啟用時回報，停用時不輸出也不修改狀態"]
-
-    language --> commitSkill["git-commit-action<br/>提交訊息的描述與內文"]
-    language --> worktreeText["worktree-task-workflow<br/>提交與 request 文字"]
-    language --> vscodeCommit["VS Code Copilot<br/>提交訊息指示"]
-
-    repository["儲存庫 AGENTS.md 或 CLAUDE.md"] -.->|"優先於本機情境"| instructions
-~~~
-
-圖中有三個細節很容易理解錯：
-
-- **產出物語言只套用在目前支援的產出文字。** 預設語言會套用到 `git-commit-action` 產生的提交訊息
-  描述與內文、worktree workflow 的提交與 request 描述文字，以及受管理的 VS Code Copilot 提交訊息指示。
-  它不會翻譯 branch 名稱、路徑、指令、使用者層級 dotfiles 或本儲存庫的文件。明確指定 `en` 或
-  `zhtw` 時，仍會覆寫預設值。
-- **停用連續性會改變指示與輔助程式行為，但不會改動 hook 設定。** Hook 在兩種狀態下都
-  會保留，這樣獨立的 worktree 啟動檢查仍然有效，Codex 也不必因為切換設定而重新核准
-  每個 hook 項目。
-- **儲存庫指示優先於本機情境。** 因此本儲存庫自己的 `AGENTS.md` 會將在此工作的情境
-  固定為 `personal`，而不需要修改本機選擇器。
-
-應用程式或專案 repo 中的程式註解會依選定的情境處理，除非儲存庫或專案指示另有規定。使用者
-層級的設定與自訂內容註解，以及連續性狀態，不論對話使用哪種語言，都會維持英文。
-
-## 選擇設定方式
+這是個人設定儲存庫。套用前請先閱讀[設定指南](./docs/setup.md)，尤其是電腦上已經有 Shell、
+編輯器或 AI 用戶端設定時。
 
 ### 全新電腦
 
-只有在不需要保留既有 Shell、編輯器或 AI 用戶端設定時，才使用這個單行設定方法。Windows
-使用者請先依照[設定前置條件](./docs/setup.md#enable-windows-symlink-creation)啟用
-Developer Mode，或提供建立 symbolic link 所需的權限。
+只有在不需要保留既有設定時，才使用這個單行入口。完成[設定前置條件](./docs/setup.md#common-prerequisites)
+後，從 macOS 或 Git Bash 執行：
 
-以下指令會下載並執行遠端安裝程式。請先確認你信任來源，並已檢查本機的 URL 與腳本政策，
-再執行它。
-
-~~~bash
+```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
-~~~
+```
+
+這會下載並執行遠端安裝程式。執行前請確認你信任該 URL 與這個腳本政策。除非設定使用目錄 junction，
+Windows 也需要[建立 symbolic link](./docs/setup.md#enable-windows-symlink-creation)。
 
 ### 已有設定的電腦
 
-如果有任何設定需要保留，或你不確定是否需要保留，請先初始化但不要套用：
+先初始化但不要套用，確認 chezmoi 指向這個儲存庫，並檢閱產生的變更：
 
-~~~bash
+```bash
 chezmoi init sherrilla71940
-git -C "$(chezmoi source-path)" rev-parse --show-toplevel   # 必須是此儲存庫
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel
 chezmoi diff
-~~~
+```
 
-在採用想保留的設定（也就是將它們複製進儲存庫）之前，不要套用。請參閱
-[既有設定指南](./docs/setup.md#existing-configuration)，了解如何保留完整的一般檔案，或
-從 template 產生的檔案中只保留選定設定。如果使用 fork，請將 `sherrilla71940` 替換為
-fork 的 URL。
+`git` 命令的輸出必須是這個 checkout。套用前，先採用你想保留的設定；[既有設定指南](./docs/setup.md#existing-configuration)
+說明一般檔案與 template 檔案各自的保留方式。需要使用 fork 時，將 `sherrilla71940` 替換成 fork URL。
 
-以上任一方式都只是七個步驟中的第一步。接下來還要執行會連結來源目錄並啟用驗證 hook 的
-bootstrap 輔助程式、安裝並登入應用程式，然後**再次執行 bootstrap**，讓 plugin、extension
-與 MCP 步驟能找到它們需要的 CLI。完整流程請參閱 [docs/setup.md](./docs/setup.md)；只
-停在這裡只會有檔案，沒有完整的工具環境。
+以上任一路徑都只是設定步驟。完整設定還需要安裝並登入應用程式、執行平台 bootstrap、啟用儲存庫驗證，
+並在應用程式 CLI 可用後再次執行 bootstrap，讓 plugin、extension 與 MCP 步驟完成。請使用詳細的[新電腦設定順序](./docs/setup.md#new-machine-in-order)。
 
-## 設定完成後
+開發 checkout 通常位於 `~/dotfiles`。Bootstrap 會用 macOS symlink 或 Windows 目錄 junction，把 chezmoi
+的預設來源位置連到這個 checkout。這樣儲存庫腳本、決策紀錄與來源狀態會留在同一個 Git 工作樹；其中的取捨請參閱
+[ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md)。
 
-無論目前在哪個目錄，你都可以執行這些指令。Chezmoi 會使用已設定的來源目錄，因此不必先切換目錄，
-`chezmoi edit`、`chezmoi diff`、`chezmoi apply` 與 `chezmoi git` 都能直接使用。
-儲存庫根目錄（如果保留預設位置就是 `~/dotfiles`，也可以用 `chezmoi cd` 開啟）只是方便
-執行一般 `git` 指令與儲存庫腳本的地方。
+## 架構：單一來源，原生輸出
 
-### 修改設定
+Chezmoi 將 `home/` 下的檔案視為**來源狀態**：也就是你應該編輯並提交的理想設定。寫入家目錄的檔案則是
+**目標檔案**：應用程式實際讀取的檔案。
 
-修改來源、用 `chezmoi diff` 預覽、執行 `chezmoi apply`，最後提交。套用完成後，
-`chezmoi status` 應該會是空的。
+```text
+home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
+```
 
-在儲存庫根目錄執行 `bash scripts/dotfiles doctor`，可以取得一份健康檢查報告，內容包括
-chezmoi 來源識別、解析後的本機 profile、尚未套用的目標差異、Claude 的共用技能連結，
-以及必要的工具版本。這個工具位於 `scripts/`，因為它要檢查來源 checkout 與 live chezmoi
-狀態；它是儲存庫工具，不是會產生到每台電腦使用者家目錄的設定指令。
+來源檔名本身也有意義。`dot_` 會變成開頭的 `.`，`.tmpl` 會啟用 template 產生，而 `create_`、`modify_`
+與 `symlink_` 等前綴則控制 chezmoi 如何處理目標檔案。新增或重新命名來源檔案前，請先閱讀
+[chezmoi 工作流程](./docs/chezmoi-workflow.md)。
 
-其餘不由儲存庫管理的內容則是例外；應用程式記錄的大部分資料都屬於這一類。Claude 的
-`settings.json` 是最明顯的例子：儲存庫只管理應該在各台電腦一致的鍵，模型、主題、
-權限等其餘內容則留在本機。請在用戶端內使用 `/config`、`/model` 或 `/plugin`
-修改它們，不需要套用或提交。執行 `scripts/diagnostics/claude-settings-drift.sh` 可以
-查看目前的管理分界；一般流程請參閱 [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md)。
+下圖顯示目前的 AI 用戶端轉接層與最重要的邊界。圖中也把 Claude Code、Codex、GitHub Copilot 與 VS Code
+使用者設定放在一起；Shell、Git、Windows Terminal 與輔助腳本則使用相同的來源到目標原則，不需要 AI 用戶端
+轉接層。
 
-### 也可以直接向 AI 助手描述需求
+```mermaid
+flowchart LR
+    subgraph source["Git 追蹤的來源（`home/`）"]
+        core["共用核心<br/>+ 選定情境<br/>+ 選用的連續性"]
+        rules["共用的路徑範圍規則本文"]
+        skills["可攜式與受主機閘門管理的技能"]
+        native["用戶端原生檔案<br/>agents、commands、MCP、settings"]
+        vscodeBody["共用 VS Code 本文"]
+        platform["Shell、Git、Terminal<br/>與輔助來源"]
+    end
 
-你可以用日常語言向 Claude Code、Codex 或 VS Code 中的 GitHub Copilot 描述想要的結果，
-不必先熟悉 chezmoi 編碼過的來源檔名或指令。例如：
+    subgraph render["Chezmoi 組合"]
+        instructionAdapters["原生指示包裝器"]
+        ruleAdapters["路徑範圍規則包裝器<br/>Claude：paths<br/>Copilot：applyTo"]
+        skillDelivery["技能交付<br/>實體檔案、symlink、主機閘門"]
+        osAdapters["Windows/macOS<br/>VS Code 包裝器"]
+    end
 
-- 「請帶我了解如何用這個儲存庫管理 dotfiles。」
-- 「新增 Claude Code 與 Copilot 共用的 React 指示，並說明 Codex 支援哪些內容。」
-- 「只為 Claude Code 新增這項指示。」
-- 「我直接修改了 live 的 `.bashrc`，請幫我把變更保留到儲存庫。」
-- 「把 VS Code 字型大小設為 14，提交來源變更，然後安全地用 chezmoi 套用。」
+    subgraph targets["Live 目標"]
+        claude["~/.claude<br/>Claude Code"]
+        codex["~/.codex<br/>Codex"]
+        copilot["~/.copilot<br/>Copilot CLI"]
+        agents["~/.agents/skills<br/>共用技能目標"]
+        vscode["VS Code 使用者設定檔"]
+        other["Shell、Git、Windows Terminal、<br/>共用輔助檔案"]
+    end
 
-儲存庫層級的 [AGENTS.md](./AGENTS.md) 會告訴每個助手如何將需求轉換成安全的來源狀態
-變更，並區分編輯、套用與提交。Claude 會透過 [CLAUDE.md](./CLAUDE.md) 取得它；
-Codex 與 Copilot 可以直接讀取 `AGENTS.md`。
+    core --> instructionAdapters
+    instructionAdapters --> claude
+    instructionAdapters --> codex
+    instructionAdapters --> copilot
 
-從儲存庫根目錄啟動工作階段最簡單，因為每個工具都會自行載入該目錄的指示。即使從其他
-位置開始也一樣有效：本儲存庫安裝的共用核心指示會要求每個助手在修改設定前先用
-`chezmoi source-path` 找到來源，並先讀取本儲存庫的 `AGENTS.md`。因此，即使助手從未
-接觸過本儲存庫，也能取得來源與目標的規則以及結構限制。
+    rules --> ruleAdapters
+    ruleAdapters --> claude
+    ruleAdapters --> copilot
 
-## 只複製本儲存庫的一部分
+    skills --> skillDelivery
+    skillDelivery --> agents
+    skillDelivery -.->|"Claude 連結"| claude
 
-只取出 `home/.chezmoitemplates/` 中的單一檔案並不能運作，因為其中沒有任何檔案是目標檔；
-每個檔案都是由某個 wrapper 產生的本文。VS Code 本文需要 `home/AppData/` 或
-`home/Library/` 底下的作業系統專用 wrapper；共用規則本文刻意省略每個用戶端要求的
-frontmatter；Claude 的 durable-settings 本文也必須搭配 `home/dot_claude/modify_settings.json`
-才能合併。請一併取得 wrapper，或先閱讀它，了解它提供了哪些內容。
+    native --> claude
+    native --> codex
+    native --> copilot
 
-`home/dot_agents/skills/` 底下的技能是真正的檔案，不是本文，因此可以直接複製。大多數
-技能都可攜；只有來源端的 `.codex-only` marker 代表需要 host gate 的例外。將技能放入
-單一用戶端的設定前，請先確認這項限制。
+    vscodeBody --> osAdapters --> vscode
+    platform --> other
 
-## 目錄結構
+    agents --> copilot
+    agents --> vscode
+```
 
-~~~text
-home/                            chezmoi 來源狀態
-  .chezmoidata.yaml              規則 glob，集中管理
-  .chezmoitemplates/             共用本文（core.md、profiles/、rules/、vscode/、claude/）
-  dot_claude/                    CLAUDE.md、規則、設定、hook、指令、agent、
-                                 Claude 專屬技能，以及指向共用技能的連結
-  dot_codex/                     AGENTS.md、config.toml（技能來自 dot_agents）
-  dot_copilot/                   指示、agent、Copilot 專屬技能
-  dot_agents/skills/             可攜式與受 host gate（主機篩選機制）管理的 Codex 技能 -> ~/.agents/skills
-  .README.md                     如何閱讀這棵樹（只存於儲存庫，不會部署）
-  dot_bashrc  dot_zshrc.tmpl  dot_bash_profile   Shell 設定
-  AppData/ · Library/            每個作業系統一份的 VS Code 設定
-scripts/dotfiles                 儲存庫工具入口（bash scripts/dotfiles doctor）
-scripts/bootstrap/                一次性新電腦設定（手動執行）
-scripts/install/                  Claude MCP 安裝程式
-scripts/manifests/                MCP 與 VS Code extension manifest
-scripts/diagnostics/              doctor、Claude 設定差異與工作階段使用量報告
-scripts/tests/                    profile、連續性與 worktree 回歸測試
-scripts/git-hooks/pre-commit     每次提交前驗證來源狀態
-scripts/git-hooks/markdown-anchors.awk
-                                 解析文件交叉參照
-docs/decisions/                  架構決策與重新評估條件
-~~~
+三個細節可以解釋大部分的結構：
 
-## 維護者回歸測試
+- 共用核心會直接嵌入每個用戶端的原生指示檔。Codex 會收到永遠載入的核心，但本儲存庫不會為 Claude 與
+  Copilot 的路徑範圍規則建立 Codex 對等輸出。
+- 可攜式技能是 `home/dot_agents/skills/` 下的實體檔案，會產生到 `~/.agents/skills`；Claude Code 會透過
+  `~/.claude/skills` 下的個別 symlink 找到同一份檔案。`.codex-only` marker 與原生 metadata gate 會阻止
+  不應自動使用的工作流程被 Claude 或 Copilot 使用。
+- VS Code 是編輯器宿主，不是 Copilot CLI 設定的第四份副本。VS Code 的使用者設定、keybindings 與 MCP
+  檔案使用作業系統專用的包裝器；Copilot 的指示、agent 與技能則依照各自宿主支援的位置放置。
 
-以下腳本是長期保留的回歸測試。只要它們保護的行為仍受支援，就請保留測試；只有在功能
-退役，或已有等價覆蓋取代時，才移除測試。
+### 為什麼有些內容共用，有些不共用
 
-| 變更內容 | 執行方式 |
+| 內容 | 表示方式 |
 | --- | --- |
-| Windows worktree 建立實作 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-git-worktree-provision.ps1` |
-| macOS worktree 建立實作 | `bash scripts/tests/test-git-worktree-provision.sh` |
-| 共用 worktree 建立契約或安全邊界 | 執行兩套 worktree 建立測試 |
-| Project-continuity 生命週期 hook 或復原契約 | `bash scripts/tests/test-project-continuity-hook.sh` |
-| AI profile 選擇器、組合、語言預設或連續性切換 | `bash scripts/tests/test-ai-configuration-profiles.sh` |
-| `.chezmoiignore` 作業系統篩選、任一 VS Code 設定樹或任一 worktree 輔助程式 | `bash scripts/tests/test-ai-configuration-profiles.sh`；它會從本機產生 darwin 與 windows 兩個分支，因此不會漏測另一個平台的 template |
+| 永遠載入的工作約定 | 一份共用本文，同時納入 Claude 的 `CLAUDE.md`、Codex 的 `AGENTS.md` 與 Copilot 指示。 |
+| 路徑範圍規則 | `home/.chezmoidata.yaml` 中的一份本文與一個 glob，再由 Claude 與 Copilot 的薄型 frontmatter 包裝器產生。Codex 在這個設定中沒有對等的路徑範圍輸出。 |
+| 可攜式技能 | `home/dot_agents/skills/` 下的一個實體技能目錄，搭配共用的探索目標與 Claude symlink。 |
+| 用戶端專屬技能、agent、命令與 MCP 檔案 | 放在相關用戶端的原生來源目錄中，不會被改寫成容易誤導的「工具中立」複本。 |
+| VS Code 檔案 | `home/.chezmoitemplates/vscode/` 下的共用本文，再各自包裝一次，產生 Windows 與 macOS 使用者設定檔的目標。 |
 
-這些測試會建立暫時的儲存庫，並在實作或契約變更時手動執行。Pre-commit hook 則維持快速，
-專注於來源產生與結構檢查。
+`home/.chezmoitemplates/` 下的檔案是可重用的本文，不是直接目標。本文通常需要搭配用戶端或作業系統包裝器
+才能正確產生。[AI 自訂指南](./docs/customization-support.md)說明每一項自訂內容由哪個來源路徑負責。
+
+## 本機 profile 與工作階段連續性
+
+Chezmoi 的本機設定中有兩個彼此獨立的值，用來控制產生的 AI profile：
+
+```toml
+[data]
+ai_context = "company"        # personal 或 company
+ai_continuity = "on"           # on 或 off
+```
+
+| 選擇器 | 控制內容 | 預設值與界線 |
+| --- | --- | --- |
+| `ai_context` | 個人或公司情境層、該情境的產出物語言預設值，以及應用程式與專案儲存庫的預設註解語言。 | 遺漏時使用 `personal`；其他值會使產生失敗。 |
+| `ai_continuity` | 是否啟用連續性指示，以及自動生命週期回報與狀態維護。 | 遺漏時使用 `on`；其他值會使產生失敗。即使關閉，仍可明確使用連續性技能。 |
+
+組合方式是：
+
+```text
+共用基線 + 個人或公司情境 + 啟用時的連續性
+```
+
+選擇器只在本機生效、整台電腦共用，而且不會提交。變更只會影響新產生的設定與新啟動的工作階段；
+已經執行中的工作階段會保留啟動時載入的情境。儲存庫指示與使用者直接指示仍然優先。本儲存庫根目錄的
+`AGENTS.md` 刻意要求在此工作時使用有效的 `personal` 情境，即使電腦選擇的是 `company` 也一樣。
+
+產出物語言預設值的適用範圍很窄。它會影響支援的提交描述與內文、worktree 提交與 request 文字，以及
+受管理的 VS Code Copilot 提交訊息指示；不會翻譯 branch 名稱、路徑、命令、使用者層級 dotfiles 或本 README。
+明確傳入 `en` 或 `zhtw` 時會覆寫預設值。
+
+### 專案連續性
+
+啟用後，專案連續性會把交接狀態保留在目前的實體工作樹中：
+
+- `.project-continuity/state.md` 記錄目標、階段、下一步、阻礙、假設與驗證狀態。
+- Claude Code 與 Codex 會收到生命週期回報，能辨識現有狀態並偵測分支或 `HEAD` 漂移。Copilot 可以使用
+  共用的狀態協定，但本儲存庫沒有為 Copilot 新增自動生命週期 hook。
+- Git 才是分支、`HEAD` 與工作樹實際狀態的依據。連續性檔案提供上下文，但不取代 Git 歷史或對話記錄。
+- 狀態會被 Git 忽略，兼顧隱私與便利。它是本機交接檔案，不是加密的秘密儲存區。
+
+關閉 `ai_continuity` 後，常駐載入的連續性指示會移除，共用生命週期輔助程式會變成 no-op。Hook 項目仍會
+保留，因此獨立的 Claude worktree 啟動檢查仍可使用；Codex 也不需要因切換設定而重新核准 hook 信任。
+
+### 隔離的 worktree 與平行任務
+
+專案連續性屬於一個實體工作樹。對允許使用 worktree 的儲存庫，worktree 工作流程會為每個任務建立或進入
+隔離的 worktree，再把該任務的交接狀態記錄在那裡。不同任務可以平行進行，不會混用狀態。本 dotfiles 儲存庫
+刻意留在主要 checkout，因為 chezmoi 的來源解析與它綁定。
+
+如果新的 worktree 需要被忽略的專案本機檔案，worktree manifest 技能會檢查候選檔案，排除憑證、快取、資料
+與連續性狀態，並在建立或擴充 `.worktreeinclude` 前請使用者核准符合條件的 pattern。接著由 `git wt-add`
+與 `git wt-copy` 只佈建已核准的檔案。VS Code 使用獨立的使用者層級 include 設定，因此儲存庫 manifest
+不涵蓋每一種 worktree 建立路徑。用戶端之間的差異請閱讀[worktree 佈建指南](./docs/worktree-provisioning.md)。
+
+## 其他受管理的內容
+
+| 範圍 | 代表性內容 |
+| --- | --- |
+| Claude Code | 共用 `CLAUDE.md`、路徑範圍規則、連結技能、Claude 專屬命令與技能、hook、跨平台狀態列與通知、主題，以及選定的持久設定。 |
+| Codex | 共用 `AGENTS.md`、生命週期 hook、共用與主機閘門技能，以及 create-once 設定預設值。 |
+| GitHub Copilot CLI | 共用指示、Copilot 專屬 agent 與技能、設定，以及使用者 MCP 宣告。 |
+| VS Code | Windows 與 macOS 使用者設定、keybindings、MCP 設定、extension manifest，以及受支援的 Copilot 自訂內容。 |
+| Shell 與 Git | Bash、Zsh、profile 啟動設定、Git 身分與 aliases，包括 worktree 命令。 |
+| Windows Terminal | 持久的字型與輸入行為、actions 與 keybindings；產生的機器專屬 profile 仍由應用程式管理。 |
+| 儲存庫工具 | Bootstrap 腳本、Claude MCP 安裝程式、manifest、診斷工具、跨平台輔助程式、回歸測試套件與架構決策紀錄。 |
+
+內含的工作流程函式庫涵蓋無障礙檢視、瀏覽器協作、文件與簡報產生、試算表、PDF、提交慣例、台灣繁體中文、
+prompt 最佳化、技術寫作、專案連續性與 worktree 佈建。Copilot 也有專注於儲存庫架構、前端效能與安全性檢視
+的 agent。MCP 與 extension manifest 提供可重複的宣告；驗證資訊與下載的快取則留在本機。
+
+這份清單只是代表性內容，不是完整清單。隨著工具組成長，新的應用程式設定、dotfiles、整合與 AI 用戶端
+轉接層都可以遵循相同的來源到原生目標模型。
+
+## 權責與隱私界線
+
+儲存庫不會試圖管理應用程式寫入的每一個位元組，而是採用最小但實用的管理範圍：
+
+| 目標檔案 | 儲存庫管理 | 應用程式或使用者管理 |
+| --- | --- | --- |
+| Claude `settings.json` | 由 modify template 合併的持久環境、hook、狀態列與更新頻道設定。 | 模型、努力程度、主題選擇、權限、plugin 啟用狀態、專案狀態與未來新增的鍵。 |
+| Codex `config.toml` | 檔案不存在的電腦所使用的預設值。 | 現有的信任、執行期、marketplace、工作階段與其他混合狀態。`create_` 來源屬性避免整份取代。 |
+| Windows Terminal `settings.json` | 選定的持久值，以及完整的 `actions` 與 `keybindings` 陣列。 | 產生的 profile 與其他未命名設定。被宣告擁有的陣列在套用時會整組取代。 |
+| VS Code 使用者檔案 | 透過作業系統專用包裝器產生的受追蹤設定、keybindings 與 MCP 來源檔案。 | Workspace 儲存資料、驗證資訊、extension 快取與其他執行期資料。 |
+| Claude 使用者 MCP 狀態 | 透過 manifest 與 add-missing 安裝程式提供的非秘密宣告。 | 驗證資訊，以及 `~/.claude.json` 的其餘內容；該檔案也包含應用程式狀態。 |
+
+全域 Git exclude 檔案透過 `core.excludesFile` 連接，保護下列精確的本機範圍：
+
+```text
+**/.claude/settings.local.json
+**/CLAUDE.local.md
+**/AGENTS.override.md
+/.project-continuity/
+```
+
+共用的 `AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` 與其他儲存庫指示仍可追蹤。忽略規則
+只防止意外追蹤，不會把檔案複製到 worktree，也不會把它們加密。
+
+永遠不要提交憑證。MCP 設定包含端點，以及在支援時使用的 prompt placeholder，例如 `${input:figma-api-key}`
+或 `${GITHUB_MCP_TOKEN}`，而不是秘密值本身。請在各用戶端本機完成驗證，並將工作階段、記錄、快取、已安裝的
+plugin 與金鑰排除在 `home/` 之外。
+
+## 日常維護
+
+編輯來源狀態、預覽產生結果，只套用已檢閱的變更，再提交來源變更：
+
+```bash
+chezmoi source-path                                        # 找出已設定的來源
+git -C "$(chezmoi source-path)" rev-parse --show-toplevel  # 必須是此 checkout
+chezmoi diff                                               # 預覽即時目標的變更
+chezmoi apply -v                                           # 套用已檢閱的產生結果
+chezmoi status                                             # 空白表示沒有尚未套用的漂移
+git diff                                                   # 檢閱來源變更
+```
+
+直接編輯 live 目標不具持久性。先執行 `chezmoi source-path <target>` 找到來源；如果目標由應用程式管理或
+只被部分管理，請依照權責表處理，並使用應用程式自己的命令修改那一部分。不要對已經受管理的目標執行
+`chezmoi add`，尤其是 `create_` 或 `modify_` 目標。
+
+從儲存庫根目錄執行 `bash scripts/dotfiles doctor`，可以在不變更目標的情況下回報 chezmoi 來源識別、解析後的
+profile、尚未套用的目標漂移、Claude 共用技能連結健康狀態與必要工具版本。
+
+本儲存庫也能讓程式設計助手自行理解工作方式。根目錄的 [`AGENTS.md`](./AGENTS.md) 告訴 Codex 與 Copilot
+如何找到真實來源、保留應用程式管理的狀態，以及區分編輯、套用、提交與驗證。根目錄的 [`CLAUDE.md`](./CLAUDE.md)
+會為 Claude Code 匯入相同指引。你可以向任何支援的助手描述結果，例如：
+
+- 「我修改了 live 的 `.bashrc`，請幫我把它保留到來源狀態。」
+- 「新增 Claude Code 與 Copilot 共用的規則，並說明 Codex 支援哪些內容。」
+- 「設定 VS Code，顯示差異，然後只套用已檢閱的變更。」
+
+## 驗證與回歸測試涵蓋範圍
+
+Pre-commit hook 會把已暫存的來源產生到暫存目錄，並檢查：
+
+- chezmoi 來源識別與檔名屬性安全性；
+- 技能檔案數量對等性、Claude 共用技能連結與 Codex 主機閘門；
+- Claude 與 Copilot 之間的共用規則本文是否一致；
+- Codex 產生的 `AGENTS.md` 是否沒有 YAML frontmatter；
+- Bash 與 PowerShell 狀態列實作的對等性（任一方變更時）；以及
+- 帶有 `#fragment` 錨點的 Markdown 連結是否指向實際存在的標題。
+
+受保護行為發生變更時，請手動執行下列長期回歸測試：
+
+| 變更 | 測試 |
+| --- | --- |
+| Windows worktree 實作 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-git-worktree-provision.ps1` |
+| macOS worktree 實作 | `bash scripts/tests/test-git-worktree-provision.sh` |
+| 共用 worktree 契約或安全界線 | 執行兩套 worktree 佈建測試。 |
+| 專案連續性生命週期或復原契約 | `bash scripts/tests/test-project-continuity-hook.sh` |
+| AI profile 選擇器、組合、語言預設值或連續性切換 | `bash scripts/tests/test-ai-configuration-profiles.sh` |
+
+Pre-commit hook 維持為快速的來源產生與結構檢查；回歸測試套件則會深入測試一次性儲存庫與跨平台行為。
+
+## 儲存庫結構
+
+```text
+home/                              chezmoi 來源狀態
+  .chezmoidata.yaml                共用規則 glob
+  .chezmoitemplates/               共用本文與作業系統中立資料
+  dot_agents/skills/               可攜式與受主機閘門管理的技能
+  dot_claude/                      Claude Code 檔案與轉接層
+  dot_codex/                       Codex 檔案與 create-once 設定
+  dot_copilot/                     Copilot CLI 檔案、agent 與技能
+  AppData/ · Library/              Windows 與 macOS VS Code 目標
+  dot_bashrc · dot_zshrc.tmpl      Shell 啟動檔
+  dot_gitconfig.tmpl               Git 身分、aliases 與全域排除連結
+  dot_config/git/ignore            個人 AI 與連續性排除規則
+
+scripts/bootstrap/                 手動執行的新電腦設定
+scripts/install/                   Claude MCP 安裝程式
+scripts/manifests/                 MCP 與 VS Code extension 宣告
+scripts/diagnostics/               doctor 與 Claude 設定報告
+scripts/tests/                     profile、連續性與 worktree 測試套件
+scripts/git-hooks/                 pre-commit 與 Markdown 錨點驗證
+docs/                              設定、工作流程、自訂與 ADR 指南
+```
 
 ## 接下來要去哪裡
 
 | 我想要…… | 請閱讀 |
 | --- | --- |
-| 設定電腦，或確認哪些應用程式需要自行安裝 | [docs/setup.md](./docs/setup.md) |
+| 設定電腦，或確認哪些內容必須另外安裝 | [docs/setup.md](./docs/setup.md) |
 | 新增、修改或移除一般受管理檔案 | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
-| 新增或修改 AI 指示、技能、agent、prompt、MCP server 或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
-| 了解被忽略的本機檔案如何進入新的 Git worktree | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
-| 了解本儲存庫為什麼採用目前的結構 | [docs/decisions/README.md](./docs/decisions/README.md) |
-| 在刪減規則前了解它存在的原因 | [docs/rule-rationale.md](./docs/rule-rationale.md) |
-| 讓程式設計助手在本儲存庫中工作 | [AGENTS.md](./AGENTS.md) |
+| 新增 AI 指示、技能、agent、prompt、MCP 伺服器或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
+| 在 Git worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| 了解儲存庫為什麼採用目前的結構 | [docs/decisions/README.md](./docs/decisions/README.md) |
+| 移除規則前，先了解它為什麼存在 | [docs/rule-rationale.md](./docs/rule-rationale.md) |
+| 讓程式設計助手在本儲存庫中安全工作 | [AGENTS.md](./AGENTS.md) |
 
-這份 README 是給人閱讀的繁體中文入口；由工具載入的 `AGENTS.md`、`CLAUDE.md`、技能、
-指示與連續性狀態仍維持英文。詳細技術指南目前也維持英文，因為它們同時是維護流程與
-AI 工作階段會參考的來源文件。
-
-`AGENTS.md` 是這裡唯一主要供工具讀取、而不是供人閱讀的檔案：Codex 與 Copilot CLI 會自動載入
-它，根目錄的 `CLAUDE.md` 會匯入它，讓 Claude Code 也取得相同限制。它刻意保持精簡，
-因為每個 AI 工作階段都會佔用 context；操作流程則放在各自的任務指南中。
+設定探索路徑、frontmatter、hook payload 與 worktree 行為都可能隨上游版本更新。修改用戶端專用路徑或鍵值前，
+請先對照最新版的 [chezmoi 文件](https://www.chezmoi.io/reference/source-state-attributes/)、
+[Claude Code 文件](https://code.claude.com/docs/en/overview)、
+[Codex 文件](https://learn.chatgpt.com/docs/agent-configuration/agents-md)，以及
+[VS Code agent 自訂文件](https://code.visualstudio.com/docs/agent-customization/overview)確認版本敏感的細節。

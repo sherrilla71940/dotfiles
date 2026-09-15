@@ -19,8 +19,8 @@ Git 排除私有狀態，pre-commit 則檢查這條界線。
 
 | 問題 | 儲存庫的解法 |
 | --- | --- |
-| AI 用戶端的指引會各自飄移 | 共用 AI 指引只保留一份，專屬內容留在各用戶端的原生來源，再由 chezmoi 產生各用戶端需要的格式，並在 commit 前檢查 parity。 |
-| 應用程式與 Git 都把整份檔案當成唯一來源時，彼此的變更可能互相抹掉 | 管理 key，不管理整份檔案：深層合併儲存庫負責的 key，只有在檔案不存在時才建立預設值，其餘應用程式偏好留在本機。 |
+| Claude Code、Codex 與 GitHub Copilot 使用不同的指示檔案與套用範圍規則。更新一個 AI 編碼用戶端的共用工作指引後，還得手動在其他用戶端維持相同內容，否則就會逐漸不一致。 | 共用 AI 指引只保留一份，專屬內容留在各用戶端的原生來源，再由 chezmoi 產生各用戶端需要的格式，並在 commit 前檢查 parity。 |
+| 應用程式與這個儲存庫都會寫入同一批設定檔。Claude 的 `/config` 選擇、Windows Terminal 設定檔與 Codex 信任狀態，可能在下一次 `chezmoi apply` 被覆蓋；反過來，把實際檔案整份複製回 Git，也會把機器專屬的應用程式狀態帶進來源。 | 管理 key，不管理整份檔案：深層合併儲存庫負責的 key，只有在檔案不存在時才建立預設值，其餘應用程式偏好留在本機。 |
 | 工作階段會遺失脈絡，平行 worktree 需要隔離 | Git 負責程式碼與分支狀態；每個 worktree 用一份由 Git 忽略的連續性檔案記錄交接脈絡，每個任務各自擁有目錄與分支。 |
 | 同一個設定在每個作業系統上的路徑不同 | 由同一份來源依條件產生各作業系統的目標，只寫出 Windows 或 macOS 會用到的路徑。 |
 | 還原 checkout 後仍缺少支援工具 | 用 bootstrap 腳本、manifest、診斷工具，以及應用程式安裝後的第二輪處理，補齊支援工具與整合。 |
@@ -170,6 +170,9 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 - 開始另一個任務前，未完成的狀態要先停放到 `.project-continuity/parked/`，這樣一份交接紀錄才不會
   覆蓋掉另一份。
 
+例如，Codex 工作階段到達 token 上限而結束後，請在同一個 worktree 開啟新的 Codex 工作階段，輸入
+`continue from project continuity`。Codex 會讀取 `.project-continuity/state.md`，從記錄的下一步繼續。
+
 把 `ai_continuity` 關掉後，永遠載入的連續性指引會移除，共用的生命週期輔助程式則變成空操作。Hook
 項目仍然保留註冊，所以獨立的 Claude worktree 啟動檢查照常運作，Codex 也不需要在切換後重新信任 hook。
 
@@ -178,7 +181,8 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 連續性的範圍是目錄，所以要同時進行多個任務，靠的就是隔離。`worktree-task-workflow` 技能會把一個
 任務放進專屬的 worktree，從頭帶到尾。
 
-**圖：一個任務的完整生命週期，包含 agent 自動驗證與使用者人工測試關卡。** 工作區路徑與移除步驟是 Claude adapter 專用；Codex 的差異列在下面。
+**圖：一個任務的生命週期，包含素材檢閱、worktree 佈建、agent 自動驗證與使用者人工測試關卡。** 工作區路徑與
+移除步驟是 Claude adapter 專用；Codex 的差異寫在下方連結的指南裡。
 
 ```mermaid
 flowchart TD
@@ -235,24 +239,12 @@ flowchart TD
     O -->|"通過"| Q
 ```
 
-上圖只是骨架。真正讓這套流程比在原地切分支更值得用的，有三點：
+這套流程讓每個任務都有自己的目錄、分支與連續性檔案。工作階段因為 token 上限而結束時，下一個用戶端可以
+進入同一路徑，讀取記錄的目標、決策、素材、阻礙與下一步，不需要手動整理交接文件。啟用 agent 驗證時，流程
+會執行自動檢查，UI 變更會跑真實瀏覽器測試；只有你親自測試並回報後，流程才會進入發佈階段。
 
-- **每個任務都有自己的目錄、分支與連續性檔案。** 機器撐得住幾個就開幾個；任務之間不共用 index、
-  `HEAD`，也不共用交接紀錄。
-- **工作階段在任務中途結束，不需要手動整理交接文件。** 連續性 checkpoint 在該 worktree 裡，而且每一份
-  素材都會記下來——路徑是因為它可能放在 worktree 外面，URL 則是因為之後的工作階段得重新抓一次——新的
-  工作階段進到同一個路徑就能讀取記錄的下一步接續，包括上一個工作階段是被用量上限中斷的情況。
-- **自動化驗證會實際檢查應用程式。** 啟用 agent 驗證後，流程會先執行圖中的自動檢查；如果變更包含使用者
-  介面，agent 會透過瀏覽器實際操作。瀏覽器 driver 做不到的互動會交給你，不會直接宣稱通過。
-- **人工測試關卡是硬性的。** 在你親自測過並回報之前，不會有任何 commit、push 或 request。計畫被
-  核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。
-
-至於過程中每一步實際做了什麼——素材怎麼讀、分支名稱怎麼推導、佈建被靜靜略過時怎麼抓出來、驗證
-怎麼實際操作瀏覽器，以及清理為什麼絕不刪分支——都寫在
+素材處理、分支命名、缺少檔案時的 manifest、瀏覽器 driver 的限制，以及保留分支的清理規則，都寫在
 [worktree 佈建指南](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)。
-
-這些特性是可以疊加的。工作流程本身完全不知道有其他任務存在，所以能同時跑幾個，取決於機器和你自己
-的注意力。
 
 **圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
 
@@ -326,15 +318,14 @@ worktree 不會帶任何被忽略的檔案，所以由 `worktree-manifest` 技�
 以上只是代表性清單。新的應用程式、dotfiles、整合與 AI 用戶端轉接層，都沿用同一套「來源產生為原生
 目標」的模式。
 
-Claude 狀態列值得特別提一下，因為它回答的正是「工作階段還剩多少」這個問題：
+開發體驗層包含一個跨平台的 Claude 狀態列：
 
 ![狀態列的三行：模型與努力程度加上工作階段名稱；工作目錄與 Git 分支加上變更檔案數；以及已使用的
 context 比例與兩個用量視窗和各自的重置時間。](./docs/images/statusline.png)
 
-它會顯示模型與努力程度、有設定時的工作階段名稱、工作目錄、Git 分支與 ahead／behind 以及 staged、
-modified、untracked 的檔案數、已使用的 context 比例，還有**五小時與七天用量視窗以及各自的重置
-時間**。Bash 與 PowerShell 兩份實作由 pre-commit 對等檢查維持一致，而且兩者都會計算中文與 emoji
-的顯示寬度，終端機變窄時版面才收得乾淨。
+狀態列會顯示模型與努力程度、工作階段名稱、工作目錄、Git 分支與檔案狀態、context 使用量，以及**五小時與
+七天用量視窗和各自的重置時間**。Bash 與 PowerShell 兩份實作由 pre-commit 對等檢查，並計算中文與 emoji 的
+顯示寬度，讓版面在狹窄的終端機中仍然容易閱讀。
 
 ## 權責界線
 
@@ -454,8 +445,7 @@ docs/                              設定、工作流程、自訂與 ADR 指南
 | 新增、修改或移除一般受管理的檔案，或查日常命令 | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | 新增 AI 指示、技能、agent、prompt、MCP 伺服器或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | 查某一項自訂內容是哪個用戶端介面會讀到 | [支援對照表](./docs/customization-support.md#what-the-support-table-answers) |
-| 執行隔離任務，或了解工作流程每一步做了什麼 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step) |
-| 在 worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| 執行隔離任務，或在 worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
 | 了解儲存庫為什麼採用這種結構 | [docs/decisions/README.md](./docs/decisions/README.md) |
 | 在移除某條規則前先了解它為什麼存在 | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | 讓編碼助理安全地在這個儲存庫裡工作 | [AGENTS.md](./AGENTS.md) |

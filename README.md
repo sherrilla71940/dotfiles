@@ -21,8 +21,8 @@ pre-commit checks enforce that boundary.
 
 | The problem | How this repository answers it |
 | --- | --- |
-| AI-client guidance drifts across tools | Keep reusable AI guidance once, keep client-exclusive content in native client sources, and let chezmoi render each client's format with a pre-commit parity check. |
-| Application changes and Git changes can erase each other when both treat an entire file as authoritative | Claim keys rather than files: deep-merge repository-owned keys, create defaults only when files are absent, and leave application-owned preferences local. |
+| Claude Code, Codex, and GitHub Copilot use different instruction files and scoping rules. Updating shared working instructions for one AI coding client means manually keeping equivalent guidance in the other clients, or they become stale. | Keep reusable AI instructions once, keep client-exclusive content in native client sources, and let chezmoi render each client's format with a pre-commit parity check. |
+| The application and this repository both write the same settings files. Claude's `/config` choices, Windows Terminal profiles, and Codex trust state can be overwritten by `chezmoi apply`—or copied back into Git as machine-specific application state. | Claim keys rather than files: deep-merge repository-owned keys, create defaults only when files are absent, and leave application-owned preferences local. |
 | Sessions lose context, and parallel worktrees need isolation | Keep Git authoritative for code and branch state; use one ignored continuity file per worktree for handoff context, and give each task its own directory and branch. |
 | The same setting lives at a different path on each operating system | Render each OS-specific target conditionally from the same source, so Windows and macOS receive only the paths they use. |
 | A restored checkout still lacks supporting tools | Use bootstrap scripts, manifests, diagnostics, and a second pass after applications are installed to restore supporting tools and integrations. |
@@ -186,6 +186,10 @@ Continuity belongs to one physical working tree, and each tree holds at most one
 - Unfinished state is parked in `.project-continuity/parked/` before a different task starts, so
   one handoff never overwrites another.
 
+For example, after a Codex session reaches its token limit, open a new Codex session in the same
+worktree and type `continue from project continuity`. Codex reads `.project-continuity/state.md`
+and resumes from the recorded next action.
+
 Turning `ai_continuity` off removes the always-loaded guidance and renders the shared lifecycle
 helper as a no-op. The hook entries stay registered, so the independent Claude worktree launch
 check keeps working and Codex needs no new hook-trust decision after a toggle.
@@ -196,9 +200,9 @@ Continuity is scoped to a directory, so isolation is what lets several tasks run
 `worktree-task-workflow` skill drives one task through its whole lifecycle in a worktree of its
 own.
 
-**Figure: one task's lifecycle, including automated agent verification and the user manual-test
-gate.** The worktree path and the removal step are Claude-specific; the Codex differences are
-noted after the properties below.
+**Figure: one task's lifecycle, including material review, worktree provisioning, automated agent
+verification, and the user manual-test gate.** The worktree path and removal step are
+Claude-specific; the Codex differences are in the linked guide.
 
 ```mermaid
 flowchart TD
@@ -222,7 +226,7 @@ flowchart TD
         G["Create an isolated worktree<br/>from the selected starting branch"]
         H{"Are ignored local files<br/>needed to run the project?"}
         I["Review missing files<br/>exclude secrets and get approval"]
-        J["Enter the worktree and verify<br/>the directory, branch, and starting point"]
+        J["Enter the worktree and verify<br/>the directory, branch, and starting commit"]
         K["Record the task context<br/>objective, decisions, materials, and next action"]
         L["Implement the change"]
         M{"Run automated agent verification?"}
@@ -252,34 +256,18 @@ flowchart TD
     end
 
     F --> G
-    O -->|"passes"| Q
+    O -->|"Passes"| Q
 ```
 
-The diagram is only the skeleton. Three properties make the workflow worth invoking rather than
-switching branches in place:
+The workflow gives every task its own directory, branch, and continuity file. If a session ends
+because it reaches its token limit, the next client can start in the same path and read the
+recorded objective, decisions, materials, blockers, and next action without a manual handoff
+document. When agent verification is enabled, the workflow runs automated checks and, for UI
+changes, drives a real browser test; only your manual test opens the publishing gate.
 
-- **Every task gets its own directory, branch, and continuity file.** Run as many at once as the
-  machine allows; no two tasks share an index, a `HEAD`, or a handoff record.
-- **A session ending mid-task requires no manual handoff document.** Continuity is checkpointed
-  inside the worktree and records every material — a path because it may live outside the worktree,
-  a URL because a later session has to fetch it again — so a new session enters the same path and
-  resumes from the recorded next action, including after the usage limit that ended the previous
-  one.
-- **Automated verification includes the real application.** When agent verification is enabled, the
-  workflow runs the automated checks shown in the diagram and drives a real browser for changes
-  with a user interface. If the browser driver cannot perform an interaction, the workflow hands
-  that interaction to you instead of claiming that it passed.
-- **The manual-test gate is hard.** No commit, push, or request happens until you report that you
-  tested it yourself. An approved plan, a reviewed diff, and green automated checks do not open
-  that gate.
-
-What each step does on the way there — how materials are read, how the branch name is derived, how
-a silent provisioning skip is caught, how verification drives a real browser, and why cleanup never
-deletes a branch — is in [the worktree provisioning
-guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step).
-
-Those properties compose. Nothing in the workflow is aware of any other task, so what limits how
-many run at once is the machine and your own attention.
+The linked [worktree provisioning guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)
+covers material handling, branch naming, missing-file manifests, browser-driver limits, and
+branch-preserving cleanup.
 
 **Figure: Repository A runs parallel worktrees, while one task crosses clients through continuity
 state.**
@@ -360,18 +348,16 @@ machinery. Copilot adds repository-architecture, frontend-performance, and secur
 This list is representative. New applications, dotfiles, integrations, and AI-client adapters
 follow the same source-to-native-target model.
 
-The Claude status line deserves a specific mention, because it answers the question that ends
-sessions:
+The developer-experience layer includes a cross-platform Claude status line:
 
 ![Three status-line rows: model and effort level with the session name; the working directory and
 Git branch with a dirty-file count; and the context used alongside both rate-limit windows with
 their reset times.](./docs/images/statusline.png)
 
-It renders the model and effort level, the session name when one is set, the working directory,
-the Git branch with ahead/behind and staged, modified, and untracked counts, the context window
-used, and the **five-hour and seven-day rate-limit windows with their reset times**. Two
-implementations, Bash and PowerShell, are kept in step by a pre-commit parity check, and both
-measure CJK and emoji width so the layout collapses cleanly on a narrow terminal.
+The status line shows the model and effort level, session name, working directory, Git branch and
+file status, context usage, and the **five-hour and seven-day rate-limit windows with their reset
+times**. Bash and PowerShell implementations are parity-checked and measure CJK and emoji width,
+so the layout remains readable on narrow terminals.
 
 ## Ownership boundaries
 
@@ -500,8 +486,7 @@ docs/                              setup, workflow, customization, and ADR guide
 | Add, change, or remove a general managed file, or run the daily commands | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | Add an AI instruction, skill, agent, prompt, MCP server, or plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | Find out which client surface reads a given customization | [the support table](./docs/customization-support.md#what-the-support-table-answers) |
-| Run an isolated task, or see what the workflow does at each step | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step) |
-| Provision ignored local files in a worktree | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| Run an isolated task or provision ignored local files in a worktree | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
 | Understand why the repository uses this structure | [docs/decisions/README.md](./docs/decisions/README.md) |
 | Understand why a rule exists before removing it | [docs/rule-rationale.md](./docs/rule-rationale.md) |
 | Let a coding assistant work safely in this repository | [AGENTS.md](./AGENTS.md) |

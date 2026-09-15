@@ -2,121 +2,37 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> Git-tracked dotfiles, AI-client integrations, and development workflows for Claude Code, Codex,
-> GitHub Copilot, and more.
->
-> **TL;DR:** A personal, cross-platform developer environment managed with [chezmoi](https://www.chezmoi.io).
-> One Git-tracked source renders into the native
-> files that Claude Code, Codex, GitHub Copilot, VS Code, the shells, Git, and Windows Terminal
-> actually read. It keeps one body per shared rule instead of three drifting copies, preserves
-> per-worktree task state across sessions so parallel tasks stay isolated, and never overwrites a
-> setting the application owns.
+> **TL;DR:** A personal, cross-platform developer environment for agentic workflows, managed with
+> [chezmoi](https://www.chezmoi.io/). Git tracks dotfiles and AI-client integrations for Claude Code,
+> Codex, and GitHub Copilot, alongside developer settings for VS Code, Zsh, Git, Windows Terminal,
+> and more. One Git-tracked source tree renders the native files each tool actually reads. It keeps
+> one body per shared rule instead of three drifting copies, preserves per-worktree task state across
+> sessions so parallel tasks stay isolated, and leaves application-owned settings local.
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
 ```
 
-Tracking dotfiles in Git is the easy part. What is worth reading about is where this repository
-**stops**, and what holds it there: each boundary below is enforced by a mechanism — a chezmoi
-merge, a Git exclude, a check that fails the commit — rather than by remembering to be careful.
+Git tracking is only the foundation. The important boundary is what this repository owns and what
+it leaves to each application; chezmoi merges selected keys, Git excludes private state, and
+pre-commit checks enforce that boundary.
 
 ## Why this exists
 
 | The problem | How this repository answers it |
 | --- | --- |
-| [Three AI clients that agree on nothing](#three-ai-clients-that-agree-on-nothing). Different files, formats, and discovery rules, so guidance updated in one leaves the others stale. | One body per rule, composed conditionally by chezmoi templates — the machine's personal-or-company context layer, whether the session-handoff instructions are included, and the operating system — then wrapped in each client's own frontmatter: `paths:` for Claude, `applyTo:` for Copilot, neither for Codex. A pre-commit check compares the rendered Claude and Copilot bodies byte for byte. |
-| [Applications own part of their own configuration](#applications-own-part-of-their-own-configuration). `/config`, Windows Terminal profiles, and Codex trust state all write to files you also want tracked. | Claim keys, not files. The repository owns Claude's hooks, status line, environment, and update channel; the model, effort level, theme, and permissions that `/config` writes stay yours. A modify template deep-merges only the owned keys, so every other key in `settings.json` survives untouched. |
-| [A session can end in the middle of a task](#a-session-can-end-in-the-middle-of-a-task). Usage limits and compaction lose the objective, the decisions, and the next action. | One Git-ignored continuity file per working tree records the objective, decisions, blockers, and next action. Isolated worktrees give each task its own directory, branch, and state, so several run at once and any new session resumes one from where it stopped. |
-| [The same setting lives somewhere different on every machine](#the-same-setting-lives-somewhere-different-on-every-machine). VS Code's user directory, the shell startup file, and Windows Terminal all sit at OS-specific paths. | One body per file, wrapped once per operating system. `home/.chezmoiignore` renders only the branch that matches the machine, so Windows gets the `AppData` tree and macOS the `Library` one from the same source, and the unused tree is never written rather than written and ignored. |
-| [Restored dotfiles are not a working machine](#restored-dotfiles-are-not-a-working-machine). Prerequisites, validation hooks, extensions, plugins, and MCP servers are all still missing. | Platform bootstrap scripts link the checkout, enable the validation hook, install prerequisites, and apply the VS Code extension and Claude MCP manifests. Run them again once the client applications exist, so the plugin, extension, and MCP steps that need a working CLI can finish. |
+| AI-client guidance drifts across tools | Keep reusable AI guidance once, keep client-exclusive content in native client sources, and let chezmoi render each client's format with a pre-commit parity check. |
+| Application changes and Git changes can erase each other when both treat an entire file as authoritative | Claim keys rather than files: deep-merge repository-owned keys, create defaults only when files are absent, and leave application-owned preferences local. |
+| Sessions lose context, and parallel worktrees need isolation | Keep Git authoritative for code and branch state; use one ignored continuity file per worktree for handoff context, and give each task its own directory and branch. |
+| The same setting lives at a different path on each operating system | Render each OS-specific target conditionally from the same source, so Windows and macOS receive only the paths they use. |
+| A restored checkout still lacks supporting tools | Use bootstrap scripts, manifests, diagnostics, and a second pass after applications are installed to restore supporting tools and integrations. |
 
-### Three AI clients that agree on nothing
+## Set up a machine
 
-Claude Code reads `~/.claude/CLAUDE.md`. Codex reads `~/.codex/AGENTS.md` and renders YAML
-frontmatter as visible text. Copilot reads `*.instructions.md` files and scopes them with
-`applyTo`. Update a working agreement in one client and the other two go stale.
-
-This repository keeps each shared rule body once, under `home/.chezmoitemplates/`, and renders it
-into every client's native file through a thin wrapper. A rule that names one client's machinery
-stays in that client's file; it is never paraphrased into a "tool-neutral" twin, because a
-paraphrase living beside the original is the exact failure the structure prevents. Only the
-wrapper differs between clients: the frontmatter that scopes the body, and nothing else.
-
-### Applications own part of their own configuration
-
-Claude Code's `/config` command writes the model, effort level, theme, and permissions into
-`~/.claude/settings.json`. Windows Terminal regenerates its own profiles. Codex writes trust and
-marketplace state into `config.toml`. Tracking any of those files whole would overwrite the
-application's choices on every apply, or force every in-app change back into the source.
-
-So the repository claims **keys, not files**, and picks a different chezmoi mechanism per target:
-a modify template where both sides write the same file, a create-once source where the application
-should own the file after its first run, and a whole-array claim where merging half an array would
-be meaningless. [Ownership boundaries](#ownership-boundaries) lists exactly who owns what.
-
-### A session can end in the middle of a task
-
-Usage limits, compaction, or a closed terminal end an AI session with no chance to hand off. Git
-knows what changed. Git does not know the objective, the decisions already made, or the next
-action.
-
-Project continuity records those in `.project-continuity/state.md`: one file per working tree,
-ignored by Git, always written in English so a resuming session never has to translate before it
-can work. Git stays authoritative for branch, `HEAD`, and working-tree reality; continuity
-supplies only the context Git cannot hold.
-
-### The same setting lives somewhere different on every machine
-
-VS Code keeps user settings under `AppData` on Windows and `Library/Application Support` on macOS.
-Bash reads `.bashrc` and zsh reads `.zshrc`. Windows Terminal exists on one platform only, and the
-Git aliases that drive worktree provisioning call a PowerShell script on Windows and a Bash script
-on macOS.
-
-Copying files machine by machine lets each one drift on its own schedule. Here each body is
-written once and wrapped per operating system. `home/.chezmoiignore` renders only the branch that
-matches the machine, so the unused tree is never written at all.
-
-### Restored dotfiles are not a working machine
-
-A fresh checkout still lacks command-line prerequisites, validation hooks, editor extensions,
-client plugins, and MCP server declarations, and some integrations cannot run until their client
-application is installed and signed in.
-
-The platform bootstrap scripts close that gap, and they are designed to be run twice: once to
-connect the checkout and install prerequisites, and again after the client applications exist so
-the deferred plugin, extension, and MCP steps can complete.
-
-## Get started
-
-This is a personal configuration repository. Read [the setup guide](./docs/setup.md) before
-applying it, especially on a machine that already has shell, editor, or AI-client settings.
-
-| Situation | Start here |
-| --- | --- |
-| Nothing to preserve | [Empty machine](./docs/setup.md#empty-machine) — prerequisites and what the one-liner below does |
-| Existing configuration | [Existing configuration](./docs/setup.md#existing-configuration) — initialize, review `chezmoi diff`, adopt, then apply |
-| Full machine build | [New machine, in order](./docs/setup.md#new-machine-in-order) — configuration, applications, bootstrap, validation |
-
-On a machine with nothing to preserve, the whole configuration step is one command:
-
-```bash
-sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
-```
-
-That downloads and runs a remote installer, so review the URL and the machine's script policy
-before running it, and replace `sherrilla71940` with your own fork. This line is only for a
-machine with nothing to lose.
-
-Applying configuration is only one step of a machine build. The complete sequence also installs
-and authenticates the applications, runs the platform bootstrap, and enables repository
-validation. Windows additionally needs
-[symbolic-link creation](./docs/setup.md#enable-windows-symlink-creation) unless the setup uses a
-directory junction.
-
-The development checkout lives at `~/dotfiles`, and the bootstrap connects chezmoi's default
-source location to it with a macOS symlink or a Windows directory junction. Scripts, decision
-records, and source state therefore stay in one Git working tree; see
-[ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md) for the trade-off.
+Use the [setup guide](./docs/setup.md) for both fresh machines and existing installations. It
+covers preserving existing configuration, application installation, bootstrap, machine-local
+profiles, and validation. On a machine with existing settings, review `chezmoi diff` before
+applying anything.
 
 ## Architecture: one source, native outputs
 
@@ -133,35 +49,41 @@ rendering, and prefixes such as `create_`, `modify_`, and `symlink_` control how
 target. Read [the chezmoi workflow](./docs/chezmoi-workflow.md) before adding or renaming a
 source file.
 
+Claude Code, Codex, and GitHub Copilot discover instructions through different native files and
+scope rules. The architecture below shows how chezmoi turns reusable and client-exclusive sources
+into each client's native output.
+
 **Figure: how each kind of tracked source reaches its live target.** Solid arrows mean "renders
-into". Dotted arrows mean "reads the same file from another location", which is why no content is
-duplicated to reach a second host.
+into". Dotted arrows mean "links to or discovers an existing target", so content is not duplicated
+to reach a second host.
 
 ```mermaid
 flowchart LR
     subgraph source["Git-tracked source — home/"]
-        core["shared core<br/>personal and company context layers<br/>continuity instructions"]
-        rules["shared scoped-rule bodies"]
-        skills["portable and host-gated skills"]
-        native["client-native files, one set per client<br/>agents, commands, MCP, settings"]
-        vscodeBody["shared VS Code bodies"]
-        platform["shell, Git, Terminal,<br/>and helper sources"]
+        core["Shared instruction bodies<br/>Personal or company context<br/>Optional continuity instructions"]
+        rules["Shared path-scoped rules"]
+        skills["Portable and host-gated skills"]
+        claudeNative["Claude-only sources<br/>Skills, agents, commands, MCP, settings"]
+        codexNative["Codex-only sources<br/>Agents, MCP, create-once settings"]
+        copilotNative["Copilot-only sources<br/>Instructions, agents, skills, MCP, settings"]
+        vscodeBody["Shared VS Code bodies"]
+        platform["Shell, Git, Terminal<br/>and helper sources"]
     end
 
     subgraph render["Chezmoi composition"]
-        instructionAdapters["native instruction wrappers<br/>machine-local selectors choose<br/>the context layer and continuity"]
-        ruleAdapters["scoped-rule wrappers<br/>Claude: paths<br/>Copilot: applyTo"]
-        skillDelivery["skill delivery<br/>real files, symlinks, host gates"]
-        osAdapters["Windows/macOS<br/>VS Code wrappers"]
+        instructionAdapters["Render each client's native instructions<br/>Select context and continuity per machine"]
+        ruleAdapters["Add each client's scope metadata<br/>Claude uses paths<br/>Copilot uses applyTo"]
+        skillDelivery["Deliver skills with files<br/>symlinks, and host gates"]
+        osAdapters["Render the Windows or macOS<br/>VS Code profile"]
     end
 
     subgraph targets["Live targets"]
-        claude["~/.claude<br/>Claude Code"]
-        codex["~/.codex<br/>Codex"]
-        copilot["~/.copilot<br/>Copilot CLI"]
-        agents["~/.agents/skills<br/>shared skill target"]
-        vscode["VS Code user profile"]
-        other["shells, Git, Windows Terminal,<br/>shared helpers"]
+        claude["Claude Code<br/>Native files under ~/.claude"]
+        codex["Codex<br/>Native files under ~/.codex"]
+        copilot["GitHub Copilot<br/>CLI and VS Code"]
+        agents["Shared skill directory<br/>~/.agents/skills"]
+        vscode["VS Code user profile<br/>Windows or macOS"]
+        other["Shells, Git, Windows Terminal<br/>and shared helpers"]
     end
 
     core --> instructionAdapters
@@ -175,11 +97,11 @@ flowchart LR
 
     skills --> skillDelivery
     skillDelivery --> agents
-    skillDelivery -.->|"symlinked into"| claude
+    agents -.->|"symlinked into"| claude
 
-    native --> claude
-    native --> codex
-    native --> copilot
+    claudeNative --> claude
+    codexNative --> codex
+    copilotNative --> copilot
 
     vscodeBody --> osAdapters --> vscode
     platform --> other
@@ -191,7 +113,7 @@ flowchart LR
 
 Three details explain most of the structure:
 
-- **The shared core is inlined, not imported.** Each client's native instruction file receives the
+- **Shared instructions are inlined, not imported.** Each client's native instruction file receives the
   same body. Codex receives the always-on core only, because Codex supports neither imports nor
   path-scoped instructions.
 - **A portable skill is one real file.** It lives under `home/dot_agents/skills/` and renders to
@@ -274,55 +196,58 @@ Continuity is scoped to a directory, so isolation is what lets several tasks run
 `worktree-task-workflow` skill drives one task through its whole lifecycle in a worktree of its
 own.
 
-**Figure: one task's lifecycle, Claude adapter.** The worktree path and the removal step are
-Claude-specific; the Codex differences are noted after the properties below.
+**Figure: one task's lifecycle, including automated agent verification and the user manual-test
+gate.** The worktree path and the removal step are Claude-specific; the Codex differences are
+noted after the properties below.
 
 ```mermaid
 flowchart TD
-    subgraph resolve["Before any Git command"]
-        A["resolve the invocation<br/>base · task or inference · materials · flags"]
-        B["read every material first<br/>document skills · text · images<br/>web fetch · design integration"]
-        C{"task supplied?"}
-        D["infer one task<br/>in the materials' language"]
-        E["cross-check the task<br/>against the materials"]
-        F["echo the resolved plan<br/>task · branch type/slug/suffix · worktree path · flags"]
+    subgraph resolve["Before creating anything"]
+        A["Confirm the task request<br/>starting branch, task, materials, and options"]
+        B["Read every supplied material<br/>before creating a worktree"]
+        C{"Was a task supplied?"}
+        D["Derive one task<br/>from the supplied materials"]
+        E["Check the task against<br/>the supplied materials"]
+        F["Show the plan before proceeding<br/>task, branch, worktree, and options"]
+        Z["Stop and ask for a task<br/>or ask to infer one"]
         A --> B --> C
-        C -->|"no, inference requested"| D
-        C -->|"yes"| E
+        C -->|"No, infer from materials"| D
+        C -->|"Yes"| E
+        C -->|"No, do not infer"| Z
         D --> F
         E --> F
     end
 
-    subgraph isolate["In the task worktree"]
-        G["git wt-add from the remote base<br/>into .claude/worktrees/slug"]
-        H{"ignored files<br/>needed to run?"}
-        I["worktree-manifest skill<br/>propose patterns · exclude secrets<br/>get approval · ask where it lands"]
-        J["enter and verify<br/>root · branch · base commit"]
-        K["start project-continuity<br/>objective · decisions · materials"]
-        L["implement"]
-        M{"agent-test<br/>optional automated checks"}
-        N["typecheck · lint<br/>focused tests · build"]
-        N2["drive the real UI in a browser<br/>hand off the clicks a driver cannot make<br/>or a runtime check where there is no UI"]
-        N3["start the app · request one real route<br/>an error page is a failure, not a pass"]
-        O{{"manual test gate<br/>the user runs it"}}
-        P["diagnose · fix<br/>checkpoint continuity"]
+    subgraph isolate["In the isolated worktree"]
+        G["Create an isolated worktree<br/>from the selected starting branch"]
+        H{"Are ignored local files<br/>needed to run the project?"}
+        I["Review missing files<br/>exclude secrets and get approval"]
+        J["Enter the worktree and verify<br/>the directory, branch, and starting point"]
+        K["Record the task context<br/>objective, decisions, materials, and next action"]
+        L["Implement the change"]
+        M{"Run automated agent verification?"}
+        N["Run automated checks<br/>typecheck, lint, focused tests, and build"]
+        N2["For UI changes, when enabled<br/>the agent automatically runs a real browser test"]
+        N3["Verify the running application<br/>with a real route or runtime check"]
+        O{{"You run the manual test<br/>before publishing"}}
+        P["Diagnose the failure, fix it,<br/>and run verification again"]
         G --> H
-        H -->|"manifest missing"| I
+        H -->|"Yes, files are missing"| I
         I --> J
-        H -->|"provisioned, or none needed"| J
+        H -->|"No, or already provisioned"| J
         J --> K --> L --> M
-        M -->|"true"| N
+        M -->|"Yes"| N
         N --> N2 --> N3
-        M -->|"false"| N3
+        M -->|"No"| N3
         N3 --> O
-        O -->|"fails"| P
-        P --> O
+        O -->|"Fails"| P
+        P --> M
     end
 
-    subgraph publish["After the gate opens"]
-        Q["git-commit-action<br/>mode · group · lang from the AI profile"]
-        R["detect the forge · push<br/>open the pull or merge request"]
-        S["remove the worktree<br/>branch and request stay"]
+    subgraph publish["After you approve the result"]
+        Q["Create the commit<br/>using the active profile"]
+        R["Push the branch<br/>and open a pull or merge request"]
+        S["Remove the worktree when appropriate<br/>keep the branch and request"]
         Q --> R --> S
     end
 
@@ -335,11 +260,15 @@ switching branches in place:
 
 - **Every task gets its own directory, branch, and continuity file.** Run as many at once as the
   machine allows; no two tasks share an index, a `HEAD`, or a handoff record.
-- **A session ending mid-task costs almost nothing.** Continuity is checkpointed inside the
-  worktree and records every material — a path because it may live outside the worktree, a URL
-  because a later session has to fetch it again — so a new session enters the same path and
+- **A session ending mid-task requires no manual handoff document.** Continuity is checkpointed
+  inside the worktree and records every material — a path because it may live outside the worktree,
+  a URL because a later session has to fetch it again — so a new session enters the same path and
   resumes from the recorded next action, including after the usage limit that ended the previous
   one.
+- **Automated verification includes the real application.** When agent verification is enabled, the
+  workflow runs the automated checks shown in the diagram and drives a real browser for changes
+  with a user interface. If the browser driver cannot perform an interaction, the workflow hands
+  that interaction to you instead of claiming that it passed.
 - **The manual-test gate is hard.** No commit, push, or request happens until you report that you
   tested it yourself. An approved plan, a reviewed diff, and green automated checks do not open
   that gate.
@@ -352,53 +281,51 @@ guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)
 Those properties compose. Nothing in the workflow is aware of any other task, so what limits how
 many run at once is the machine and your own attention.
 
-**Figure: several tasks at once, across worktrees and repositories.**
+**Figure: Repository A runs parallel worktrees, while one task crosses clients through continuity
+state.**
 
 ```mermaid
-flowchart TB
-    subgraph live["Sessions — disposable"]
-        s1["Claude session"]
-        s2["Codex session"]
-        s3["Claude session"]
+flowchart LR
+    subgraph taskA["Repository A — Worktree 1: Cross-client handoff"]
+        claudeA["Claude Code starts Task A"]
+        workA["Repository A, Worktree 1<br/>Task branch and continuity state"]
+        codexA["Codex resumes Task A<br/>from the same worktree"]
+        claudeA -->|"Checkpoints Task A"| workA
+        workA -->|"The AI session reaches its token limit<br/>continuity state remains for Codex"| codexA
     end
 
-    subgraph repoA["Repository A — one clone"]
-        wa1["worktree<br/>feat/offset-matching/frontend<br/>its own state.md"]
-        wa2["worktree<br/>feat/plan-review/frontend<br/>its own state.md"]
-        ma["main checkout<br/>its own state.md"]
-        ex[".git/info/exclude<br/>one entry, repository-wide"]
+    subgraph taskB["Repository A — Worktree 2: Parallel task"]
+        claudeB["Another Claude Code session<br/>starts Task B"]
+        workB["Repository A, Worktree 2<br/>Separate task branch and continuity state"]
+        claudeB -->|"Starts independently"| workB
     end
 
-    subgraph repoB["Repository B — separate clone"]
-        wb1["worktree<br/>fix/import-csv/backend<br/>its own state.md"]
+    subgraph taskC["Repository B — Worktree 1: Separate repository"]
+        copilotC["GitHub Copilot session<br/>follows the continuity protocol"]
+        workC["Repository B, Worktree 1<br/>Task branch and continuity state"]
+        copilotC -->|"Starts independently"| workC
     end
 
-    s1 -.->|"starts in"| wa1
-    s2 -.->|"resumes what Claude created"| wa2
-    s3 -.->|"starts in"| wb1
+    gate{{"You manually test<br/>each task"}}
+    out["Each task keeps its branch<br/>and pull or merge request"]
 
-    ex -.-> wa1
-    ex -.-> wa2
-    ex -.-> ma
-
-    gate{{"your manual test"}}
-    out["one branch and one request per task"]
-
-    wa1 --> gate
-    wa2 --> gate
-    wb1 --> gate
+    codexA --> gate
+    workB --> gate
+    workC --> gate
     gate --> out
 ```
 
-Three things in that picture are easy to miss. **Sessions are disposable; the task branch and its
-state are not** — a session ending leaves the directory, the branch, and the state file exactly as
-they were. The directory's own lifetime is client- and policy-dependent, which is why cleanup
-never deletes the branch: archiving a Codex chat can remove the worktree it manages, and Claude's
-periodic sweep has rules of its own. **The client is not part of a task's identity**: continuity
-state is client-neutral, so a worktree Claude Code created can be resumed by Codex, and two
-clients can hold different worktrees of the same clone at once. And **one `.git/info/exclude` entry covers every worktree of a clone**, because it
-lives in the repository's common directory and the anchored pattern resolves against each working
-tree's own root; worktrees created later are protected without a per-worktree step.
+Task A shows the central handoff: Claude Code checkpoints the task in its worktree. When the AI
+session reaches its token limit, Codex starts in the same path and reads the existing continuity
+state. Task B can run at
+the same time in a separate worktree, while Task C runs in another repository. Git remains the
+source of truth for code, branches, and commits; continuity supplies only the objective, decisions,
+blockers, materials, and next action that Git cannot hold.
+
+Sessions are disposable; worktrees, branches, and continuity state survive them. Cleanup may remove
+a client-managed worktree, but the task branch and its pull or merge request remain available for
+review. Copilot can follow the same continuity protocol when started in a worktree, but this
+repository's automatic worktree adapters currently target Claude Code and Codex.
 
 The manual-test gate is the part that does not parallelize. Agents fan out; verification converges
 on you.
@@ -450,6 +377,12 @@ measure CJK and emoji width so the layout collapses cleanly on a narrow terminal
 
 The repository does not try to own every byte an application writes. It uses the narrowest useful
 ownership model:
+
+Claude Code's `/config` command, Windows Terminal, and Codex all write application-owned choices
+into files this repository also touches. The repository therefore claims keys rather than files:
+modify templates deep-merge owned keys, create-once sources apply defaults only when files are
+absent, and whole-array ownership is used only when partial merging would be meaningless. The
+table shows the boundary for each managed target.
 
 | Target | Repository owns | Application or user owns |
 | --- | --- | --- |
@@ -564,7 +497,6 @@ docs/                              setup, workflow, customization, and ADR guide
 
 | I want to… | Read |
 | --- | --- |
-| Set up a machine or identify what must be installed separately | [docs/setup.md](./docs/setup.md) |
 | Add, change, or remove a general managed file, or run the daily commands | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | Add an AI instruction, skill, agent, prompt, MCP server, or plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | Find out which client surface reads a given customization | [the support table](./docs/customization-support.md#what-the-support-table-answers) |

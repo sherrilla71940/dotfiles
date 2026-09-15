@@ -2,108 +2,33 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> 以 Git 追蹤的 dotfiles、AI 用戶端整合，以及支援 Claude Code、Codex、GitHub Copilot 與其他工具的
-> 開發工作流程。
->
-> **快速摘要：** 這是一套以 [chezmoi](https://www.chezmoi.io) 管理的個人跨平台開發環境。Git 追蹤一份來源，
-> 再由 chezmoi 產生成 Claude Code、
-> Codex、GitHub Copilot、VS Code、Shell、Git 與 Windows Terminal 實際讀取的原生檔案。每條共用
-> 規則只留一份本文，不會變成三份各自飄移的副本；每個 worktree 各自的任務狀態能跨工作階段保留，
-> 讓平行的任務彼此隔離；而且絕不覆寫應用程式自己管理的設定。
+> **快速摘要：** 這是一套以 [chezmoi](https://www.chezmoi.io/) 管理的個人跨平台開發環境，支援
+> Agentic 工作流程。Git 追蹤 dotfiles、Claude Code、Codex、GitHub Copilot 的 AI 用戶端整合，以及
+> VS Code、Zsh、Git、Windows Terminal 等開發設定。所有工具的原生檔案都由同一份 Git 追蹤的來源樹產生。
+> 每條共用規則只保留一份本文，不會變成三份各自飄移的副本；每個 worktree 的任務狀態能跨工作階段保留，
+> 讓平行任務彼此隔離；應用程式自己管理的設定則留在本機。
 
 ```text
 home/dot_bashrc  ──chezmoi apply──▶  ~/.bashrc
 ```
 
-把 dotfiles 放進 Git 追蹤只是最簡單的一步。真正值得一看的是這個儲存庫**在哪裡停手**，以及是什麼
-讓它停在那裡：下面每一條界線都由某個機制守著——chezmoi 的合併、Git 的排除規則、一道會讓 commit
-失敗的檢查——而不是靠人記得要小心。
+Git 追蹤只是基礎。重要的是這個儲存庫管理哪些內容、把哪些內容留給應用程式；chezmoi 合併負責的 key，
+Git 排除私有狀態，pre-commit 則檢查這條界線。
 
 ## 這個儲存庫解決的問題
 
 | 問題 | 儲存庫的解法 |
 | --- | --- |
-| [三個 AI 用戶端，彼此毫無共通之處](#三個-ai-用戶端彼此毫無共通之處)。檔案、格式與探索規則都不一樣，在其中一個更新指引，其他就過時了。 | 一條規則只留一份本文，由 chezmoi template 依條件組合——這台電腦是個人還是公司情境層、要不要納入工作交接指示、作業系統——再套上各用戶端自己的 frontmatter：Claude 用 `paths:`、Copilot 用 `applyTo:`、Codex 兩者都沒有。commit 時還會逐位元組比對 Claude 與 Copilot 產生出來的本文。 |
-| [應用程式自己也管理一部分設定](#應用程式自己也管理一部分設定)。`/config`、Windows Terminal 設定檔與 Codex 信任狀態，都會寫進你同時想追蹤的檔案。 | 管理個別 key，不是整份檔案。儲存庫管的是 Claude 的 hook、狀態列、環境變數與更新頻道；`/config` 會寫入的模型、努力程度、主題與權限仍然歸你。modify template 只深層合併被管理的那幾個 key，`settings.json` 裡其他 key 原封不動。 |
-| [工作階段可能在任務做到一半時結束](#工作階段可能在任務做到一半時結束)。用量上限與 context 壓縮會讓目標、決策與下一步一起消失。 | 每個工作樹一份由 Git 忽略的連續性檔案，記錄目標、決策、阻礙與下一步。隔離的 worktree 讓每個任務各自擁有目錄、分支與狀態，因此可以同時跑好幾個，而且任何新的工作階段都能從上次停下的地方接續。 |
-| [同一個設定在每台電腦上的位置都不一樣](#同一個設定在每台電腦上的位置都不一樣)。VS Code 的使用者目錄、Shell 啟動檔、Windows Terminal，路徑都跟作業系統綁在一起。 | 一份本文，依作業系統各包裝一次。`home/.chezmoiignore` 只會產生符合這台電腦的那一支，所以 Windows 拿到 `AppData`、macOS 拿到 `Library`，兩者出自同一份來源；用不到的那一支根本不會被寫出來，而不是寫出來再忽略。 |
-| [還原 dotfiles 不等於電腦可以用了](#還原-dotfiles-不等於電腦可以用了)。前置條件、驗證 hook、擴充功能、plugin 與 MCP 伺服器都還沒有。 | 平台 bootstrap 腳本會連接 checkout、啟用驗證 hook、安裝前置條件，並套用 VS Code 擴充功能與 Claude MCP 清單。等用戶端應用程式裝好後再跑一次，那些需要 CLI 才能完成的 plugin、extension 與 MCP 步驟就能收尾。 |
+| AI 用戶端的指引會各自飄移 | 共用 AI 指引只保留一份，專屬內容留在各用戶端的原生來源，再由 chezmoi 產生各用戶端需要的格式，並在 commit 前檢查 parity。 |
+| 應用程式與 Git 都把整份檔案當成唯一來源時，彼此的變更可能互相抹掉 | 管理 key，不管理整份檔案：深層合併儲存庫負責的 key，只有在檔案不存在時才建立預設值，其餘應用程式偏好留在本機。 |
+| 工作階段會遺失脈絡，平行 worktree 需要隔離 | Git 負責程式碼與分支狀態；每個 worktree 用一份由 Git 忽略的連續性檔案記錄交接脈絡，每個任務各自擁有目錄與分支。 |
+| 同一個設定在每個作業系統上的路徑不同 | 由同一份來源依條件產生各作業系統的目標，只寫出 Windows 或 macOS 會用到的路徑。 |
+| 還原 checkout 後仍缺少支援工具 | 用 bootstrap 腳本、manifest、診斷工具，以及應用程式安裝後的第二輪處理，補齊支援工具與整合。 |
 
-### 三個 AI 用戶端，彼此毫無共通之處
+## 設定一台電腦
 
-Claude Code 讀 `~/.claude/CLAUDE.md`。Codex 讀 `~/.codex/AGENTS.md`，而且會把 YAML frontmatter
-當成可見文字印出來。Copilot 讀 `*.instructions.md`，並用 `applyTo` 決定套用範圍。在其中一個用戶端
-更新工作約定，另外兩個就過時了。
-
-這個儲存庫讓每條共用規則只在 `home/.chezmoitemplates/` 留一份本文，再透過薄型包裝器產生成各用戶端
-的原生檔案。如果一條規則講的是某個用戶端專屬的機制，它就只留在那個用戶端的檔案裡，不會被改寫成
-「工具中立」的雙胞胎版本——因為一份改寫版本跟原文並存，正是這套結構要避免的失誤。用戶端之間唯一
-不同的就是包裝器：也就是界定套用範圍的那段 frontmatter，其餘完全一樣。
-
-### 應用程式自己也管理一部分設定
-
-Claude Code 的 `/config` 命令會把模型、努力程度、主題與權限寫進 `~/.claude/settings.json`。
-Windows Terminal 會自行重新產生設定檔。Codex 會把信任與 marketplace 狀態寫進 `config.toml`。
-只要整份追蹤其中任何一個檔案，每次 apply 都會覆寫掉應用程式寫入的選擇，不然就是每次在應用程式裡
-改設定，都得回頭同步進來源。
-
-所以這個儲存庫管理的是**個別 key，不是整份檔案**，而且會依目標挑不同的 chezmoi 機制：雙方都會寫入
-同一個檔案時用 modify template；應用程式第一次建立後就該由它自己管的檔案用 create-once 來源；
-只合併半個陣列毫無意義的地方，就整個陣列一起宣告。[權責界線](#權責界線)列出每一項由誰負責。
-
-### 工作階段可能在任務做到一半時結束
-
-用量上限、context 壓縮，或是關掉終端機，都會讓 AI 工作階段在沒機會交接的情況下結束。Git 知道改了
-什麼，但不知道當初的目標是什麼、已經做過哪些決定、下一步該做什麼。
-
-專案連續性會把這些記在 `.project-continuity/state.md`：每個工作樹一份，由 Git 忽略，而且一律用英文
-撰寫，讓接手的工作階段不必先翻譯才能開始做事。分支、`HEAD` 與工作目錄狀態仍然以 Git 為準；連續性
-只補上 Git 記不住的那部分脈絡。
-
-### 同一個設定在每台電腦上的位置都不一樣
-
-VS Code 的使用者設定在 Windows 放 `AppData`，在 macOS 放 `Library/Application Support`。Bash 讀
-`.bashrc`，zsh 讀 `.zshrc`。Windows Terminal 只存在於一個平台，而驅動 worktree 佈建的那幾個 Git
-別名，在 Windows 呼叫 PowerShell 腳本，在 macOS 呼叫 Bash 腳本。
-
-一台一台複製檔案，只會讓每台電腦各自照自己的節奏飄移。這裡的做法是每份本文只寫一次，再依作業系統
-各包裝一次。`home/.chezmoiignore` 只會產生符合這台電腦的那一支，用不到的那一支根本不會被寫出來。
-
-### 還原 dotfiles 不等於電腦可以用了
-
-剛 checkout 完的環境還缺命令列前置條件、驗證 hook、編輯器擴充功能、用戶端 plugin 與 MCP 伺服器宣告，
-而且有些整合要等用戶端應用程式安裝並登入後才能執行。
-
-平台 bootstrap 腳本就是用來補這一段的，而且設計上本來就要跑兩次：第一次連接 checkout 並安裝前置
-條件，等用戶端應用程式裝好之後再跑一次，完成延後處理的 plugin、extension 與 MCP 步驟。
-
-## 開始使用
-
-這是個人設定儲存庫。套用前請先閱讀[設定指南](./docs/setup.md)，尤其是電腦上已經有 Shell、編輯器
-或 AI 用戶端設定的時候。
-
-| 情境 | 從這裡開始 |
-| --- | --- |
-| 沒有東西需要保留 | [全新電腦](./docs/setup.md#empty-machine)——前置條件，以及下面那行命令做了什麼 |
-| 已經有設定 | [已有設定的電腦](./docs/setup.md#existing-configuration)——先初始化、檢閱 `chezmoi diff`、採用要保留的項目，再套用 |
-| 完整建置一台電腦 | [新電腦設定順序](./docs/setup.md#new-machine-in-order)——設定、應用程式、bootstrap、驗證 |
-
-如果這台電腦沒有東西需要保留，整個設定步驟就是一行命令：
-
-```bash
-sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
-```
-
-這會下載並執行遠端安裝程式，所以執行前請先確認你信任該 URL 與這台電腦的腳本政策，並把
-`sherrilla71940` 換成你自己的 fork。這一行只適用於沒有東西可以弄丟的電腦。
-
-套用設定只是建置電腦的其中一步。完整流程還包含安裝並登入應用程式、執行平台 bootstrap，以及啟用
-儲存庫驗證。除非設定使用目錄 junction，Windows 另外還需要
-[建立 symbolic link 的權限](./docs/setup.md#enable-windows-symlink-creation)。
-
-開發 checkout 位於 `~/dotfiles`，bootstrap 會用 macOS symlink 或 Windows 目錄 junction 把 chezmoi
-的預設來源位置連過去。這樣腳本、決策紀錄與來源狀態都留在同一個 Git 工作樹；其中的取捨請參閱
-[ADR-0006](./docs/decisions/0006-keep-the-working-tree-at-dotfiles.md)。
+全新電腦或已有設定的電腦，都請使用[設定指南](./docs/setup.md)。指南涵蓋保留既有設定、安裝應用程式、
+bootstrap、機器專用 profile 與驗證。電腦上已有設定時，套用任何東西前先檢閱 `chezmoi diff`。
 
 ## 架構：單一來源，原生輸出
 
@@ -117,34 +42,39 @@ Chezmoi 把 `home/` 下的檔案視為**來源狀態**：也就是你應該編�
 `modify_` 與 `symlink_` 等前綴則決定 chezmoi 怎麼處理目標檔案。新增或重新命名來源檔案前，請先閱讀
 [chezmoi 工作流程](./docs/chezmoi-workflow.md)。
 
-**圖：每一類受追蹤的來源，各自怎麼走到它的實際目標。** 實線箭頭代表「產生為」，虛線箭頭代表「從
-另一個位置讀到同一份檔案」——正因為有後者，才不必把內容複製一份給第二個宿主。
+Claude Code、Codex 與 GitHub Copilot 會從不同的原生檔案與套用範圍規則探索指示。下面的架構圖會說明
+chezmoi 怎麼把可重用來源與用戶端專屬來源，產生各用戶端自己的原生輸出。
+
+**圖：每一類受追蹤的來源，各自怎麼走到它的實際目標。** 實線箭頭代表「產生為」，虛線箭頭代表「連結到或探索
+現有目標」——因此不必複製內容，就能交付給第二個宿主。
 
 ```mermaid
 flowchart LR
     subgraph source["Git 追蹤的來源 — home/"]
-        core["共用核心<br/>personal 與 company 情境層<br/>連續性指示"]
-        rules["共用的路徑範圍規則本文"]
-        skills["可攜式與受主機閘門管理的技能"]
-        native["用戶端原生檔案，各用戶端一套<br/>agents、commands、MCP、settings"]
+        core["共用指示本文<br/>personal 或 company 情境<br/>選用的連續性指示"]
+        rules["共用的路徑範圍規則"]
+        skills["可攜式與主機閘門技能"]
+        claudeNative["Claude 專屬來源<br/>skills、agents、commands、MCP、settings"]
+        codexNative["Codex 專屬來源<br/>agents、MCP、create-once 設定"]
+        copilotNative["Copilot 專屬來源<br/>instructions、agents、skills、MCP、settings"]
         vscodeBody["共用 VS Code 本文"]
         platform["Shell、Git、Terminal<br/>與輔助來源"]
     end
 
     subgraph render["Chezmoi 組合"]
-        instructionAdapters["原生指示包裝器<br/>由本機選擇器決定<br/>用哪個情境層、要不要連續性"]
-        ruleAdapters["路徑範圍規則包裝器<br/>Claude：paths<br/>Copilot：applyTo"]
-        skillDelivery["技能交付<br/>實體檔案、symlink、主機閘門"]
-        osAdapters["Windows/macOS<br/>VS Code 包裝器"]
+        instructionAdapters["產生各用戶端的原生指示<br/>由每台電腦選擇情境與連續性"]
+        ruleAdapters["加入各用戶端的套用範圍資訊<br/>Claude 使用 paths<br/>Copilot 使用 applyTo"]
+        skillDelivery["交付技能<br/>使用檔案、symlink 與主機閘門"]
+        osAdapters["產生 Windows 或 macOS<br/>使用的 VS Code 設定檔"]
     end
 
     subgraph targets["Live 目標"]
-        claude["~/.claude<br/>Claude Code"]
-        codex["~/.codex<br/>Codex"]
-        copilot["~/.copilot<br/>Copilot CLI"]
-        agents["~/.agents/skills<br/>共用技能目標"]
-        vscode["VS Code 使用者設定檔"]
-        other["Shell、Git、Windows Terminal、<br/>共用輔助檔案"]
+        claude["Claude Code<br/>~/.claude 下的原生檔案"]
+        codex["Codex<br/>~/.codex 下的原生檔案"]
+        copilot["GitHub Copilot<br/>CLI 與 VS Code"]
+        agents["共用技能目錄<br/>~/.agents/skills"]
+        vscode["VS Code 使用者設定檔<br/>Windows 或 macOS"]
+        other["Shell、Git、Windows Terminal<br/>與共用輔助檔案"]
     end
 
     core --> instructionAdapters
@@ -158,23 +88,23 @@ flowchart LR
 
     skills --> skillDelivery
     skillDelivery --> agents
-    skillDelivery -.->|"symlink 連到"| claude
+    agents -.->|"symlink 連到"| claude
 
-    native --> claude
-    native --> codex
-    native --> copilot
+    claudeNative --> claude
+    codexNative --> codex
+    copilotNative --> copilot
 
     vscodeBody --> osAdapters --> vscode
     platform --> other
 
-    agents -.->|"直接探索"| codex
-    agents -.->|"直接探索"| copilot
-    agents -.->|"直接探索"| vscode
+    agents -.->|"由 Codex 發現"| codex
+    agents -.->|"由 Copilot 發現"| copilot
+    agents -.->|"由 VS Code 發現"| vscode
 ```
 
 三個細節就能解釋大部分的結構：
 
-- **共用核心是直接嵌入，不是 import。** 每個用戶端的原生指示檔都收到同一份本文。Codex 只收到永遠
+- **共用指示會直接嵌入，不是 import。** 每個用戶端的原生指示檔都收到同一份本文。Codex 只收到永遠
   載入的核心，因為 Codex 既不支援 import，也沒有路徑範圍指示。
 - **一個可攜式技能就是一份實體檔案。** 它放在 `home/dot_agents/skills/`，產生到 `~/.agents/skills`，
   Codex、Copilot 與 VS Code 都能原生找到。Claude Code 只從 `~/.claude/skills` 讀個人技能，所以改用
@@ -248,55 +178,56 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 連續性的範圍是目錄，所以要同時進行多個任務，靠的就是隔離。`worktree-task-workflow` 技能會把一個
 任務放進專屬的 worktree，從頭帶到尾。
 
-**圖：單一任務的生命週期（Claude 轉接層）。** worktree 路徑與移除步驟是 Claude 專屬的；Codex 的
-差異寫在下面幾項特性之後。
+**圖：一個任務的完整生命週期，包含 agent 自動驗證與使用者人工測試關卡。** 工作區路徑與移除步驟是 Claude adapter 專用；Codex 的差異列在下面。
 
 ```mermaid
 flowchart TD
-    subgraph resolve["執行任何 Git 命令之前"]
-        A["確認 invocation<br/>base · 任務或推導 · 素材 · 選項"]
-        B["先把每份素材讀完<br/>文件技能 · 文字 · 圖片<br/>網頁擷取 · 設計整合"]
-        C{"有給任務嗎？"}
-        D["從素材推導出一個任務<br/>用素材本身的語言"]
-        E["拿任務跟素材<br/>互相核對"]
-        F["回報解析結果<br/>任務 · 分支 type/slug/suffix · worktree 路徑 · 選項"]
+    subgraph resolve["開始建立任何東西之前"]
+        A["確認任務請求<br/>起始分支、任務、素材與選項"]
+        B["閱讀所有提供的素材<br/>再建立 worktree"]
+        C{"有提供任務嗎？"}
+        D["從提供的素材<br/>推導出一個任務"]
+        E["拿任務與提供的素材<br/>互相核對"]
+        F["先顯示計畫再繼續<br/>任務、分支、worktree 與選項"]
+        Z["停止並要求提供任務<br/>或要求推導任務"]
         A --> B --> C
-        C -->|"沒有，要求推導"| D
+        C -->|"沒有，從素材推導"| D
         C -->|"有"| E
+        C -->|"沒有，不要推導"| Z
         D --> F
         E --> F
     end
 
-    subgraph isolate["在任務 worktree 裡"]
-        G["git wt-add 從遠端 base<br/>建到 .claude/worktrees/slug"]
-        H{"執行 app 需要<br/>被忽略的檔案嗎？"}
-        I["worktree-manifest 技能<br/>提出樣式 · 排除機密<br/>取得核准 · 詢問放在哪裡"]
-        J["進入並驗證<br/>根目錄 · 分支 · base commit"]
-        K["啟動 project-continuity<br/>目標 · 決策 · 素材"]
-        L["實作"]
-        M{"agent-test<br/>選用的自動化檢查"}
-        N["typecheck · lint<br/>重點測試 · build"]
-        N2["用瀏覽器實際操作 UI<br/>driver 點不到的部分交給使用者<br/>沒有 UI 的就做執行期驗證"]
-        N3["啟動 app · 實際請求一個路由<br/>跑到錯誤頁就是失敗，不是通過"]
-        O{{"人工測試關卡<br/>由使用者親自測"}}
-        P["找出原因 · 修正<br/>checkpoint 連續性"]
+    subgraph isolate["在隔離的 worktree 裡"]
+        G["建立隔離的 worktree<br/>從選定的起始分支開始"]
+        H{"執行專案需要<br/>被忽略的本機檔案嗎？"}
+        I["檢查缺少的檔案<br/>排除機密並取得核准"]
+        J["進入 worktree 並驗證<br/>目錄、分支與起始 commit"]
+        K["記錄任務脈絡<br/>目標、決策、素材與下一步"]
+        L["實作變更"]
+        M{"要執行 agent 自動驗證嗎？"}
+        N["執行自動檢查<br/>typecheck、lint、重點測試與 build"]
+        N2["啟用後，如果變更包含使用者介面<br/>agent 會自動執行真實瀏覽器測試"]
+        N3["驗證正在執行的應用程式<br/>請求真實路由或檢查執行期行為"]
+        O{{"由你執行人工測試<br/>通過後才能發佈"}}
+        P["找出失敗原因並修正<br/>再次執行驗證"]
         G --> H
-        H -->|"缺少 manifest"| I
+        H -->|"有缺少的檔案"| I
         I --> J
-        H -->|"已佈建或不需要"| J
+        H -->|"沒有，或已經佈建"| J
         J --> K --> L --> M
-        M -->|"true"| N
+        M -->|"是"| N
         N --> N2 --> N3
-        M -->|"false"| N3
+        M -->|"否"| N3
         N3 --> O
         O -->|"失敗"| P
-        P --> O
+        P --> M
     end
 
-    subgraph publish["關卡打開之後"]
-        Q["git-commit-action<br/>mode · group · lang 取自 AI profile"]
-        R["判斷 forge · push<br/>開 pull 或 merge request"]
-        S["移除 worktree<br/>分支與 request 都留著"]
+    subgraph publish["你確認結果之後"]
+        Q["建立 commit<br/>使用目前的 profile"]
+        R["推送分支<br/>開啟 pull 或 merge request"]
+        S["適當時移除 worktree<br/>保留分支與 request"]
         Q --> R --> S
     end
 
@@ -308,9 +239,11 @@ flowchart TD
 
 - **每個任務都有自己的目錄、分支與連續性檔案。** 機器撐得住幾個就開幾個；任務之間不共用 index、
   `HEAD`，也不共用交接紀錄。
-- **工作階段在任務中途結束幾乎沒有成本。** 連續性 checkpoint 在該 worktree 裡，而且每一份素材都會
-  記下來——路徑是因為它可能放在 worktree 外面，URL 則是因為之後的工作階段得重新抓一次——新的工作
-  階段進到同一個路徑就能從記錄的下一步接續，包括上一個工作階段是被用量上限中斷的情況。
+- **工作階段在任務中途結束，不需要手動整理交接文件。** 連續性 checkpoint 在該 worktree 裡，而且每一份
+  素材都會記下來——路徑是因為它可能放在 worktree 外面，URL 則是因為之後的工作階段得重新抓一次——新的
+  工作階段進到同一個路徑就能讀取記錄的下一步接續，包括上一個工作階段是被用量上限中斷的情況。
+- **自動化驗證會實際檢查應用程式。** 啟用 agent 驗證後，流程會先執行圖中的自動檢查；如果變更包含使用者
+  介面，agent 會透過瀏覽器實際操作。瀏覽器 driver 做不到的互動會交給你，不會直接宣稱通過。
 - **人工測試關卡是硬性的。** 在你親自測過並回報之前，不會有任何 commit、push 或 request。計畫被
   核准、diff 被看過、自動化檢查全綠，都不足以打開這道關卡。
 
@@ -321,52 +254,47 @@ flowchart TD
 這些特性是可以疊加的。工作流程本身完全不知道有其他任務存在，所以能同時跑幾個，取決於機器和你自己
 的注意力。
 
-**圖：多個任務同時進行，橫跨多個 worktree 與儲存庫。**
+**圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
 
 ```mermaid
-flowchart TB
-    subgraph live["工作階段——用完即丟"]
-        s1["Claude 工作階段"]
-        s2["Codex 工作階段"]
-        s3["Claude 工作階段"]
+flowchart LR
+    subgraph taskA["儲存庫 A — Worktree 1：跨用戶端接續"]
+        claudeA["Claude Code 開始任務 A"]
+        workA["儲存庫 A 的 Worktree 1<br/>任務分支與連續性狀態"]
+        codexA["Codex 從同一個 worktree<br/>接續任務 A"]
+        claudeA -->|"checkpoint 任務 A"| workA
+        workA -->|"AI 工作階段到達 token 上限<br/>連續性狀態留給 Codex"| codexA
     end
 
-    subgraph repoA["儲存庫 A——同一個 clone"]
-        wa1["worktree<br/>feat/offset-matching/frontend<br/>自己的 state.md"]
-        wa2["worktree<br/>feat/plan-review/frontend<br/>自己的 state.md"]
-        ma["主要 checkout<br/>自己的 state.md"]
-        ex[".git/info/exclude<br/>一條設定，整個儲存庫適用"]
+    subgraph taskB["儲存庫 A — Worktree 2：平行任務"]
+        claudeB["另一個 Claude Code 工作階段<br/>開始任務 B"]
+        workB["儲存庫 A 的 Worktree 2<br/>另一個任務的分支與連續性狀態"]
+        claudeB -->|"獨立啟動"| workB
     end
 
-    subgraph repoB["儲存庫 B——另一個 clone"]
-        wb1["worktree<br/>fix/import-csv/backend<br/>自己的 state.md"]
+    subgraph taskC["儲存庫 B — Worktree 1：另一個儲存庫"]
+        copilotC["GitHub Copilot 工作階段<br/>遵循連續性協定"]
+        workC["儲存庫 B 的 Worktree 1<br/>任務分支與連續性狀態"]
+        copilotC -->|"獨立啟動"| workC
     end
 
-    s1 -.->|"在這裡啟動"| wa1
-    s2 -.->|"接手 Claude 建立的 worktree"| wa2
-    s3 -.->|"在這裡啟動"| wb1
+    gate{{"你為每個任務<br/>執行人工測試"}}
+    out["每個任務保留自己的分支<br/>與 pull 或 merge request"]
 
-    ex -.-> wa1
-    ex -.-> wa2
-    ex -.-> ma
-
-    gate{{"你的人工測試"}}
-    out["每個任務一條分支、一個 request"]
-
-    wa1 --> gate
-    wa2 --> gate
-    wb1 --> gate
+    codexA --> gate
+    workB --> gate
+    workC --> gate
     gate --> out
 ```
 
-這張圖有三個地方很容易被忽略。**工作階段是用完即丟的，任務分支與它的狀態不是**——工作階段結束後，
-目錄、分支與狀態檔都原封不動地留著。目錄本身能活多久，則要看用戶端與各自的政策，這也是為什麼清理
-永遠不會刪掉分支：把 Codex 對話封存起來，可能會連它管理的 worktree 一起移除，而 Claude 的定期清理
-也有自己的規則。**用戶端不屬於任務身分的一部分**：連續性狀態與用戶端無關，所以
-Claude Code 建立的 worktree 可以由 Codex 接手，兩個用戶端也可以同時各自佔著同一個 clone 的不同
-worktree。另外，**一條 `.git/info/exclude` 設定就涵蓋這個 clone 的每一個 worktree**，因為它放在
-儲存庫的共用目錄，而錨定的樣式會對照每個工作樹自己的根目錄；之後才建立的 worktree 也一樣受保護，
-不需要另外再設定。
+這張圖的核心是任務 A：Claude Code 把任務狀態 checkpoint 在 worktree 裡。AI 工作階段到達 token 上限後，
+Codex 進到同一路徑並讀取原本的連續性狀態。任務 B 可以同時在同一個儲存庫的另一個 worktree 執行，任務 C
+則可以在另一個儲存庫執行。
+Git 仍然是程式碼、分支與 commit 的真相來源；連續性只補上 Git 記不住的目標、決策、阻礙、素材與下一步。
+
+工作階段可以丟棄，但 worktree、分支與連續性狀態會保留。清理可能會移除由用戶端管理的 worktree，但任務分支
+與 pull 或 merge request 仍可供檢閱。Copilot 在進入 worktree 後可以遵循相同的連續性協定，但這個儲存庫目前
+只有 Claude Code 與 Codex 的自動 worktree 轉接層。
 
 人工測試關卡就是無法平行化的那一段。agent 可以散開來跑，驗證最後還是收斂到你身上。
 
@@ -411,6 +339,11 @@ modified、untracked 的檔案數、已使用的 context 比例，還有**五小
 ## 權責界線
 
 這個儲存庫不打算管理應用程式寫入的每一個位元組，而是採用剛好夠用的最小權責範圍：
+
+Claude Code 的 `/config` 命令、Windows Terminal 與 Codex 都會把應用程式自己管理的選擇寫進這個儲存庫
+也會處理的檔案。所以這裡管理的是 key，不是整份檔案：modify template 深層合併負責的 key，create-once
+來源只在檔案不存在時提供預設值，只有無法合理只合併一部分的陣列才整個宣告。下面的表格列出每個目標
+檔案的權責界線。
 
 | 目標 | 儲存庫負責 | 應用程式或使用者負責 |
 | --- | --- | --- |
@@ -518,7 +451,6 @@ docs/                              設定、工作流程、自訂與 ADR 指南
 
 | 我想要… | 請看 |
 | --- | --- |
-| 設定一台電腦，或確認有哪些東西要另外安裝 | [docs/setup.md](./docs/setup.md) |
 | 新增、修改或移除一般受管理的檔案，或查日常命令 | [docs/chezmoi-workflow.md](./docs/chezmoi-workflow.md) |
 | 新增 AI 指示、技能、agent、prompt、MCP 伺服器或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | 查某一項自訂內容是哪個用戶端介面會讀到 | [支援對照表](./docs/customization-support.md#what-the-support-table-answers) |

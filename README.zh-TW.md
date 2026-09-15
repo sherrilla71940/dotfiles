@@ -19,11 +19,11 @@ Git 排除私有狀態，pre-commit 則檢查這條界線。
 
 | 問題 | 儲存庫的解法 |
 | --- | --- |
-| Claude Code、Codex 與 GitHub Copilot 使用不同的指示檔案與套用範圍規則。更新一個 AI 編碼用戶端的共用工作指引後，還得手動在其他用戶端維持相同內容，否則就會逐漸不一致。 | 共用 AI 指引只保留一份，專屬內容留在各用戶端的原生來源，再由 chezmoi 產生各用戶端需要的格式，並在 commit 前檢查 parity。 |
-| 應用程式與這個儲存庫都會寫入同一批設定檔。Claude 的 `/config` 選擇、Windows Terminal 設定檔與 Codex 信任狀態，可能在下一次 `chezmoi apply` 被覆蓋；反過來，把實際檔案整份複製回 Git，也會把機器專屬的應用程式狀態帶進來源。 | 管理 key，不管理整份檔案：深層合併儲存庫負責的 key，只有在檔案不存在時才建立預設值，其餘應用程式偏好留在本機。 |
-| 工作階段會遺失脈絡，平行 worktree 需要隔離 | Git 負責程式碼與分支狀態；每個 worktree 用一份由 Git 忽略的連續性檔案記錄交接脈絡，每個任務各自擁有目錄與分支。 |
-| 同一個設定在每個作業系統上的路徑不同 | 由同一份來源依條件產生各作業系統的目標，只寫出 Windows 或 macOS 會用到的路徑。 |
-| 還原 checkout 後仍缺少支援工具 | 用 bootstrap 腳本、manifest、診斷工具，以及應用程式安裝後的第二輪處理，補齊支援工具與整合。 |
+| Claude Code、Codex 與 Copilot 使用不同的指示檔案與套用範圍，AI 編碼指引很容易因此逐漸不一致。 | 共用 AI 指引只保留一份，專屬內容留在各用戶端的原生來源，再由 chezmoi 產生各用戶端需要的格式，並在 commit 前檢查 parity。 |
+| 儲存庫管理的設定與應用程式偏好，可能都把整份檔案當成唯一來源，結果互相覆蓋。 | 管理 key，不管理整份檔案：深層合併儲存庫負責的 key，只有在檔案不存在時才建立預設值，其餘應用程式偏好留在本機。 |
+| 工作階段可能在交接前結束；平行任務需要隔離的 worktree，才能各自保留檔案、分支與連續性狀態。 | Git 負責程式碼與分支狀態；每個 worktree 用一份由 Git 忽略的連續性檔案記錄交接脈絡，每個任務各自擁有目錄與分支。 |
+| 同一個設定在不同作業系統上會放在不同路徑。 | 由同一份來源依條件產生各作業系統的目標，只寫出 Windows 或 macOS 會用到的路徑。 |
+| 還原 checkout 後，可能仍缺少執行所需的工具與整合。 | 用 bootstrap 腳本、manifest、診斷工具，以及應用程式安裝後的第二輪處理，補齊支援工具與整合。 |
 
 ## 設定一台電腦
 
@@ -247,6 +247,14 @@ flowchart TD
 
 素材處理、分支命名、缺少檔案時的 manifest、瀏覽器 driver 的限制，以及保留分支的清理規則，都寫在
 [worktree 佈建指南](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)。
+
+專案素材也是工作流程的一部分。建立 worktree 前，流程會先閱讀提供的規格、交接筆記、參考文件與測試
+輸入，分類後把路徑記進連續性狀態。需要歸檔時，需要長期保留的參考資料放在
+`~/Documents/reference-docs/{repo}/`，大型或需要跨 worktree 共用的人工測試輸入放在
+`~/Documents/test-files/{repo}/`，沒有正式歸屬位置的 agent 交接摘要放在
+`~/Documents/handoff/{repo}/`。目前任務狀態留在 worktree 內由 Git 忽略的
+`.project-continuity/state.md`；可長期維護的測試程序與 fixture 留在儲存庫裡。有正式歸屬位置的產出，
+例如 MR 說明，就留在原本的地方，不另外複製。
 
 **圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
 

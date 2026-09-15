@@ -21,11 +21,11 @@ pre-commit checks enforce that boundary.
 
 | The problem | How this repository answers it |
 | --- | --- |
-| Claude Code, Codex, and GitHub Copilot use different instruction files and scoping rules. Updating shared working instructions for one AI coding client means manually keeping equivalent guidance in the other clients, or they become stale. | Keep reusable AI instructions once, keep client-exclusive content in native client sources, and let chezmoi render each client's format with a pre-commit parity check. |
-| The application and this repository both write the same settings files. Claude's `/config` choices, Windows Terminal profiles, and Codex trust state can be overwritten by `chezmoi apply`—or copied back into Git as machine-specific application state. | Claim keys rather than files: deep-merge repository-owned keys, create defaults only when files are absent, and leave application-owned preferences local. |
-| Sessions lose context, and parallel worktrees need isolation | Keep Git authoritative for code and branch state; use one ignored continuity file per worktree for handoff context, and give each task its own directory and branch. |
-| The same setting lives at a different path on each operating system | Render each OS-specific target conditionally from the same source, so Windows and macOS receive only the paths they use. |
-| A restored checkout still lacks supporting tools | Use bootstrap scripts, manifests, diagnostics, and a second pass after applications are installed to restore supporting tools and integrations. |
+| Claude Code, Codex, and Copilot use different instruction files and scopes, so shared AI coding guidance can drift. | Keep reusable AI instructions once, keep client-exclusive content in native client sources, and let chezmoi render each client's format with a pre-commit parity check. |
+| Repository-managed settings and application preferences can overwrite each other when both treat an entire file as authoritative. | Claim keys rather than files: deep-merge repository-owned keys, create defaults only when files are absent, and leave application-owned preferences local. |
+| A session can end before handoff; parallel tasks need isolated worktrees so each keeps its own files, branch, and continuity state. | Keep Git authoritative for code and branch state; use one ignored continuity file per worktree for handoff context, and give each task its own directory and branch. |
+| The same setting is stored at a different path on each operating system. | Render each OS-specific target conditionally from the same source, so Windows and macOS receive only the paths they use. |
+| A restored checkout may still lack the tools and integrations it needs to run. | Use bootstrap scripts, manifests, diagnostics, and a second pass after applications are installed to restore supporting tools and integrations. |
 
 ## Set up a machine
 
@@ -270,6 +270,16 @@ changes, drives a real browser test; only your manual test opens the publishing 
 The linked [worktree provisioning guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)
 covers material handling, branch naming, missing-file manifests, browser-driver limits, and
 branch-preserving cleanup.
+
+Project materials are part of the workflow. Before creating a worktree, the workflow reads
+supplied specifications, handoff notes, reference documents, and test inputs, classifies them, and
+records their paths in continuity. When filing is needed, durable references go in
+`~/Documents/reference-docs/{repo}/`, bulky or cross-worktree manual-test inputs go in
+`~/Documents/test-files/{repo}/`, and agent-authored briefs without a canonical destination go in
+`~/Documents/handoff/{repo}/`. Current task state stays in the worktree's ignored
+`.project-continuity/state.md`; durable test procedures and fixtures stay in the repository.
+Artifacts with a canonical destination, such as an MR description, stay there instead of being
+duplicated.
 
 **Figure: Repository A runs parallel worktrees, while one task crosses clients through continuity
 state.**

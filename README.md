@@ -2,54 +2,38 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-> **TL;DR:** A chezmoi-managed, cross-platform developer environment that renders one source into
-> native configuration for AI clients—including instructions, skills, rules where supported, and
-> client settings—as well as shells, editors, and tools. Each computer can choose personal or
-> company AI conventions and independently enable private project handoff continuity. Shared skills
-> stay canonical, while application-owned settings are preserved.
-
-This repository is a personal, cross-platform AI development environment and developer-tooling
-system managed with [chezmoi](https://www.chezmoi.io). It manages shell, editor, tool, and AI-client
-configuration—including instructions, skills, rules, and settings—from one source across Windows and
-macOS.
+> **TL;DR:** This is a personal, cross-platform AI development environment managed with
+> [chezmoi](https://www.chezmoi.io). Git tracks the desired source, and chezmoi renders it into
+> native configuration for Claude Code, Codex, GitHub Copilot, shells, editors, and tools, with
+> personal/company profiles, resumable project continuity, canonical shared skills, and preserved
+> application-owned settings.
 
 ## What this repository provides
 
-- **Claude Code, Codex, and GitHub Copilot share many AI instructions and skills, but each expects
-  different files and formats.** The repository keeps canonical source material in one place and
-  composes it at render time: the always-on baseline, the selected personal or company context,
-  optional continuity guidance, and platform- or client-specific branches. Thin adapters then
-  render the resulting content into each tool's native format. Some content is shared verbatim,
-  some content is included conditionally, and some content remains client-specific. Where a complete
-  file can be shared, such as portable skills, symlinks avoid duplicate copies. For example,
-  `~/.claude/CLAUDE.md` combines the shared baseline, selected context, optional continuity guidance,
-  and a Claude-only section at render time.
-- **One computer can support both personal and company work without maintaining two separate
-  configuration sets.** Two machine-local selectors drive render-time composition: a shared baseline,
-  either the personal or company context, and project-continuity instructions when enabled. The same
-  canonical skills, instructions, and rules therefore produce the appropriate workflow for the current
-  context, while thin client adapters render each tool's native format. `ai_context` controls
-  context-specific conventions and artifact-language defaults. `ai_continuity` controls a separate
-  feature: a private task-handoff mechanism stored in `.project-continuity/state.md`, whether its
-  instructions are always loaded, and whether its session-start/session-stop helpers automatically
-  report or update the handoff state. The state records the current objective, phase, next action,
-  blockers, and assumptions. A new Claude Code or Codex session can use it to resume the task after
-  the previous session reaches its token limit, ends unexpectedly, or pauses for days or weeks—instead
-  of starting from scratch. When continuity is off, those automatic reports and updates stop, but the
-  continuity skill remains available for explicit requests. Changing either selector affects newly
-  rendered configuration and newly started sessions, while repository and project instructions still
-  take precedence.
-- **Configuration drifts between machines, and the same setting lives at a different path on
-  each operating system.** Templates keep one managed configuration consistent across
-  platforms. A new machine clones this repository and renders every managed file with a
-  single chezmoi command; the tools those files configure are installed by their own scripts,
-  kept out of the apply path so a routine apply never installs software.
-- **Some settings files have two owners: the repository and the application that uses them.** A
-  managed file is one that chezmoi renders from this repository, but the application may also
-  write its own preferences into that same file. Replacing the file wholesale would erase those
-  application-owned values. Claude Code's `settings.json` is the example: the repository manages
-  only a small set of durable keys, and chezmoi merges those keys into the existing file while
-  preserving Claude's model, effort level, theme, permissions, and other local settings.
+- **One canonical AI configuration can serve Claude Code, Codex, and GitHub Copilot.** Their files
+  and formats differ, so chezmoi templates compose shared bodies and thin client-specific adapters
+  into each native target. Content that can remain identical—such as portable skill files—uses one
+  canonical copy with a Claude symlink instead of duplicate rendered copies.
+- **One computer can switch between personal and company conventions without two configuration
+  trees.** The machine-local `ai_context` selector chooses the context layer and its
+  artifact-language defaults. It also supplies the default comment language in application and
+  project repositories. Explicit user, repository, and project instructions still take precedence.
+- **AI work can resume after a session ends or changes clients.** Project continuity keeps private
+  handoff state in `.project-continuity/state.md`, including the objective, phase, next action,
+  blockers, and assumptions. A new Claude Code, Codex, or GitHub Copilot session in the same working
+  tree can use that state after a token limit, unexpected interruption, or days or weeks away. Git
+  remains authoritative for the branch, `HEAD`, and working-tree reality; continuity state supplies
+  the handoff context. The machine-local `ai_continuity` selector independently enables or disables
+  the always-loaded guidance and automatic lifecycle behavior, while the continuity skill remains
+  available for explicit requests.
+- **A new computer can be rebuilt from a version-controlled source checkout.** Git tracks the
+  desired source state, chezmoi renders it into Windows or macOS live paths, and separate bootstrap
+  scripts connect the checkout and install supporting tools, plugins, extensions, and MCP
+  integrations.
+- **Application-owned settings are preserved instead of overwritten.** Some files combine
+  repository-owned durable keys with preferences written by the application. Chezmoi merges the
+  repository's keys into the existing file; Claude Code's `settings.json` preserves its model,
+  effort level, theme, permissions, and other local settings.
 
 ## AI client architecture at a glance
 
@@ -247,6 +231,10 @@ three separate things: which context layer is composed in, whether project-conti
 and automatic session-start/session-stop reporting or state updates are active, and which language
 the supported artifacts default to.
 
+The context layer also supplies the default comment language in application and project repositories.
+User-level configuration and customization comments remain English, and this repository's documentation
+does not change automatically with `artifact_language`.
+
 ```mermaid
 flowchart TD
     config["chezmoi config file<br/>machine-local, never committed"]
@@ -264,25 +252,29 @@ flowchart TD
     gate --> instructions
     gate --> helper["maintain-project-continuity.sh<br/>reports when on, no-op when off"]
 
-    language --> commitSkill["git-commit-action"]
-    language --> worktreeText["worktree invocation and publishing"]
-    language --> vscodeCommit["VS Code Copilot commit messages"]
+    language --> commitSkill["git-commit-action<br/>commit description/body"]
+    language --> worktreeText["worktree-task-workflow<br/>commit and request text"]
+    language --> vscodeCommit["VS Code Copilot<br/>commit-message guidance"]
 
     repository["repository AGENTS.md or CLAUDE.md"] -.->|"outranks the machine context"| instructions
 ```
 
 Three details in that picture are easy to get wrong:
 
-- **Artifact language reaches skills and VS Code, not just the instruction files.** Those three
-  leaves are the whole supported surface; an explicit `en` or `zhtw` argument still overrides them.
+- **Artifact language applies only to supported artifact text.** It defaults the commit-message
+  description/body produced by `git-commit-action`, the worktree workflow's commit and request text, and the
+  managed VS Code Copilot commit-message guidance. It does not translate branch names, paths,
+  commands, user-level dotfiles, or this repository's documentation. An explicit `en` or `zhtw`
+  argument still overrides the default.
 - **Continuity off changes instructions and helper behaviour, never hook wiring.** The hooks stay
   registered in both states, which keeps the independent worktree launch check active and keeps
   Codex's per-entry hook trust valid across a toggle.
 - **Repository instructions outrank the machine context.** That is why this repository's own
   `AGENTS.md` pins the `personal` context for work performed here without touching the selector.
 
-User-level configuration and customization comments stay English in both contexts, and continuity
-state is written in English regardless of the conversation language.
+Application and project comments follow the selected context unless repository or project instructions
+override it. User-level configuration and customization comments, and continuity state, remain English
+regardless of the conversation language.
 
 
 ## Choose a setup path

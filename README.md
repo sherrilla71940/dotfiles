@@ -283,7 +283,7 @@ flowchart TD
         L["implement"]
         M{"agent-test"}
         N["typecheck · lint<br/>focused tests · build"]
-        N2["browser or runtime pass<br/>only where a tool drives the UI"]
+        N2["drive the real UI in a browser<br/>hand off the clicks a driver cannot make<br/>or a runtime check where there is no UI"]
         N3["start the app · request one real route<br/>an error page is a failure, not a pass"]
         O{{"manual test gate<br/>the user runs it"}}
         P["diagnose · fix<br/>checkpoint continuity"]
@@ -337,11 +337,15 @@ branches in place, is what each step does without being asked:
   copying nothing. The workflow settles whether that matters by building and running the app, and
   when a manifest is warranted it asks where `.worktreeinclude` should land instead of folding an
   unrelated root-level file into this task's request.
+- **Automated verification reaches the browser, not just the build.** With `agent-test` on, the
+  workflow runs typecheck, lint, focused tests and a build, and for visual work drives the real UI
+  through the managed `chrome-devtools` MCP server. Where a driver cannot reach — canvas, map
+  overlays, WebGL, drag gestures — the `browser-collab-testing` skill splits the interactions with
+  you rather than skipping them. Nothing is reported as tested unless a tool actually drove it.
 - **The manual-test gate is hard.** No commit, push, or request happens until you report that you
   tested it yourself. An approved plan, a reviewed diff, and green automated checks do not open
   that gate. Before handing the steps over, the workflow starts the app and requests one real
-  route, so what you are given is known to run — and it never calls a UI flow tested unless a tool
-  actually drove it.
+  route, so what you are given is known to run.
 - **Publishing inherits the machine's profile.** The resolved `lang` defaults to the active
   context's artifact language, so commit messages and the request description come out in the
   right language, with `natural-zhtw` loaded before any Traditional Chinese text. The forge is

@@ -92,6 +92,18 @@ Claude's launch guard; native mode leaves those skills manual and does not regis
 launch guard. `ai_continuity` remains a separate preference for managed mode. General Git and
 worktree provisioning commands are unaffected by the harness selection.
 
+The task workflow is an explicit opt-in for substantial or isolation-sensitive work. It is not a
+mandatory entry point for every task: a small, self-contained edit that does not need parallel
+isolation may remain in the current valid worktree. Choose it when isolation, cross-session handoff,
+controlled verification, or publishing matters.
+
+Worktree isolation covers source and Git state, not running services or their ports. For concurrent
+application testing, see the [per-worktree runtime guide](./worktree-runtime.md) and invoke the task
+workflow with `runtime=auto` only when the consuming project provides its authoritative tracked
+`.worktree-runtime.json`. Without that descriptor, source isolation remains valid but concurrent
+runtime testing is not guaranteed. This preserves strong guarantees when the workflow is explicitly
+chosen without making every task or project use a rigid runtime harness.
+
 The wrapper options are:
 
 | Option | Effect |

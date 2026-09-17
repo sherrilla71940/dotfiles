@@ -22,6 +22,11 @@ skills for supplied containers, `project-continuity` for resumable state, `git-c
 commits, `git-commit-reference` for message conventions, and `natural-zhtw` for Traditional
 Chinese publishing text.
 
+This is an explicit opt-in workflow for substantial or isolation-sensitive tasks. Do not invoke it
+merely because an agent is making a change: a small, self-contained edit that does not need parallel
+isolation may stay in the current valid worktree. Use this workflow when isolation, cross-session
+handoff, controlled verification, or publishing matters.
+
 ## 1. Resolve the invocation
 
 Read [references/invocation.md](references/invocation.md) and follow it through the resolved echo.
@@ -31,6 +36,11 @@ Invoke this skill as either:
 $worktree-task-workflow <base-branch> "<task>" [materials...] [options...]
 $worktree-task-workflow <base-branch> --infer-task <materials...> [options...]
 ```
+
+For an application task that needs concurrent runtime testing, add `runtime=auto` and use the
+project's tracked `.worktree-runtime.json` descriptor. An explicit `port=<number>` may override
+the descriptor's preferred allocation. Leave runtime at its default `off` for tasks that do not
+need an application server; this workflow is not a mandatory runtime harness.
 
 `base` is required and means the user-provided existing branch on `origin`. The workflow creates
 the task branch from `origin/<base>` in a new worktree, and the eventual pull or merge request

@@ -1,4 +1,4 @@
-# Managed by the dotfiles repository. Provides the implementation behind the Windows-only
+# Managed by the developer environment repository. Provides the implementation behind the Windows-only
 # `git wt-add` and `git wt-copy` aliases.
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0

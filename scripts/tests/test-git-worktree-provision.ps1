@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 2.0
 
-$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $toolPath = (Resolve-Path (Join-Path $repositoryRoot "home\dot_local\share\git-worktree-provision.ps1")).Path
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd("\", "/")

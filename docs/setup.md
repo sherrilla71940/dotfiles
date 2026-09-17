@@ -1,4 +1,4 @@
-# Dotfiles setup
+# Developer environment setup
 
 This guide covers first-time installation on Windows or macOS. Recurring edits, additions,
 removals, and applies belong in [the chezmoi workflow](./chezmoi-workflow.md).
@@ -44,7 +44,7 @@ Choose based on the configuration already in the home directory:
 | Any existing settings should survive, or you are unsure | [Existing configuration](#existing-configuration) |
 
 A new computer can already have existing configuration if you used an application before
-installing these dotfiles. When unsure, use the existing-configuration path. It initializes
+installing this developer environment. When unsure, use the existing-configuration path. It initializes
 the repository without changing live files.
 
 Both paths clone into the default chezmoi source directory. Where the Git working tree lives is
@@ -62,6 +62,9 @@ brew install git chezmoi
 ```
 
 Chezmoi's standalone installer is also available when Homebrew is not desired:
+
+This downloads and executes a remote installer. Use it only after deciding that you trust the
+source and have reviewed the URL/script policy for the machine.
 
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)"
@@ -89,6 +92,9 @@ links. See [chezmoi's Windows guidance](https://www.chezmoi.io/user-guide/machin
 
 Use this path only when no existing configuration needs to be preserved. On macOS or Git
 Bash, the standalone installer can install chezmoi and apply the repository in one command:
+
+This command downloads and executes a remote installer; use it only after deciding that you trust
+the source and have reviewed the URL/script policy for the machine.
 
 ```bash
 sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply sherrilla71940
@@ -198,22 +204,10 @@ other machines. Do not commit machine-specific values or credentials.
 
 ## Select the machine-local AI profile
 
-After initialization, choose the two independent profile dimensions with `chezmoi edit-config`:
-
-```toml
-[data]
-ai_context = "company"        # personal or company; default: company
-ai_continuity = "on"           # on or off; default: on
-```
-
-Personal context defaults applicable artifact language to English (`en`); company context defaults
-it to Traditional Chinese (`zh-TW`, `zhtw` where an existing command interface uses that value).
-Explicit requests, repository instructions, and explicit `en` or `zhtw` arguments still win.
-Continuity is independent: `on` includes its instructions and automatic Claude/Codex hooks, while
-`off` leaves the skill installed but suppresses those automatic startup/stop behaviors and their
-state handling. Missing `ai_context` uses `company`; missing `ai_continuity` uses `on`;
-unsupported values fail during rendering. This dotfiles repository is the exception: root
-`AGENTS.md` requires the effective context to be `personal` while working here.
+After initialization, choose the two independent profile inputs and the managed-mode continuity
+option with `chezmoi edit-config`.
+The values, defaults, validation behavior, language mapping, and repository-level override are
+documented in [the machine-local selector guide](./chezmoi-workflow.md#machine-local-ai-profile-selectors).
 
 Preview the selected result with `chezmoi diff` before applying. These values are machine-local,
 not synchronized in the repository, and machine-wide in v1. Start new Claude Code, Codex, or VS
@@ -266,11 +260,11 @@ from the manifest, and the user MCP servers. It installs none of the application
 and it never replaces an existing source directory:
 
 ```bash
-bash scripts/bootstrap-macos.sh
+bash scripts/bootstrap/bootstrap-macos.sh
 ```
 
 ```powershell
-powershell -File scripts/bootstrap-windows.ps1
+powershell -File scripts/bootstrap/bootstrap-windows.ps1
 ```
 
 ### VS Code extensions
@@ -279,11 +273,11 @@ The bootstrap helper installs these when the `code` CLI is on `PATH`. The manife
 of routine apply, so run it directly to reinstall or to pick up manifest changes later:
 
 ```bash
-grep -v '^#' scripts/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
+grep -v '^#' scripts/manifests/vscode-extensions.txt | grep . | xargs -I{} code --install-extension {} --force
 ```
 
 ```powershell
-Get-Content scripts/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
+Get-Content scripts/manifests/vscode-extensions.txt | Where-Object { $_ -and -not $_.StartsWith("#") } |
   ForEach-Object { code --install-extension $_ --force }
 ```
 
@@ -293,11 +287,11 @@ The bootstrap helper runs this when the `claude` CLI is on `PATH`. Run it direct
 Code was installed afterwards, or to pick up manifest changes:
 
 ```bash
-bash scripts/install-claude-mcp.sh
+bash scripts/install/install-claude-mcp.sh
 ```
 
 ```powershell
-powershell -File scripts/install-claude-mcp.ps1
+powershell -File scripts/install/install-claude-mcp.ps1
 ```
 
 The shell installer requires `jq`; the PowerShell installer does not. It leaves existing
@@ -308,7 +302,7 @@ in the manifest and what remains owned by plugins, accounts, or browser integrat
 ### Plugins
 
 The repository carries portable plugin declarations for Codex and Copilot, and installs
-Claude Code's plugins from `scripts/bootstrap-*` instead, so enabling and disabling them stays
+Claude Code's plugins from `scripts/bootstrap/bootstrap-*` instead, so enabling and disabling them stays
 local. It never carries downloaded caches or authentication. Follow the
 [plugin customization guide](./customization-support.md#add-a-marketplace-plugin) for the
 client-specific source and Codex's create-once behavior.
@@ -320,6 +314,10 @@ The bootstrap helper does this. Run it by hand in a clone that has not been boot
 ```bash
 git config core.hooksPath scripts/git-hooks
 ```
+
+From the repository root, run `bash scripts/dev-env doctor` when diagnosing a machine. It reports
+the chezmoi source identity, resolved profile values, unapplied drift, Claude shared-skill links,
+and required tool versions without changing any target.
 
 The pre-commit hook, in order (the script's own numbering starts at the render step):
 
@@ -350,26 +348,30 @@ That hook is Claude-only, because it shells out to `claude agents --json` and sp
 `EnterWorktree`. Project-continuity reporting used to live in it too and no longer does; it is
 described next.
 
-When `ai_continuity` is `on`, the script rendered from
+When `ai_continuity` is `on` and `ai_harness` is `managed`, the script rendered from
 `home/dot_local/share/maintain-project-continuity.sh.tmpl` adds the
 deterministic reporting that the skill cannot do for itself. On `SessionStart` it reports whether
 continuity exists and, when it does, names the objective it tracks, so the decision about whether
 this is the same task is made
 against a shown fact rather than from recall; it also ensures `.project-continuity/` is excluded
-from Git. On `Stop` it compares the recorded branch and HEAD against the checkout and reports
-drift, and it offers cleanup once every tracking section is empty. HEAD is reported two ways. A
+from Git. On `Stop` it compares the recorded branch and HEAD against the checkout, offers cleanup
+when the active tracking sections are empty, and reports parked files with no unfinished sections
+as closure candidates. It never deletes parked state; the skill requires confirmation for each
+named file. HEAD is reported two ways. A
 recorded commit that has left the history - rebased, reset, or belonging to another line of work
 - means the recorded starting point cannot be trusted. A recorded commit that is still an
 ancestor but more than one commit behind means a checkpoint opportunity passed without the file
 being rewritten; one commit behind is work in flight and stays silent, because a notice after
 every commit is one readers learn to ignore. The script never reads or copies the transcript.
 
-With `ai_continuity = "off"`, the hook entries stay wired but the script renders as a deliberate
-no-op: it drains the event payload, prints nothing, and creates, updates, reconciles, and excludes
-nothing. Leaving the wiring alone is what keeps the independent worktree launch check in Claude's
-`SessionStart` array active, and it keeps Codex's per-entry hook trust valid across a toggle, since
-that trust is keyed by each entry's path and content hash. The `project-continuity` skill remains
-installed for explicit continuity requests.
+With `ai_continuity = "off"`, the continuity guidance and continuity lifecycle hook are absent, but
+managed notifications and Claude's worktree-launch check remain. With `ai_harness = "native"`,
+continuity guidance and continuity/worktree lifecycle hooks are absent; the statusline, lightweight
+notifications, shared instructions, reusable skills, wrappers, and private-file protections remain.
+The stored continuity preference is not changed, so returning to managed mode with continuity on
+restores the automatic behavior. The `project-continuity` skill remains installed for explicit
+continuity requests. Codex records trust by hook path and content hash, so switching harness modes
+can require a new `/hooks` approval.
 
 It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
 run it**. They share hook event names, stdin fields (`cwd`, `hook_event_name`, `session_id`,
@@ -383,13 +385,14 @@ Anything naming one client's machinery stays in that client's own hook, which is
 
 Neither `PreCompact` nor `PostCompact` is wired in either client: neither can inject context into
 the model, so a backstop built on them could only write state, never ask for it to be reconciled.
-The ordinary `SessionStart` report covers the post-compaction case instead. On Windows the hook
+In managed mode, the ordinary `SessionStart` report covers the post-compaction case instead. On Windows the hook
 uses Git Bash to avoid paying PowerShell startup cost after every response.
 
 Claude Code, Codex and Copilot can all resume the resulting `.project-continuity/state.md` when
-started in the same physical working tree. Claude and Codex additionally get the hook reporting
-above; Copilot has no hook system, so its entry path is the global instructions and shared skill
-alone.
+started in the same physical working tree. In managed mode with continuity enabled, Claude and
+Codex additionally get the hook reporting above; native mode leaves that protocol available only
+through explicit instructions and skills. Copilot has no hook system, so its entry path is the
+global instructions and shared skill alone.
 
 ## Working tree at `~/dotfiles`
 

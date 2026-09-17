@@ -73,7 +73,7 @@ print("application. theme, verbose, tui, permissions and enabledPlugins were rel
 print("deliberately, so re-pinning one reverses that decision.")
 print()
 print("Plugins are the exception that does not belong here at all: add them to the")
-print("claude plugin install list in scripts/bootstrap-* instead.")
+print("claude plugin install list in scripts/bootstrap/bootstrap-* instead.")
 print()
 print("Otherwise copy the value into")
 print("home/.chezmoitemplates/claude/settings-durable.json, then run chezmoi apply.")

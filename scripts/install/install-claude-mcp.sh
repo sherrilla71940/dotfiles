@@ -12,7 +12,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-manifest_path="$script_dir/claude-user-mcp-servers.json"
+manifest_path="$script_dir/../manifests/claude-user-mcp-servers.json"
 
 while IFS= read -r server; do
   name="$(jq -r '.key' <<<"$server")"

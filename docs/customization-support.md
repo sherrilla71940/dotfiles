@@ -33,10 +33,11 @@ The columns group surfaces only when they read the same personal configuration:
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
+| Workflow archive, restore, and delete skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
-| Marketplace plugins | installed by `scripts/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
+| Marketplace plugins | installed by `scripts/bootstrap/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
 | User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
 | General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
 
@@ -52,13 +53,25 @@ the same duplication for rules with `chat.instructionsFilesLocations`, and VS Co
 
 ## AI profile dimensions
 
-Claude Code, Codex, and the managed VS Code Copilot commit-message instruction use two independent
-machine-local chezmoi data values: `ai_context` (`personal` or `company`) and `ai_continuity`
-(`on` or `off`). Missing values default to `company` and `on`; unsupported values fail during
-rendering. The rendered configuration is the shared baseline plus one context layer, with the
-continuity instructions and automatic hooks added independently when enabled.
+The repository exposes two independent machine-local inputs plus one managed-mode option:
+`ai_context` (`personal` or `company`), `ai_harness` (`managed` or `native`), and
+`ai_continuity` (`on` or `off`). Claude Code and Codex use all three inputs for their instruction
+and hook outputs. The managed VS Code Copilot commit-message instruction uses the context-derived
+artifact language. Missing values default to `personal`, `managed`, and `on`; unsupported values
+fail during rendering. `ai_workflow` remains a legacy alias for `ai_harness` when the new key is
+absent. The rendered configuration is the shared baseline plus one context layer. Continuity
+guidance and automatic lifecycle reporting are effective only when `ai_continuity=on` and
+`ai_harness=managed`.
 
-This dotfiles repository is an explicit exception: its root `AGENTS.md` is a repository
+Managed mode is the complete opinionated harness: it registers continuity reporting, notifications,
+and Claude's automatic worktree-launch check when applicable. Native mode is the low-opinionated
+layer: it keeps shared instructions, reusable skills, the statusline, lightweight notifications,
+delivery wrappers, and private-file protections, but does not load continuity guidance or register
+continuity/worktree lifecycle hooks. Workflow skills remain discoverable and explicitly invokable
+in native mode. General shell, Git, VS Code, and Windows Terminal settings are not controlled by
+`ai_harness`.
+
+This repository is an explicit exception: its root `AGENTS.md` is a repository
 instruction that overrides the machine default and requires the effective context to be
 `personal` while work is performed here.
 
@@ -69,15 +82,21 @@ instructions take precedence. User-level configuration and customization source 
 in both contexts; application/project comment language follows the active context unless the
 repository or project says otherwise. Continuity state remains English.
 
-Turning continuity off removes the always-loaded continuity instructions and turns the shared
-lifecycle hook into a no-op: it prints nothing and changes neither continuity state nor
-`.git/info/exclude`. The hook stays wired in both states, so the independent worktree launch check
-keeps working and Codex does not have to re-approve its hook entries after a toggle. The
-`project-continuity` skill stays installed, so an explicit continuity request can still invoke it.
-Worktree workflow and worktree manifest remain independently available in both contexts and do not
-toggle continuity. Broad Copilot integration—skill discovery, repository instructions, and agent
-plugins—is unchanged and deferred. See [ADR-0014](./decisions/0014-machine-local-ai-configuration-profiles.md)
-for the design boundaries.
+Turning continuity off removes the always-loaded continuity instructions and unregisters the
+continuity lifecycle hook, but managed notifications and the Claude worktree-launch check remain.
+Native mode unregisters the continuity and worktree lifecycle hooks but retains lightweight
+notifications. The `project-continuity` skill stays installed, so an explicit continuity request
+can still invoke it; returning to managed mode with continuity on restores the automatic behavior.
+Because Codex records trust for each hook entry by path and content hash, switching harness modes
+may require a new `/hooks` approval. Native mode is lower-opinionated, not notification-free.
+State-changing workflow skills—including project continuity, worktree provisioning, archive, restore,
+and delete—are explicit-only in every client and harness mode. Managed hooks may report lifecycle
+events, but they never start a worktree or change source state.
+Worktree workflow and worktree manifest remain independently available as explicit skills in all
+selector combinations and do not toggle continuity. Broad Copilot integration—skill discovery,
+repository instructions, and agent plugins—is unchanged and deferred. See [ADR-0014](./decisions/0014-machine-local-ai-configuration-profiles.md)
+for the design boundaries. See [ADR-0022](./decisions/0022-define-native-and-managed-ai-harness-modes.md)
+for the native-versus-managed harness decision.
 
 ### Surfaces outside this table
 
@@ -95,7 +114,7 @@ This repository does not manage complete product or account state:
   available to the cloud task. It does not receive personal files from this machine's
   `~/.codex/` directory through chezmoi.
 - Copilot cloud features can read supported files committed inside a repository. This
-  dotfiles setup does not copy personal `~/.copilot/` runtime state into GitHub.
+  this setup does not copy personal `~/.copilot/` runtime state into GitHub.
 
 ## Choose where a customization goes
 
@@ -159,6 +178,21 @@ directory. Represent a reusable Claude workflow as a skill instead:
 - Claude-only: `home/dot_claude/skills/<name>/SKILL.md`.
 - Portable across Claude, Codex, and Copilot: `home/dot_agents/skills/<name>/SKILL.md` plus
   its Claude symlink wrapper.
+
+### Archive, restore, or delete a reusable workflow
+
+Workflow archive, restore, and delete skills are repository tooling, not another client
+customization directory. They accept a workflow name or description, perform bounded discovery,
+and show the exact source/dependency/target boundary before mutation. The shared engine under
+`scripts/workflows/` archives or removes only the confirmed canonical source files. Archives live
+under `archives/workflows/`, outside `home/` and active skill discovery; generated targets,
+secrets, application state, and `.project-continuity/` stay outside the archive.
+
+Archive queues generated-target deletion through `home/.chezmoiremove` after creating the archive;
+delete queues the same cleanup without creating an archive. Neither operation deletes live targets
+directly. Archive-copy deletion is separately confirmed. Read the
+[workflow archive guide](./workflow-archives.md) for the definition fields, discovery boundary,
+archive/delete behavior, restore safety rules, and focused test suite.
 
 ## Add an instruction
 
@@ -266,7 +300,7 @@ So name a new skill from the instruction that covers its topic, the way
 Without that, expect it to sit unused however good its description is, and prefer folding its
 content into an existing rule to adding a skill nothing reaches.
 
-`scripts/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
+`scripts/diagnostics/claude-config-usage.sh` reports which managed skills are actually being invoked, so this
 is worth re-measuring rather than assuming. Read a zero as a lower bound: a skill marked
 `user-invocable: false`, or one whose guidance was followed without a tool call, looks the same
 there as one that was ignored.
@@ -289,11 +323,13 @@ Create the skill with all of these gates:
    discovering the skill.
 3. Set `disable-model-invocation: true` in `SKILL.md`. Copilot still discovers the skill in
    `~/.agents/skills`, but does not invoke it automatically.
-4. Add `agents/openai.yaml` with Codex implicit invocation enabled:
+4. Add `agents/openai.yaml` with an explicit Codex invocation policy. Use `false` for a
+   state-changing or side-effectful skill, and use `true` only when implicit Codex invocation is
+   safe and deliberate:
 
    ```yaml
    policy:
-     allow_implicit_invocation: true
+     allow_implicit_invocation: false
    ```
 
 5. Start the skill body with a host guard that tells GitHub Copilot to stop and states whether
@@ -306,6 +342,11 @@ frontmatter schema, so it rejects client-specific fields used in this repository
 `disable-model-invocation`, `argument-hint`, and `user-invocable`. Do not remove a required field
 or install PyYAML only to make that validator pass. The repository hook renders the staged source
 and checks the `.codex-only` host gates.
+
+For a portable skill that changes repository state, add the same explicit-only boundary to its
+`SKILL.md` with `disable-model-invocation: true` and to its Codex metadata with
+`allow_implicit_invocation: false`. Keep this policy separate from `ai_harness`: managed mode may
+register lifecycle hooks, but it does not make source-changing workflows implicit.
 
 When another host adapter shares workflow guidance, keep detailed references as thin templates
 that include one existing shared body. Do not copy that body into each skill.
@@ -345,14 +386,14 @@ loading Claude-only instructions. Keep those exclusions when changing VS Code se
 
 User-scoped MCP configuration shares `~/.claude.json` with authentication, project state,
 and caches, so chezmoi must not overwrite that file. Add a non-secret definition to
-`scripts/claude-user-mcp-servers.json`, then run the platform installer:
+`scripts/manifests/claude-user-mcp-servers.json`, then run the platform installer:
 
 ```bash
-bash scripts/install-claude-mcp.sh
+bash scripts/install/install-claude-mcp.sh
 ```
 
 ```powershell
-powershell -File scripts/install-claude-mcp.ps1
+powershell -File scripts/install/install-claude-mcp.ps1
 ```
 
 The installer adds missing definitions with `claude mcp add-json --scope user` and leaves an
@@ -364,7 +405,7 @@ show additional MCP-backed tools from other sources, and those should stay with 
 | Source | This setup | How it follows machines |
 | --- | --- | --- |
 | Direct user MCP | Chrome DevTools, GitLab, GitHub | the manifest and hand-run installer |
-| Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap-*` |
+| Enabled Claude plugin | Figma and Playwright MCP servers | `claude plugin install` in `scripts/bootstrap/bootstrap-*` |
 | Claude.ai connector | Figma and Slack | the signed-in Claude account; authenticate through `/mcp` |
 | Claude in Chrome | browser tools exposed by the Chrome extension integration | install the extension, then use `/chrome`; its onboarding and enablement state is app-owned |
 
@@ -429,11 +470,11 @@ mechanisms differ, so share a server definition only when both clients support i
 
 Here, **declarative** means the repository records which plugin should be enabled, while the
 client downloads and manages the plugin files. The downloaded cache is not copied into the
-dotfiles repository. Claude Code is the exception: its plugins are installed by the bootstrap
+developer environment repository. Claude Code is the exception: its plugins are installed by the bootstrap
 scripts rather than declared, so enabling and disabling them stays a local decision.
 
 - Claude Code: add the plugin to the `claude plugin install` list in both
-  `scripts/bootstrap-macos.sh` and `scripts/bootstrap-windows.ps1`, with its marketplace
+  `scripts/bootstrap/bootstrap-macos.sh` and `scripts/bootstrap/bootstrap-windows.ps1`, with its marketplace
   ahead of it if that marketplace is not registered automatically. The repository installs
   Claude plugins rather than declaring them, so enabling and disabling stays local — see
   [ADR-0005](./decisions/0005-merge-durable-claude-settings-as-json.md).

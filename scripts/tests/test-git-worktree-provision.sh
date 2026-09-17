@@ -4,7 +4,7 @@
 
 set -u
 
-repository_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repository_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 tool_path="$repository_root/home/dot_local/share/git-worktree-provision.sh"
 temporary_parent=$(cd "${TMPDIR:-/tmp}" && pwd -P)
 test_root=$(mktemp -d "$temporary_parent/git-worktree-provision-tests.XXXXXX") || exit 1

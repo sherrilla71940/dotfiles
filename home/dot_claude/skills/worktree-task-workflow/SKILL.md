@@ -37,7 +37,7 @@ git rev-parse --show-toplevel
 git remote get-url origin
 ```
 
-Stop if repository instructions forbid worktrees. This dotfiles repository does, identifiable by
+Stop if repository instructions forbid worktrees. This developer environment repository does, identifiable by
 its root `.chezmoiroot`; offer to run that task in place instead.
 
 Unless supplied, derive:
@@ -51,7 +51,7 @@ That path is deliberate, not a copy of a terminal habit. `EnterWorktree` moves t
 without an approval prompt only inside the repository's `.claude/worktrees/`, and no permission
 rule suppresses the prompt elsewhere. A sibling `.worktrees/` directory would therefore add one
 approval to every run. Do not relocate it to match a `git wt-add` invocation; that command has
-no default path of its own. The dotfiles repository's `docs/worktree-provisioning.md` carries the
+no default path of its own. The developer environment repository's `docs/worktree-provisioning.md` carries the
 full reasoning and the pre-v2.1.246 sweep caveat.
 
 ## 3. Establish the remote base

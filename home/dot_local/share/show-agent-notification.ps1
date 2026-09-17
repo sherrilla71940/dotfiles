@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 # Windows attributes a toast to an Application User Model ID (AUMID). Without a registered
 # one it invents a per-process identity with an empty display name, so the banner cannot say
-# where it came from. scripts/bootstrap-windows.ps1 registers both AUMIDs below by hand.
+# where it came from. scripts/bootstrap/bootstrap-windows.ps1 registers both AUMIDs below by hand.
 #
 # One script serves both clients, so the identity is chosen per notification: a banner raised
 # for a Codex session must not be attributed to Claude Code. The AUMID sets the name and icon
@@ -26,7 +26,7 @@ $startMenuPrograms = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Progra
 $claudeCodeShortcut = Join-Path $startMenuPrograms "Claude Code.lnk"
 $codexShortcut = Join-Path $startMenuPrograms "Codex.lnk"
 
-# The banner's icon is named by scripts/bootstrap-windows.ps1 on the AppUserModelId key, so
+# The banner's icon is named by scripts/bootstrap/bootstrap-windows.ps1 on the AppUserModelId key, so
 # nothing about it belongs in the markup below. An appLogoOverride image was tried and removed:
 # that slot is for imagery belonging to the notification, a sender's photograph or a piece of
 # album art, and putting the application's own logo there repeats the header icon at a larger

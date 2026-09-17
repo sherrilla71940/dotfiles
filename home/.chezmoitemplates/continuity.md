@@ -1,8 +1,6 @@
 {{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
-{{- if eq $profile.ai_continuity "on" }}
-
+{{- if and (eq $profile.ai_continuity "on") (eq $profile.ai_harness "managed") }}
 ## Project continuity
-
 Decide whether continuity is needed before the first substantive repository action, and create
 it only once the work has produced something material: implementation started, a change spanning
 several files, a non-obvious investigation finding, a decision that constrains what follows, or
@@ -15,7 +13,6 @@ turns into, so reassess it at your first commit and at every commit after: a com
 point where you stop to report a hash, which makes it the one moment the question cannot be
 silently carried past. Reassess too whenever a small task grows into one of those, and always
 use continuity for an explicit handoff or resume and after conversation compaction.
-
 If the working tree root contains `.project-continuity/state.md`, continuity is already active.
 Read its `Objective` first and decide whether it describes the task you were just asked to do.
 **State that belongs to a different unfinished task is never reconciled, merged into, or

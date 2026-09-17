@@ -3,7 +3,7 @@
 # could install software unexpectedly.
 $ErrorActionPreference = "Stop"
 
-$repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
 # Wiring the clone up runs before the package-manager gate below. Neither step needs winget,
 # and both are the ones that fail silently when skipped.
@@ -80,7 +80,7 @@ if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
     # The manifest stays out of routine apply because installing this many extensions is slow
     # and is not something a configuration change should trigger. This script runs once, by
     # hand, which is where it belongs.
-    $manifest = Join-Path $repo "scripts\vscode-extensions.txt"
+    $manifest = Join-Path $repo "scripts\manifests\vscode-extensions.txt"
     if (Test-Path $manifest) {
         Write-Host "installing VS Code extensions from the manifest..."
         $failed = @()
@@ -121,11 +121,11 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 
     # ~/.claude.json also holds application-owned state, so the installer adds only missing
     # server names and leaves any existing one exactly as it is.
-    $mcpInstaller = Join-Path $repo "scripts\install-claude-mcp.ps1"
+    $mcpInstaller = Join-Path $repo "scripts\install\install-claude-mcp.ps1"
     if (Test-Path $mcpInstaller) {
         powershell -NoProfile -ExecutionPolicy Bypass -File $mcpInstaller
         if ($LASTEXITCODE -ne 0) {
-            Write-Warning "The Claude MCP installer failed. Run scripts\install-claude-mcp.ps1 by hand."
+            Write-Warning "The Claude MCP installer failed. Run scripts\install\install-claude-mcp.ps1 by hand."
         }
     }
 } else {

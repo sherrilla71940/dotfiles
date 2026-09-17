@@ -1,9 +1,15 @@
-# Verify that every markdown link carrying a #fragment resolves to a real heading, whether it
-# points into another file relatively or at a heading in the same file.
+# Verify that every relative markdown link resolves: the file it names must exist, and when it
+# carries a #fragment, that fragment must match a real heading -- in another file or in this one.
 #
-# Anchor rot is silent: the link still renders, and only fails when a reader clicks it. The
-# guides and the decision records cross-reference each other by anchor, so renaming one
-# heading can break several files at once.
+# Both failures are silent. The link still renders, and only fails when a reader clicks it. The
+# guides and the decision records cross-reference each other both ways, so one renamed heading or
+# one moved file can break several files at once. A miscounted `../` is the easy one to miss,
+# because the path looks plausible and no tool complains; that is how a dead link to the
+# project-continuity skill survived in scripts/tests/continuity-fixtures/README.md.
+#
+# A link to <name>.md is satisfied by a <name>.md.tmpl source, because chezmoi renders the
+# template to that name in the target. Headings inside a .tmpl are not verified: the staged
+# snapshot holds the unrendered template, so its headings are not knowable here.
 #
 # Prints the number of links checked and exits 0 when they all resolve; prints the offenders
 # and exits 1 when they do not.
@@ -66,7 +72,9 @@ function record(h,   slug) {
   line = $0
   gsub(/`[^`]*`/, "", line)                     # a link inside a code span is being shown, not made
   gsub(/<!--.*-->/, "", line)                   # nor is one inside a comment
-  while (match(line, /\]\([A-Za-z0-9._\/-]*#[A-Za-z0-9._-]+\)/)) {
+  # The character class excludes ":", so an absolute http(s) or mailto target never matches and
+  # only repository-relative links are collected.
+  while (match(line, /\]\([A-Za-z0-9._\/#-]+\)/)) {
     src[++total] = FILENAME
     raw[total] = substr(line, RSTART + 2, RLENGTH - 3)
     lno[total] = FNR
@@ -74,22 +82,38 @@ function record(h,   slug) {
   }
 }
 
+# One stat per distinct path: a link-heavy tree would otherwise fork test(1) hundreds of times.
+function exists(path) {
+  if (!(path in statted)) statted[path] = (system("test -e \"" path "\"") == 0)
+  return statted[path]
+}
+
 END {
   for (i = 1; i <= total; i++) {
-    split(raw[i], part, "#")
+    n = split(raw[i], part, "#")
     if (part[1] == "") {
       target = src[i]                             # bare #fragment: same file
+      rendered = 0
     } else {
       dir = src[i]
       if (!sub(/\/[^\/]*$/, "", dir)) dir = "."
       target = normalise(dir, part[1])
+      # A markdown file with no lines never reaches FNR == 1, so confirm on disk before blaming
+      # the path rather than the fragment.
+      rendered = 0
+      if (!(target in scanned) && !exists(target)) {
+        if (!exists(target ".tmpl")) {
+          printf "    %s:%d -> %s (no such file)\n", src[i], lno[i], raw[i], ""
+          bad++
+          continue
+        }
+        rendered = 1                              # exists only as the template that renders to it
+      }
     }
-    # A markdown file with no lines never reaches FNR == 1, so confirm on disk before blaming
-    # the path rather than the fragment.
-    if (!(target in scanned) && system("test -f \"" target "\"") != 0) why = "no such file"
-    else if (!(target SUBSEP part[2] in heading)) why = "no such heading"
-    else continue
-    printf "    %s:%d -> %s (%s)\n", src[i], lno[i], raw[i], why
+    if (n < 2) continue                           # plain file link: existence was the whole check
+    if (rendered) continue                        # headings of an unrendered template are unknowable
+    if (target SUBSEP part[2] in heading) continue
+    printf "    %s:%d -> %s (no such heading)\n", src[i], lno[i], raw[i]
     bad++
   }
   if (bad) exit 1

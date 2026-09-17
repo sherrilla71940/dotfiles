@@ -14,8 +14,8 @@
 # nothing, sends nothing, and prints no message content - only counts of skill and command
 # names.
 #
-#   scripts/claude-config-usage.sh            # every transcript on this machine
-#   scripts/claude-config-usage.sh --days 30  # only the last 30 days
+#   scripts/diagnostics/claude-config-usage.sh            # every transcript on this machine
+#   scripts/diagnostics/claude-config-usage.sh --days 30  # only the last 30 days
 set -euo pipefail
 
 DAYS=""

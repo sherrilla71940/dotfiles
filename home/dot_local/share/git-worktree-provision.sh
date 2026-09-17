@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Managed by the dotfiles repository. Provides the implementation behind the macOS
+# Managed by the developer environment repository. Provides the implementation behind the macOS
 # `git wt-add` and `git wt-copy` aliases without requiring PowerShell.
 
 set -u

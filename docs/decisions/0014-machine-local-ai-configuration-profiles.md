@@ -3,9 +3,13 @@
 - Status: Accepted
 - Date: 2026-09-14
 
+This decision remains in force as the v1 baseline for the two selectors it introduced. ADR-0022
+extends that schema with a harness-mode choice; references below to exactly two selectors or four
+combinations describe this record's original scope, not the current schema.
+
 ## Context
 
-The dotfiles repository serves personal and company machines from one cross-platform chezmoi
+The developer environment repository serves personal and company machines from one cross-platform chezmoi
 source tree. The existing Claude Code, Codex, Copilot, skill, hook, and worktree configuration
 already provides the required behavior, but it assumes one context and always-on automatic
 project continuity. The repository needs two independent machine-local choices without creating
@@ -24,11 +28,15 @@ Keep one canonical source tree and compose three layers at render time:
 shared baseline + personal OR company context + continuity when enabled
 ```
 
-Use exactly these machine-local selectors in the chezmoi configuration file's `[data]` section:
+This ADR originally defined two machine-local selectors in the chezmoi configuration file's
+`[data]` section. ADR-0021 added a third selector, and ADR-0022 supersedes that selector's name
+and defines the `ai_harness` boundary between the complete managed harness and the low-opinionated
+native layer. The original two-selector decision remains documented below for its context and
+continuity rationale.
 
 | Selector | Supported values | Missing-key default |
 | --- | --- | --- |
-| `ai_context` | `personal`, `company` | `company` |
+| `ai_context` | `personal`, `company` | `personal` |
 | `ai_continuity` | `on`, `off` | `on` |
 
 The values do not live in the repository. Chezmoi's shared templates read them from each
@@ -41,9 +49,13 @@ The context selects the default language for applicable artifacts:
 - `company` selects Traditional Chinese for Taiwan (`zh-TW`, represented as `zhtw` where an
   existing interface uses that value).
 
-The dotfiles repository is a deliberate repository-level exception. Its root `AGENTS.md` treats
-the effective context as `personal`, so changes to this user-level configuration remain English
-without changing the machine-wide selector used by other repositories.
+A personal machine can omit `ai_context` entirely. A work machine opts in by setting
+`ai_context = "company"` with `chezmoi edit-config`, which keeps the company choice explicit and
+machine-local rather than inherited by every machine that clones this repository.
+
+The developer environment repository is a deliberate repository-level exception either way. Its root
+`AGENTS.md` treats the effective context as `personal`, so changes to this user-level
+configuration remain English even on a machine explicitly set to `company`.
 
 Explicit language arguments remain authoritative. The default applies to `git-commit-action`,
 the worktree workflow's invocation and publishing guidance, and the managed VS Code Copilot
@@ -51,14 +63,16 @@ commit-message setting. Technical identifiers, filenames, branch names, commit t
 configuration comments, and continuity state remain in English. Application/project comments
 follow the selected context unless repository or project instructions override it.
 
-Continuity remains independent of context. When it is `on`, Claude Code and Codex receive the
-existing continuity instructions and the shared lifecycle helper reports as before. When it is
-`off`, the always-loaded instructions are omitted and that helper renders as a deliberate no-op: it
-drains the event payload, prints nothing, and writes nothing, so neither a tracked state file nor
-`.git/info/exclude` changes. The `project-continuity` skill stays installed so an explicit user
-request can still invoke it, and the existing session-export decisions remain part of that skill.
+Continuity remains independent of context. In this ADR's original two-selector scope, `on` loaded
+the existing continuity instructions and `off` omitted them while the shared lifecycle helper
+became a deliberate no-op. The current `ai_harness` selector adds a second boundary: native mode
+suppresses the guidance and automatic hooks without changing the stored continuity preference; see
+ADR-0022. The `project-continuity` skill stays installed so an explicit user request can still
+invoke it, and the existing session-export decisions remain part of that skill.
 
-Hook wiring is identical in both states, and the guard alters no app-owned configuration.
+The current harness boundary changes which repository-owned lifecycle hooks are registered: native
+mode retains lightweight notifications but omits continuity and worktree lifecycle hooks. The
+modify template alters no unrelated app-owned configuration.
 
 Worktree workflow and worktree manifest capabilities remain independently available in both
 contexts. The worktree workflow may use project continuity when continuity is enabled, but neither
@@ -114,10 +128,11 @@ the context default.
 
 ## Consequences
 
-Newly rendered configuration is deterministic for all four combinations. Changing a selector does
-not modify tracked source files and does not automatically apply the result. Users must preview
-with `chezmoi diff`, apply only after reviewing the preview, and restart Claude Code, Codex, or
-VS Code so a new session reads the rendered configuration.
+Within this decision's original scope, newly rendered configuration was deterministic for all four
+combinations. The current schema, extended by ADR-0021, is deterministic for all eight combinations.
+Changing a selector does not modify tracked source files and does not automatically apply the result.
+Users must preview with `chezmoi diff`, apply only after reviewing the preview, and restart Claude
+Code, Codex, or VS Code so a new session reads the rendered configuration.
 
 Already-running sessions retain the startup context they already loaded. The selectors are
 machine-wide, so users who need concurrent personal and company sessions must use separate machines
@@ -135,9 +150,19 @@ the test on a structural error that balanced delimiters alone would not catch.
 - `home/.chezmoitemplates/core.md`, `profiles/`, and `continuity.md` compose the instruction layers.
 - Claude, Codex, and VS Code wrappers pass the root template data explicitly.
 - `home/dot_local/share/maintain-project-continuity.sh.tmpl` carries the continuity-off no-op guard.
-- `scripts/test-ai-configuration-profiles.sh` renders all four combinations, defaults, and invalid
-  values without changing live targets. It asserts that the worktree launch check survives both
-  continuity states, and runs the rendered helper against a throwaway repository to prove that
-  continuity off prints nothing and changes neither the state file nor `.git/info/exclude`.
-- Run `bash scripts/test-ai-configuration-profiles.sh` from Git Bash or macOS Bash, then run the
+- `scripts/tests/test-ai-configuration-profiles.sh` renders all combinations defined by the current
+  schema, defaults, and invalid values without changing live targets. It asserts harness-specific
+  hook registration and runs the rendered helper against a throwaway repository to prove that
+  automatic lifecycle reporting is quiet when disabled.
+- Run `bash scripts/tests/test-ai-configuration-profiles.sh` from Git Bash or macOS Bash, then run the
   repository pre-commit hook for staged-source rendering and cross-client structural checks.
+
+## Revisions
+
+- 2026-09-14: the missing-key default for `ai_context` changed from `company` to `personal`. The
+  original value preserved the previous unconditional zh-TW comment rule for application
+  repositories, but it also meant that a machine which had never been configured produced
+  Traditional Chinese artifacts, including on a personal machine and on a fresh clone. Making
+  `personal` the fallback keeps the company choice explicit and machine-local, which is the point
+  of the selector. Nothing else in this record changed: the composition model, the continuity
+  semantics, the worktree independence, and the rejected alternatives all still hold.

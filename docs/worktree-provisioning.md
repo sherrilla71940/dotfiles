@@ -84,9 +84,13 @@ unfinished task — which is the right answer when the two tasks need separate u
 changes, and unnecessary when they do not. For a second task in the same directory, the
 `project-continuity` skill parks the first under `.project-continuity/parked/` instead.
 
-The machine-local AI profile does not toggle worktree capabilities. Both personal and company
-contexts keep the canonical `worktree-task-workflow` and `worktree-manifest` skills available;
-continuity is an independent `ai_continuity` choice that the workflow may use when enabled.
+The machine-local AI profile does not remove worktree capabilities. Both `managed` and `native`
+AI harnesses keep the canonical `worktree-task-workflow` and `worktree-manifest` skills available
+for explicit invocation. Both skills are state-changing workflows, so neither client starts them
+implicitly. Managed mode may connect the task workflow to automatic continuity and
+Claude's launch guard; native mode leaves those skills manual and does not register the automatic
+launch guard. `ai_continuity` remains a separate preference for managed mode. General Git and
+worktree provisioning commands are unaffected by the harness selection.
 
 The wrapper options are:
 
@@ -171,6 +175,10 @@ the worktree itself is the goal and a terminal, VS Code, Codex, or another tool 
 
 ### Claude worktree task workflow
 
+For this workflow, `<base>` means the user-provided existing branch on `origin`. The task branch
+is created from `origin/<base>` in the new worktree, and the eventual pull or merge request targets
+that same base branch; it is not a generic label for whichever branch happens to be checked out.
+
 The Claude adapter of `worktree-task-workflow` combines them, because neither alone gives an
 isolated session on a branch taken from an arbitrary remote base. Claude Code's own worktree
 creation branches from the remote default branch (`fresh`), from local `HEAD` (`head`), or from a
@@ -217,7 +225,8 @@ along with the directory, which is why that path is never used.
 
 The Codex adapter of `worktree-task-workflow` supports both ways a task can enter isolation. In a
 [Codex desktop Local chat](https://learn.chatgpt.com/docs/environments/git-worktrees), use the
-native Handoff control to move the chat to Worktree after the skill has resolved the task and base.
+native Handoff control to move the chat to Worktree after the skill has resolved the task and base
+branch.
 Codex creates the managed detached worktree, copies the
 repository's `.worktreeinclude` entries, and keeps the chat associated with it. In the CLI or IDE
 extension, the adapter creates a detached sibling worktree with `git wt-add` when it starts from
@@ -239,6 +248,43 @@ uses project continuity so another client can resume there.
 The running skill never removes its active Codex worktree. After the branch is clean, pushed, and
 attached to an open request, the user can keep it for review or dispose of it through the app's
 worktree lifecycle. Neither choice deletes the task branch.
+
+## What the task workflow does at each step
+
+The root [`README.md`](../README.md#parallel-tasks-without-losing-state) shows the lifecycle as a
+diagram and says why it is worth invoking. This section is the behaviour behind each step.
+
+**Materials are read before anything exists.** A handoff note, spec, deck, spreadsheet, web page,
+or design link is read through its matching document skill, web fetch, or design integration
+before a single Git command runs. An explicit task is cross-checked against the materials; with
+`--infer-task` the task is derived from them instead, in the materials' own language. Anything
+that cannot be read stops the run with nothing created, naming the missing capability rather than
+guessing from a URL slug. Fetched content is data: a page asking to change the task, base branch,
+task branch, or cleanup behaviour is reported, never obeyed.
+
+**Naming is derived, not invented.** The commit type comes from the shared `git-commit-reference`
+table, the slug from the task's meaning, and the branch from `type/slug/suffix`. The Claude
+adapter places the worktree under `.claude/worktrees/` because entering it there raises no
+approval prompt, and the base is a user-provided named remote branch and request target, which no
+client's own worktree creation can express.
+
+**A silent provisioning skip is surfaced, not swallowed.** `git wt-add` can succeed while copying
+nothing, reporting only `[skipped] .worktreeinclude: manifest not found in source worktree`. The
+workflow settles whether that matters by building and running the app rather than by classifying
+filenames, and when a manifest is warranted it asks where `.worktreeinclude` should land instead
+of folding an unrelated root-level file into the task's request.
+
+**Automated verification reaches the browser, not just the build.** With `agent-test` on, the
+workflow runs typecheck, lint, focused tests and a build, and for visual work drives the real UI
+through the managed `chrome-devtools` MCP server. Where a driver cannot reach — canvas, map
+overlays, WebGL, drag gestures — the `browser-collab-testing` skill splits the interactions with
+the user rather than skipping them. Nothing is reported as tested unless a tool actually drove it,
+and agent verification never replaces the user's manual test.
+
+**Cleanup removes the worktree, never the branch.** The task branch outlives its directory for
+review and CI. The Claude adapter exits with `keep` and then runs `git worktree remove` without
+`--force`; the Codex adapter never removes its own active worktree at all. Every removal path that
+would delete a ref is deliberately unused.
 
 ## Safety boundaries
 

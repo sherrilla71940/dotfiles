@@ -19,7 +19,7 @@ Manage portable VS Code user files individually. The current set is `settings.js
 `keybindings.json`, MCP configuration, and prompt files. Keep their bodies once under
 `home/.chezmoitemplates/vscode/` and render them to the Windows or macOS profile path.
 
-Track desired extensions separately in `scripts/vscode-extensions.txt`. Leave history,
+Track desired extensions separately in `scripts/manifests/vscode-extensions.txt`. Leave history,
 workspace storage, caches, logs, machine identifiers, extension runtime data, and similar
 state unmanaged. Add future portable files, such as intentional user snippets, selectively
 after checking their contents and ownership.
@@ -51,5 +51,5 @@ that is intentional when the state is runtime-owned or machine-specific.
 
 - [`home/.chezmoitemplates/vscode/`](../../home/.chezmoitemplates/vscode/)
 - [`home/.chezmoiignore`](../../home/.chezmoiignore)
-- [`scripts/vscode-extensions.txt`](../../scripts/vscode-extensions.txt)
+- [`scripts/manifests/vscode-extensions.txt`](../../scripts/manifests/vscode-extensions.txt)
 - [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md#applications-that-write-their-own-configuration)

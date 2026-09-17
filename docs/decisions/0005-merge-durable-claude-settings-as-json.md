@@ -46,7 +46,7 @@ that must hold belongs there rather than in a machine-wide default.
 
 `enabledPlugins` fails it as well, and the merge cannot express a disable, so a pinned plugin
 could not be turned off locally at all. Plugins are installed software rather than
-configuration, so `scripts/bootstrap-macos.sh` and `scripts/bootstrap-windows.ps1` install
+configuration, so `scripts/bootstrap/bootstrap-macos.sh` and `scripts/bootstrap/bootstrap-windows.ps1` install
 them with `claude plugin install`, the way they install any other tool. Which plugins are
 enabled after that is a local decision.
 
@@ -97,7 +97,7 @@ The merge cannot express removal. Deleting an application-written key requires e
 live file, or a mechanism other than `merge`.
 
 Promoting a local setting into the source state stays manual, supported by
-`scripts/claude-settings-drift.sh`, because `chezmoi diff` only reports repository-owned keys
+`scripts/diagnostics/claude-settings-drift.sh`, because `chezmoi diff` only reports repository-owned keys
 and so cannot surface a candidate.
 
 The ADR-0004 invariants still hold: a complete file is generated when the target is absent,
@@ -115,9 +115,9 @@ and malformed JSON fails the apply instead of being overwritten.
 
 - [`home/.chezmoitemplates/claude/settings-durable.json`](../../home/.chezmoitemplates/claude/settings-durable.json)
 - [`home/dot_claude/modify_settings.json`](../../home/dot_claude/modify_settings.json)
-- [`scripts/claude-settings-drift.sh`](../../scripts/claude-settings-drift.sh)
-- [`scripts/bootstrap-macos.sh`](../../scripts/bootstrap-macos.sh) and
-  [`scripts/bootstrap-windows.ps1`](../../scripts/bootstrap-windows.ps1), which install the
+- [`scripts/diagnostics/claude-settings-drift.sh`](../../scripts/diagnostics/claude-settings-drift.sh)
+- [`scripts/bootstrap/bootstrap-macos.sh`](../../scripts/bootstrap/bootstrap-macos.sh) and
+  [`scripts/bootstrap/bootstrap-windows.ps1`](../../scripts/bootstrap/bootstrap-windows.ps1), which install the
   plugins and the typescript language server the plugins need
 - [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md#applications-that-write-their-own-configuration)
 

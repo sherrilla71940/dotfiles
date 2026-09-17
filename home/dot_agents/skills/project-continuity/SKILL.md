@@ -1,6 +1,7 @@
 ---
 name: project-continuity
 description: Maintain private, working-tree-local work-session continuity across Claude Code, Codex and GitHub Copilot. Use when the current working tree already has continuity state, when the user asks to start, resume, checkpoint, hand off or clean up continuity, or when substantive work would be expensive to reconstruct if the current session ended abruptly. Do not initialize it for trivial or self-contained work.
+disable-model-invocation: true
 ---
 
 # Project Continuity
@@ -31,8 +32,17 @@ Before ending a response that touched continuity, apply this gate:
    `Blockers`, and `TODO / deferred` are all empty or absent, the task is finished. Unless the
    Verification block already records `Cleanup: declined`, say that continuity looks unnecessary
    and offer cleanup immediately.
-3. If the user confirms, follow [Cleanup](#cleanup); do not delete state merely because the task is complete.
-4. If the user declines, record `Cleanup: declined` in the Verification block and do not raise the offer again for that task.
+3. Review every `parked/*.md` during every continuity review, not only during cleanup or an
+   explicit parked-task listing. Reconcile each file against Git enough to apply the same
+   finished-state invariant. Report a parked file with no unfinished sections as a completed
+   parked-state closure candidate. Completion does not authorize deletion: ask for confirmation
+   before deleting each named file. If the user declines, record `Cleanup: declined` in that
+   parked file's Verification block and do not raise that candidate again.
+4. If the user confirms cleanup for the active state or named parked candidates, follow
+   [Cleanup](#cleanup) and delete only the confirmed targets; do not delete state merely because
+   the task is complete.
+5. If the user declines cleanup for the active state, record `Cleanup: declined` in its
+   Verification block and do not raise the offer again for that task.
 
 This check is independent of checkpointing: a finished task removes the reason to keep state,
 so the cleanup offer must not depend on another checkpoint occurring.
@@ -164,13 +174,25 @@ A worktree is the right answer when two tasks need separate working trees — se
 
 - **Park:** move `state.md` to `parked/<short-slug>.md`, where the slug comes from the objective. Add `Parked: <ISO 8601 timestamp with timezone>` to its Verification block and change nothing else — a parked file is a handoff, not a summary.
 - **Resume:** move it back to `state.md`, then run the ordinary Resume workflow against it. Park whatever was active first; there is never more than one `state.md`.
+- **Continue a parked task:** do not continue work on a task while its state remains in `parked/`.
+  Resume it first by moving it back to `state.md`, park the currently active state if needed, and
+  run the ordinary Resume workflow before taking substantive action.
 - **List:** read the directory. There is no index to maintain and nothing to keep in sync.
-- **Review:** during cleanup, or when explicitly asked to list parked tasks, inspect `parked/*.md`. Treat entries whose `Parked` timestamp is more than 14 days old as stale candidates, report their paths and timestamps, and never delete them automatically. A missing or invalid timestamp has unknown age and should be reported as such.
+- A completed parked file is a closure candidate, not permission to delete state. Deletion still
+  requires explicit confirmation for the named file.
+- **Review:** inspect `parked/*.md` during every continuity review. Apply the finished-state
+  invariant and report files with no unfinished sections as closure candidates. Ask for confirmation
+  before deleting each candidate, and never delete one automatically. During cleanup or an explicit
+  parked-task listing, also treat entries whose `Parked` timestamp is more than 14 days old as
+  stale candidates, report their paths and timestamps, and never delete them automatically. A
+  missing or invalid timestamp has unknown age and should be reported as such.
 - **Close:** delete the file when its task is done. Parked state is not an archive, and a finished task leaves nothing behind here — Git history and the pull request are where a decision's reasoning belongs.
 
 Park when the user turns to something substantial while unfinished state is still useful, and say that you did. Do not park to avoid asking: if the new request is small, answer it and leave `state.md` alone. If the old task is genuinely abandoned, replace it rather than parking it, so the directory does not fill with work nobody will return to.
 
-The Git exclude entry is `/.project-continuity/`, so it already covers `parked/`. The Stop hook only reads `state.md`, so parked tasks raise no drift or cleanup notices.
+The Git exclude entry is `/.project-continuity/`, so it already covers `parked/`. The lifecycle
+reporter checks parked files for completed-state closure candidates but never deletes them; the
+skill still requires confirmation before cleanup.
 
 ## Checkpoint
 
@@ -183,6 +205,11 @@ if this session ended now, could another supported client identify the objective
 first unfinished action, blockers, required external materials, and unverified assumptions without
 guessing? If not, update continuity. Skip the update when every fact needed to resume is already
 durable in the repository or current state.
+
+Required external materials include deliverables and durable context that the repository cannot
+recover. If that context is too large to inline, put it in a companion file under
+`~/Documents/handoff/{repo}/` and link it from `state.md`. Keep `state.md` as the entry point for
+the objective, decisions, blockers, and next action; do not create competing copies of those facts.
 
 Do not checkpoint when nothing meaningful changed, when the information is already obvious in code or tests, when the update would repeat conversation text, or when the change is trivial and cheap to redo.
 
@@ -227,6 +254,23 @@ Use exactly one of these labels in the user-facing response:
   one focused user answer would resolve the gap, ask that question instead of requiring a full
   export.
 
+**Artifact URLs are not guaranteed cross-client handoff inputs.** A person or a client may be able
+to open a Claude Artifact when it has the required access and browser path, but the receiving client
+must verify that; the URL alone is not evidence that the content was opened. Record an Artifact URL
+for the source client's convenience, but put any fact or deliverable a receiving client needs in
+`state.md` or a companion file under `~/Documents/handoff/{repo}/`. If the Artifact is the only copy,
+say so explicitly and treat the missing content as a blocker rather than guessing or claiming to
+have read it. When both an Artifact and a file exist, record which one is authoritative.
+
+**Client-local instructions are not automatically handed to the next client.** Claude Code loads
+`CLAUDE.local.md`; Codex uses `AGENTS.override.md` or `AGENTS.md`, with the override replacing the
+`AGENTS.md` file at that directory; and Copilot has no private project-scoped equivalent. Do not
+claim to have received or read a private file merely because another client used it. Inspect a
+named file only when the user or handoff explicitly identifies it and the current client can access
+it. If its procedure or facts are needed for the task, record them in `state.md` or a companion
+handoff file. Never create `AGENTS.override.md` to mirror `CLAUDE.local.md`, or create the reverse
+mirror for Claude.
+
 When the source client supports a documented export command, name it in the request (for example,
 Claude Code's `/export`). Do not invent an export command for a client that does not provide one;
 ask for its available transcript or a concise user summary instead.
@@ -245,11 +289,12 @@ for a checkpoint to raise it, and do not treat a quiet final turn as a reason to
 
 1. Reconcile once more, confirm the finished-state invariant still holds, and verify that no useful handoff state remains.
 2. If something belongs in durable documentation or private instructions, say so before deleting; never promote it silently.
-3. Run the parked-task review above. Report stale candidates, but do not remove parked files
-   unless the user separately confirms those specific deletions.
-4. Delete `state.md`. Remove the whole `.project-continuity/` directory only when `parked/`
-   is empty or absent; a parked task is somebody's unfinished work, and cleaning up the task
-   in front of you is not a reason to discard it. If parked files remain, say which.
+3. Run the parked-task review above. Report completed closure candidates and stale candidates, but
+   do not remove parked files unless the user separately confirms those specific deletions.
+4. Delete `state.md` when active cleanup was confirmed, and delete only the specifically confirmed
+   completed parked candidates. Remove the whole `.project-continuity/` directory only when
+   `parked/` is empty or absent; a parked task is somebody's unfinished work, and cleaning up the
+   task in front of you is not a reason to discard it. If parked files remain, say which.
 5. Leave the Git exclude entry. It is one anchored line covering every working tree of the repository, so removing it would strip protection from the others.
 6. Never remove tracked `.gitignore` rules, `CLAUDE.local.md`, `AGENTS.override.md`, native memory, or unrelated files as part of cleanup.
 7. Say what was removed.

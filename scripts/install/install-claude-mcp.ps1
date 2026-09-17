@@ -4,7 +4,7 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     throw "Claude Code is not installed or is not available on PATH."
 }
 
-$manifestPath = Join-Path $PSScriptRoot "claude-user-mcp-servers.json"
+$manifestPath = Join-Path $PSScriptRoot "..\manifests\claude-user-mcp-servers.json"
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 
 foreach ($server in $manifest.mcpServers.PSObject.Properties) {

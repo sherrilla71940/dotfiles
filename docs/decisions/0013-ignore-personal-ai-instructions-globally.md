@@ -37,7 +37,7 @@ The file contains these patterns:
 
 Keep shared `AGENTS.md`, `CLAUDE.md`, and Copilot repository instruction files out of the global
 ignore. The patterns protect personal files from accidental tracking in every repository on
-machines that apply this dotfiles configuration.
+machines that apply this developer environment configuration.
 
 Global Git ignore is only a tracking safeguard. It does not make a file available to an AI client,
 copy it into a worktree, or replace a repository's `.worktreeinclude` policy.
@@ -52,7 +52,7 @@ copy it into a worktree, or replace a repository's `.worktreeinclude` policy.
   the supported shared Copilot customization surface, while personal Copilot instructions already
   live outside Git.
 - **Use only each clone's `.git/info/exclude`:** rejected as the primary policy. It is local to a
-  clone and is not carried by the dotfiles configuration to new repositories or machines.
+  clone and is not carried by the developer environment configuration to new repositories or machines.
 - **Rely on Git's default global-ignore path:** rejected. The default depends on environment
   variables such as `HOME`; explicitly configuring the path keeps PowerShell, Git Bash, and macOS
   on the same managed file.

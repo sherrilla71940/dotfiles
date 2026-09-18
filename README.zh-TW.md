@@ -140,6 +140,37 @@ flowchart LR
     style targets fill:none,stroke:transparent
 ```
 
+### 以原生功能優先的 workflow 委派
+
+這套 workflow 負責協調契約，不會取代用戶端本身的功能。只要用戶端的原生功能能可靠地
+滿足必要的不變條件，adapter 就應優先使用它。儲存庫自有的 fallback 只補上原生行為無法
+表達或驗證的部分。
+
+| 議題 | 優先使用的原生機制 | 本儲存庫仍負責的契約 |
+| --- | --- | --- |
+| 建立與管理 worktree | Claude `--worktree` 或 `EnterWorktree`；Codex desktop 的 Worktree 與 Handoff | workflow 的隔離檢查，以及各用戶端需要的 fallback。 |
+| 選擇起始分支 | Codex desktop 的分支選擇；Claude 支援的 `baseRef` 或 PR／MR 輸入 | 驗證任意 `origin/<base>`，並一致地把它當成任務與 request 的基底。 |
+| 建立並發佈任務分支 | 原生分支、commit、push 與 GitHub pull request 控制（只要符合任務需求） | 推導任務分支、保留選定的基底，避免分支或 request 目標漂移。 |
+| 恢復工作階段 | Claude 的 resume 與 worktree 綁定；Codex 的對話／worktree Handoff | 可攜式的 `.project-continuity/state.md`，以及跨用戶端的 Git 核對。 |
+| 佈建忽略檔案與環境 | `.worktreeinclude`，以及 Codex desktop 可用的 local-environment setup | 經過審查的 allowlist，以及 terminal、VS Code、CLI 與跨用戶端 fallback。 |
+| 執行驗證 | Claude `/run`、`/verify`、hooks，或 Codex actions 與 hooks | 儲存庫的重點檢查、runtime 證據，以及使用者手動測試關卡。 |
+| 隔離 runtime 資源 | 專案自行定義的 runtime 設定 | 選用的 descriptor 與每個 worktree 的 HTTP 連接埠配置；資料庫及其他服務仍由專案負責。 |
+| 保留或移除 workflow | 用戶端原生 artifact 的 session／workflow 儲存功能 | 明確的來源 bundle archive、restore 與 delete 生命週期。 |
+| 清理 | 由用戶端管理 worktree 時，使用其原生生命週期控制 | 保留分支的清理規則，以及 live target 必須另外審查後才能 `chezmoi apply`。 |
+
+這項政策會依用戶端介面分別套用。Claude 可以原生建立與恢復 worktree，但它的 `baseRef`
+設定無法表達所有指定名稱的既有分支；需要精確基底契約時，workflow 會改用 Git。Codex
+desktop 現在提供原生的 worktree、setup、分支與發佈控制；workflow 仍支援 Codex CLI 與
+IDE extension，並會驗證選定的 worktree 是否符合要求的基底。原生 setup 與驗證可以簡化
+adapter，但不會配置每個 worktree 專用的連接埠，也不會提供可跨用戶端使用的狀態。
+
+如果用戶端日後提供可靠滿足其中一項不變條件的原生功能，請移除或繞過對應的自訂機制，
+不要同時維護兩套互相競爭的實作。
+
+這項政策所依據的用戶端行為，請參考目前的 [Claude Code worktree 文件](https://code.claude.com/docs/en/worktrees)、
+[Claude Code workflow 文件](https://code.claude.com/docs/en/workflows)、[Codex worktree 文件](https://learn.chatgpt.com/docs/environments/git-worktrees)，
+以及 [Codex local-environment 文件](https://learn.chatgpt.com/docs/environments/local-environment)。
+
 三個細節就能解釋大部分的結構：
 
 - **共用指示會直接嵌入，不是 import。** 每個用戶端的原生指示檔都收到同一份本文。Codex 只收到永遠
@@ -301,13 +332,16 @@ worktree。CWD 用來辨識儲存庫、檢查 worktree 註冊資訊，以及從�
 Worktree 隔離涵蓋來源與 Git 狀態，但不會隔離執行中的服務或其連接埠。需要平行測試應用程式時，請在使用中的儲存庫提供追蹤中的
 `.worktree-runtime.json` 描述檔後，以 `runtime=auto` 明確叫用這套流程。這個 helper 會為每個實體 worktree 保留偏好的連接埠，
 在伺服器執行期間取得 lease，並回報固定連接埠或其他無法支援隔離的執行環境相依項目。這保留了我們約定的設計邊界：只有在明確選用
-流程時才提供強而有力的執行環境保證，不會強迫每項任務或每個專案都套用僵化的 harness。
+流程時才提供強而有力的執行環境保證，不會強迫每項任務或每個專案都套用僵化的 harness。預設值是 `runtime=off`，不會啟動伺服器。
+V1 只處理一個 HTTP 開發程序及其連接埠；描述檔可以標示資料庫、cache、queue、Docker 服務與外部服務，但 helper 只會回報這些分類，
+不會替它們建立隔離環境。連接埠配置會留在 worktree 與 Git 之外的使用者快取中，因此 `chezmoi apply` 不會啟動專案伺服器，也不會還原
+runtime 配置狀態。
 
 `worktree-task-workflow` 會把一項實質的開發任務轉成可重複的隔離流程：先驗證起始分支，建立專用 worktree 與任務分支，讓任務脈絡
 能跨 AI 工作階段保留，執行自動化驗證，請求使用者進行人工測試，再把變更發佈到正確的基底分支。這能降低分支或基底選錯、脈絡遺失、
 漏做驗證、request 目標不一致，以及同時處理多個任務或 AI 用戶端時的手動設定負擔。
 
-**圖：一個新任務的生命週期，包含素材檢閱、worktree 佈建、agent 自動驗證與使用者人工測試關卡。** 圖中標出
+**圖：一個新任務的生命週期，包含素材檢閱、worktree 佈建、選用的執行環境隔離、agent 自動驗證與使用者人工測試關卡。** 圖中標出
 Claude 與 Codex 的分支流程；worktree 路徑與清理方式也會依 adapter 而不同。
 
 ```mermaid
@@ -349,7 +383,9 @@ flowchart TD
         U{"執行完整的選用 agent 驗證？<br/>預設：是"}
         V["執行 typecheck、lint、<br/>聚焦測試與有意義的 build"]
         W["涉及視覺 UI 時，若工具可用，<br/>操作指定的瀏覽器流程"]
-        X["任務需要執行應用程式時，<br/>啟動它並請求真實路由"]
+        X{"任務需要執行應用程式嗎？"}
+        RUNTIME["runtime=auto + 追蹤中的描述檔：<br/>配置並驗證每個 worktree 的連接埠"]
+        ORDINARY["runtime=off 或執行環境隔離不支援：<br/>使用專案原本的啟動方式；<br/>回報不保證每個 worktree 有獨立連接埠"]
         Y["執行最低限度的合理檢查<br/>（完整驗證關閉時也要執行）"]
         AA{{"提供明確步驟並請使用者<br/>執行人工測試；<br/>停止並等待"}}
         AB["修正失敗；重新執行適用的<br/>檢查與執行期驗證"]
@@ -362,7 +398,9 @@ flowchart TD
         R --> S --> T --> U
         U -->|"是"| V --> W --> X
         U -->|"否"| Y --> X
-        X --> AA
+        X -->|"否"| AA
+        X -->|"runtime=auto + 描述檔"| RUNTIME --> AA
+        X -->|"runtime=off 或不支援"| ORDINARY --> AA
         AA -->|"失敗"| AB --> U
     end
 
@@ -382,9 +420,10 @@ flowchart TD
 
     class A input
     class B,D,E,F,G,I,J,L,M,O,P,Q,R orchestration
-    class C,H,K,N,U,AA,AF control
+    class C,H,K,N,U,X,AA,AF control
     class S output
-    class T,V,W,X,Y,AB work
+    class T,V,W,Y,AB work
+    class RUNTIME,ORDINARY orchestration
     class Z exception
     class AC,AD,AE,AG,AH orchestration
 
@@ -416,8 +455,9 @@ worktree 階段會依 adapter 採用不同的 Git 流程：
 
 工作階段因為 token 上限而結束時，下一個用戶端可以進入同一路徑，讀取記錄的目標、決策、素材、阻礙與下一步，
 不需要手動整理交接文件。`agent-test=true` 會執行 typecheck、lint、聚焦測試、有意義的 build，以及視覺工作可用時的
-瀏覽器或執行期驗證；`agent-test=false` 仍會執行最低限度的合理檢查。任務需要執行應用程式時，執行期驗證會啟動
-應用程式並請求真實路由；指定的瀏覽器流程則驗證特定 UI 操作。兩者都不取代人工測試。
+瀏覽器或執行期驗證；`agent-test=false` 仍會執行最低限度的合理檢查。任務需要執行應用程式時，流程會先判斷是否有明確指定的 runtime 路徑：
+`runtime=auto` 會使用追蹤中的描述檔並驗證每個 worktree 的連接埠；`runtime=off` 或執行環境隔離不支援時，會使用專案原本的啟動方式，
+並回報不保證每個 worktree 有獨立連接埠。指定的瀏覽器流程則驗證特定 UI 操作。兩者都不取代人工測試。
 
 人工測試關卡會提供 worktree 絕對路徑、啟動命令、路由、前置條件、操作順序與預期結果，接著停止並等待。只有使用者
 回報人工測試通過後，流程才會建立 commit、推送任務分支，並開啟以基底分支為目標的 request。Claude 會在通過安全檢查
@@ -427,11 +467,13 @@ worktree 階段會依 adapter 採用不同的 Git 流程：
 [worktree 佈建指南](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)。
 
 專案素材也是工作流程的一部分。建立 worktree 前，流程會先閱讀提供的規格、交接筆記、參考文件與測試
-輸入，分類後把路徑記進連續性狀態。需要歸檔時，需要長期保留的參考資料放在
-`~/Documents/reference-docs/{repo}/`，大型或需要跨 worktree 共用的人工測試輸入放在
-`~/Documents/test-files/{repo}/`，沒有正式歸屬位置的 agent 交接摘要放在
-`~/Documents/handoff/{repo}/`。目前任務狀態留在 worktree 內由 Git 忽略的
-`.project-continuity/state.md`；可長期維護的測試程序與 fixture 留在儲存庫裡。有正式歸屬位置的產出，
+輸入，分類後把路徑記進連續性狀態。需要歸檔時，穩定的參考資料放在
+`~/Documents/reference-docs/{repo}/{source-or-topic}/`；只有在多個版本讓檢索變困難時，才在下面再加上版本
+或出版日期目錄，而且要把來源的出版／版本日期和本機收到的時間分開記錄。大型或需要跨 worktree 共用的
+人工測試輸入放在 `~/Documents/test-files/{repo}/{task-or-fixture}/`，沒有正式歸屬位置的 agent 交接摘要則放在
+`~/Documents/handoff/{repo}/YYYY-MM-DD/{HH-mm}-{slug}.md`。交接檔記錄 `Created`、`Last updated`、時區或
+UTC offset，以及所對應的 commit 或 state；給人閱讀的時間記到分鐘即可。目前任務狀態留在 worktree 內由 Git
+忽略的 `.project-continuity/state.md`；可長期維護的測試程序與 fixture 留在儲存庫裡。有正式歸屬位置的產出，
 例如 MR 說明，就留在原本的地方，不另外複製。
 
 **圖：儲存庫 A 用多個 worktree 平行執行任務，其中一個任務透過連續性狀態跨用戶端接續。**
@@ -617,6 +659,9 @@ pre-commit hook 會把 staged 的來源產生到暫存目錄——絕不寫進�
 | workflow archive／restore／delete 契約 | `bash scripts/tests/test-workflow-archive.sh` |
 | Worktree runtime descriptor、配置與連接埠 lease | `python scripts/tests/test-worktree-runtime.py -v` |
 
+在 Windows PowerShell 中，請透過 `.\scripts\tests\run-git-bash-tests.ps1` 執行以 Bash 為基礎的測試套件。
+這個 wrapper 會明確找到 Windows Git Bash，避免 `bash` 指令誤用 WSL 或 WindowsApps shim。
+
 連指示本身也有測試。`scripts/tests/continuity-fixtures/` 收了成對的 prompt 與預期行為，針對的是
 連續性最容易處理錯的情境——狀態還在的時候突然冒出一個無關問題、實質換了另一個任務、使用者明確
 放棄、分支落差、任務其實已經完成、只有計畫的冷啟動、未經確認的資料來源歸屬，以及超出搜尋範圍的
@@ -659,6 +704,7 @@ docs/                              設定、工作流程、自訂與 ADR 指南
 | 新增 AI 指示、技能、agent、prompt、MCP 伺服器或 plugin | [docs/customization-support.md](./docs/customization-support.md) |
 | 查某一項自訂內容是哪個用戶端介面會讀到 | [支援對照表](./docs/customization-support.md#what-the-support-table-answers) |
 | 執行隔離任務，或在 worktree 中佈建被忽略的本機檔案 | [docs/worktree-provisioning.md](./docs/worktree-provisioning.md) |
+| 在不同 worktree 中執行平行應用程式實例 | [docs/worktree-runtime.md](./docs/worktree-runtime.md) |
 | Archive、restore 或 delete 可重複使用的 workflow | [docs/workflow-archives.md](./docs/workflow-archives.md) |
 | 了解儲存庫為什麼採用這種結構 | [docs/decisions/README.md](./docs/decisions/README.md) |
 | 在移除某條規則前先了解它為什麼存在 | [docs/rule-rationale.md](./docs/rule-rationale.md) |

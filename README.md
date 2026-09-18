@@ -151,6 +151,39 @@ flowchart LR
     style targets fill:none,stroke:transparent
 ```
 
+### Native-first workflow delegation
+
+The workflow coordinates a contract; it does not replace client-native capabilities. When a
+native client feature reliably satisfies the required invariant, the adapter should use it. The
+repository-owned fallback covers only what native behavior cannot express or verify.
+
+| Concern | Preferred native mechanism | Repository-owned contract that remains |
+| --- | --- | --- |
+| Create and manage a worktree | Claude `--worktree` or `EnterWorktree`; Codex desktop Worktree and Handoff | The workflow's isolation checks and client-specific fallback paths. |
+| Choose the starting branch | Codex desktop branch selection; Claude's supported `baseRef` or PR/MR input | Validate an arbitrary `origin/<base>` and use it consistently as the task and request base. |
+| Create and publish the task branch | Native branch, commit, push, and GitHub pull-request controls when they satisfy the task | Derive the task branch, preserve the selected base, and prevent branch or request-target drift. |
+| Resume a session | Claude resume and worktree binding; Codex chat/worktree Handoff | Portable `.project-continuity/state.md` and Git reconciliation across clients. |
+| Provision ignored files and setup | `.worktreeinclude` and Codex desktop local-environment setup where available | The reviewed allowlist plus terminal, VS Code, CLI, and cross-client fallbacks. |
+| Run verification | Claude `/run`, `/verify`, hooks, or Codex actions and hooks | The repository's focused checks, runtime evidence, and user manual-test gate. |
+| Isolate runtime resources | Project-defined runtime setup | The optional descriptor and per-worktree HTTP port allocation; databases and other services remain project-specific. |
+| Preserve or remove a workflow | Native session/workflow storage for native client artifacts | The explicit source-bundle archive, restore, and delete lifecycle. |
+| Clean up | Native client lifecycle controls where they own the worktree | Branch-preserving cleanup and the rule that live targets require a separate reviewed `chezmoi apply`. |
+
+This policy is per client surface. Claude can create and resume worktrees natively, but its
+configured `baseRef` does not express every named existing branch, so the workflow uses Git when
+the exact base contract requires it. Codex desktop now provides native worktree, setup, branch,
+and publishing controls; the workflow still supports Codex CLI and the IDE extension and verifies
+that the selected worktree matches the requested base. Native setup and verification can simplify
+an adapter, but they do not allocate per-worktree ports or provide portable cross-client state.
+
+If a client later provides a native feature that satisfies one of these invariants reliably, remove
+or bypass the corresponding custom mechanism instead of maintaining two competing implementations.
+
+See the current [Claude Code worktree](https://code.claude.com/docs/en/worktrees),
+[Claude Code workflow](https://code.claude.com/docs/en/workflows), [Codex worktree](https://learn.chatgpt.com/docs/environments/git-worktrees),
+and [Codex local-environment](https://learn.chatgpt.com/docs/environments/local-environment) documentation
+for the vendor-specific behavior behind this policy.
+
 Three details explain most of the structure:
 
 - **Shared instructions are inlined, not imported.** Each client's native instruction file receives the
@@ -338,7 +371,11 @@ when the consuming repository provides a tracked `.worktree-runtime.json` descri
 persists a preferred port per physical worktree, leases it during the server process, and reports
 fixed-port or otherwise unsupported runtime dependencies. This preserves the design boundary:
 strong runtime guarantees when the workflow is explicitly chosen, without forcing every task or
-every project into a rigid harness.
+every project into a rigid harness. `runtime=off` is the default and does not start a server. V1
+covers one HTTP development process and its port; the descriptor may classify databases, caches,
+queues, Docker services, and external services, but the helper reports those classifications rather
+than provisioning them. Runtime allocation stays in a user cache outside the worktree and Git, so
+`chezmoi apply` never starts a project server or restores runtime allocation state.
 
 `worktree-task-workflow` turns a substantial coding task into a repeatable isolated lifecycle: it
 validates the starting branch, creates a dedicated worktree and task branch, preserves task context
@@ -346,8 +383,8 @@ across AI sessions, runs automated verification, requests a manual test, and pub
 to the correct base branch. This reduces branch and base mistakes, context loss, skipped verification,
 inconsistent request targets, and setup friction when several tasks or AI clients are active at once.
 
-**Figure: one new task's lifecycle, including material review, worktree provisioning, automated
-agent verification, and the user manual-test gate.** The common contract is shown with the
+**Figure: one new task's lifecycle, including material review, worktree provisioning, optional
+runtime isolation, automated agent verification, and the user manual-test gate.** The common contract is shown with the
 Claude and Codex branch paths called out; worktree location and cleanup also differ by adapter.
 
 ```mermaid
@@ -389,7 +426,9 @@ flowchart TD
         U{"Run full optional agent verification?<br/>default: yes"}
         V["Run typecheck, lint, focused tests,<br/>and a meaningful build"]
         W["For visual UI work, when available,<br/>drive targeted browser interactions"]
-        X["If an app is part of the task,<br/>start it and request a real route"]
+        X{"Application runtime<br/>needed?"}
+        RUNTIME["runtime=auto + tracked descriptor:<br/>allocate and verify the per-worktree port"]
+        ORDINARY["runtime=off or runtime isolation unsupported:<br/>use project startup;<br/>report no per-worktree port guarantee"]
         Y["Run minimum sanity checks<br/>(also when full verification is off)"]
         AA{{"Give exact steps and request<br/>the user manual test;<br/>stop and wait"}}
         AB["Fix the failure; rerun applicable<br/>checks and runtime verification"]
@@ -402,7 +441,9 @@ flowchart TD
         R --> S --> T --> U
         U -->|"Yes"| V --> W --> X
         U -->|"No"| Y --> X
-        X --> AA
+        X -->|"No"| AA
+        X -->|"runtime=auto + descriptor"| RUNTIME --> AA
+        X -->|"runtime=off or unsupported"| ORDINARY --> AA
         AA -->|"Fails"| AB --> U
     end
 
@@ -422,9 +463,10 @@ flowchart TD
 
     class A input
     class B,D,E,F,G,I,J,L,M,O,P,Q,R orchestration
-    class C,H,K,N,U,AA,AF control
+    class C,H,K,N,U,X,AA,AF control
     class S output
-    class T,V,W,X,Y,AB work
+    class T,V,W,Y,AB work
+    class RUNTIME,ORDINARY orchestration
     class Z exception
     class AC,AD,AE,AG,AH orchestration
 
@@ -463,9 +505,11 @@ If a session ends because it reaches its token limit, the next client can start 
 and read the recorded objective, decisions, materials, blockers, and next action without a manual
 handoff document. `agent-test=true` runs typecheck, lint, focused tests, a meaningful build, and a
 targeted browser or runtime pass for visual work when available. `agent-test=false` still runs
-minimum sanity checks. When an app is part of the task, runtime verification starts it and requests
-a real route; targeted browser interactions exercise a selected UI flow. Neither replaces the
-manual test.
+minimum sanity checks. When an app is part of the task, the workflow checks whether the explicit
+runtime path is available: `runtime=auto` uses the tracked descriptor and verifies a per-worktree
+port; `runtime=off` or unsupported runtime isolation uses the project's ordinary startup path and
+reports that no per-worktree port guarantee was provided. Targeted browser interactions exercise a
+selected UI flow. Neither replaces the manual test.
 
 The manual-test node gives the user the exact path, startup command, route, preconditions, actions,
 and expected results, then stops and waits. Only after the user reports a passing manual test does
@@ -479,13 +523,17 @@ and branch-preserving cleanup.
 
 Project materials are part of the workflow. Before creating a worktree, the workflow reads
 supplied specifications, handoff notes, reference documents, and test inputs, classifies them, and
-records their paths in continuity. When filing is needed, durable references go in
-`~/Documents/reference-docs/{repo}/`, bulky or cross-worktree manual-test inputs go in
-`~/Documents/test-files/{repo}/`, and agent-authored briefs without a canonical destination go in
-`~/Documents/handoff/{repo}/`. Current task state stays in the worktree's ignored
-`.project-continuity/state.md`; durable test procedures and fixtures stay in the repository.
-Artifacts with a canonical destination, such as an MR description, stay there instead of being
-duplicated.
+records their paths in continuity. When filing is needed, stable references go in
+`~/Documents/reference-docs/{repo}/{source-or-topic}/`; add a version or publication-date
+subdirectory only when multiple snapshots make retrieval harder. Keep the source's publication or
+version date distinct from the local receipt time. Bulky or cross-worktree manual-test inputs go
+in `~/Documents/test-files/{repo}/{task-or-fixture}/`, while agent-authored briefs without a
+canonical destination go in `~/Documents/handoff/{repo}/YYYY-MM-DD/{HH-mm}-{slug}.md`. Handoff
+files record `Created`, `Last updated`, the timezone or UTC offset, and the commit or state they
+are pinned to; use minute precision for human-readable metadata. Current task state stays in the
+worktree's ignored `.project-continuity/state.md`; durable test procedures and fixtures stay in
+the repository. Artifacts with a canonical destination, such as an MR description, stay there
+instead of being duplicated.
 
 **Figure: Repository A runs parallel worktrees, while one task crosses clients through continuity
 state.**
@@ -691,6 +739,10 @@ Durable suites run by hand when their protected behavior changes:
 | AI profile selectors, composition, language defaults, or continuity toggle | `bash scripts/tests/test-ai-configuration-profiles.sh` |
 | Workflow archive, restore, and deletion contract | `bash scripts/tests/test-workflow-archive.sh` |
 | Worktree runtime descriptor, allocation, and port lease | `python scripts/tests/test-worktree-runtime.py -v` |
+
+On Windows PowerShell, run the Bash-based suites through
+`.\scripts\tests\run-git-bash-tests.ps1`. It resolves Windows Git Bash explicitly, so a `bash`
+command supplied by WSL or the WindowsApps shim cannot run the suite in the wrong environment.
 
 Instructions get tested too. `scripts/tests/continuity-fixtures/` holds paired prompts and
 expected behavior for the cases continuity handling gets wrong — an unrelated question arriving

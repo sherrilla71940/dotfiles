@@ -270,6 +270,10 @@ Continuity belongs to one physical working tree, and each tree holds at most one
   without an automatic hook. Native mode keeps the continuity skill available for explicit use.
 - Git remains authoritative. Continuity is context and last-known state, never proof that
   something was finished.
+- When implementation differs from an approved artifact, classify it as an accepted scope
+  difference, a deferred dependency, or an unresolved decision. The latter two require a durable
+  PM/BE handoff or issue record; `state.md` keeps only the pointer, and implementation-complete is
+  not fully closed until the difference is classified, owned, and linked.
 - The state is Git-ignored for privacy and convenience. It is a local handoff file, not an
   encrypted store, which is why the workflow forbids putting credentials in it.
 - Unfinished state is parked in `.project-continuity/parked/` before a different task starts, so
@@ -394,8 +398,8 @@ flowchart TD
         A["From the current repository CWD<br/>invoke worktree-task-workflow<br/>base branch + task or --infer-task<br/>optional materials + options"]
         B["Resolve and validate<br/>the invocation"]
         C{"Task supplied?"}
-        D["Read supplied materials<br/>before any Git command;<br/>infer one task"]
-        E["Read supplied materials<br/>before any Git command;<br/>cross-check the explicit task"]
+        D["Run the read-only identity preflight;<br/>report workspace, active repo, Git root,<br/>branch, upstream/base, continuity, clean/dirty;<br/>then infer one task from materials"]
+        E["Run the read-only identity preflight;<br/>report workspace, active repo, Git root,<br/>branch, upstream/base, continuity, clean/dirty;<br/>then cross-check the explicit task"]
         F["Show the resolved plan<br/>base branch = task start + PR/MR target<br/>task, branch, worktree, checks, cleanup"]
         G["Fetch origin and verify<br/>origin/&lt;base&gt; and task-branch state"]
         H{"Base exists and<br/>task branch is valid?"}

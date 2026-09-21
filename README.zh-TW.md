@@ -246,6 +246,9 @@ dotfiles，也不會翻譯這份 README。明確傳入 `en` 或 `zhtw` 可以覆
 - `managed` 且連續性開啟時，Claude Code 與 Codex 會回報現有狀態，並指出分支或 `HEAD` 的落差。`native`
   模式仍保留連續性技能供明確叫用；Copilot 可以遵循同一套協定，只是沒有自動 hook。
 - Git 仍然是依據。連續性提供的是脈絡與最後已知狀態，不能用來證明某件事已經完成。
+- 當實作與已核准的 artifact 不一致時，要分類為已接受的範圍差異、延後依賴，或尚未解決的決策。
+  後兩者必須在 PM／BE handoff 或 issue 建立可持續追蹤的紀錄；`state.md` 只保留指標。差異完成分類、
+  指定負責人並連到這份紀錄前，功能只能算實作完成，不能視為完全結案。
 - 狀態檔由 Git 忽略，兼顧隱私與方便。它是本機交接檔，不是加密保險庫，所以這套流程明文禁止把憑證
   放進去。
 - 開始另一個任務前，未完成的狀態要先停放到 `.project-continuity/parked/`，這樣一份交接紀錄才不會
@@ -351,8 +354,8 @@ flowchart TD
         A["從目前儲存庫的 CWD<br/>使用者啟動 worktree-task-workflow<br/>基底分支 + 任務或 --infer-task<br/>選填素材 + 選項"]
         B["解析並驗證<br/>啟動參數"]
         C{"有提供任務嗎？"}
-        D["執行任何 Git 指令前<br/>閱讀提供的素材<br/>推導一個任務"]
-        E["執行任何 Git 指令前<br/>閱讀提供的素材<br/>核對明確任務"]
+        D["先執行唯讀的身分預檢；<br/>回報 workspace、目前 repo、Git 根目錄、<br/>分支、upstream／基底、連續性、乾淨／有變更；<br/>再從素材推導任務"]
+        E["先執行唯讀的身分預檢；<br/>回報 workspace、目前 repo、Git 根目錄、<br/>分支、upstream／基底、連續性、乾淨／有變更；<br/>再核對明確任務"]
         F["顯示解析後的計畫<br/>基底分支 = 任務起點 + PR/MR 目標<br/>任務、分支、worktree、檢查、清理"]
         G["fetch origin 並驗證<br/>origin/&lt;base&gt; 與任務分支狀態"]
         H{"基底存在，而且<br/>任務分支狀態有效嗎？"}

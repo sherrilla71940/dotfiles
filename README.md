@@ -2,15 +2,11 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-I built this as the development environment I use across machines and AI coding tools. It keeps my personal dotfiles, shared AI configuration, and workflows for Claude Code, Codex, and GitHub Copilot in one place while still respecting the native files and conventions each tool expects.
+I built this as the cross-platform development environment I use across machines and AI coding tools. At the time of writing, the supported AI clients are Claude Code, Codex, and GitHub Copilot; that list may change as the repository evolves. The environment keeps my personal dotfiles, shared AI instructions and workflow skills, and cross-client task protocols in one place while preserving each client's native files, discovery paths, and scope rules.
 
-For longer or parallel coding tasks, supported clients can use isolated Git worktrees. The workflow adds a shared contract around that isolation: it pins the task to an exact base, preserves context across sessions or AI clients, and provisions missing approved ignored files through the repository's tracked `.worktreeinclude` allowlist or a client-native equivalent. When a consuming project provides a runtime descriptor and the task opts into `runtime=auto`, the workflow can allocate and health-check a per-worktree port lease for parallel servers. It also runs local automated checks and waits for explicit manual approval before publishing a branch for review.
+For longer or parallel tasks, supported clients can use isolated Git worktrees. The shared task workflow adds the repository-level contract around that isolation: approved local-file provisioning, per-worktree runtime ports, local verification, and explicit approval before publishing.
 
-Project continuity is a small per-worktree handoff record. Git records the current state of the code, branch, and commits. Continuity records the work around that state: what we were trying to accomplish, why decisions were made, what was blocked or verified, which references and inputs informed the work, and where to find them. It points to handoff notes, reference documents, and reusable test inputs when they live outside the worktree. Another session or client can reopen the same worktree and continue without reconstructing the task from chat history.
-
-[Chezmoi](https://www.chezmoi.io/) handles configuration: one Git-tracked source tree is rendered into the native files used by each supported tool and operating system. The workflow layer adds isolation, continuity, verification, and controlled publishing around coding tasks.
-
-The design goal is bounded autonomy: AI clients can act within a defined environment, while Git, verification, and explicit approval remain authoritative boundaries.
+Git records the current state of the code, branch, and commits. A small per-worktree continuity record captures the state of the work: its objective, decisions, blockers, verification, inputs, and next action. It also records pointers to relevant reference documents, test files, and handoff notes when they live outside the worktree. Together, Git and continuity provide the working picture needed to resume: Git shows what exists, while continuity explains what we were trying to accomplish, why, what informed it, and how to continue.
 
 **Jump to:**
 
@@ -55,15 +51,17 @@ workflow begins:
 `start → isolate → record context → implement → verify → manual approval → publish for review`
 
 The workflow keeps the task directory, branch, and handoff context together, and does not publish
-until automated checks and explicit manual approval are complete. With `runtime=auto` and a project
-descriptor, it can allocate a health-checked port for a parallel server; when approved ignored files
-are missing, it can provision them from the tracked allowlist without copying tracked configuration
-or external secrets.
+until automated checks and explicit manual approval are complete. Its detailed contract resolves an
+exact base and MR/PR target, provisions missing approved ignored files from `.worktreeinclude` or a
+client-native equivalent, and uses `runtime=auto` with a project descriptor to allocate and
+health-check a per-worktree port. Questions and assessment prompts stay in a read-only planning
+phase; say `proceed` or use `phase=execute` before the workflow creates a worktree. It never copies
+tracked configuration or external secrets.
 
 ## System at a glance
 
-`home/` is the chezmoi source state for this repository's dotfiles and AI configuration. The
-home-directory files are native targets that applications read. `scripts/` and `docs/` support both
+`home/` is the chezmoi source state for this repository's dotfiles and AI configuration. [Chezmoi](https://www.chezmoi.io/)
+renders that source into native targets that applications read. `scripts/` and `docs/` support both
 the configuration and workflow planes with bootstrap, diagnostics, installers, tests, and decision
 records.
 

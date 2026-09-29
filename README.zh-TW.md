@@ -32,14 +32,17 @@ Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Co
 
 ## 核心能力
 
-| 核心能力 | 結果 |
-| --- | --- |
-| 單一來源、原生目標 | 共用的 AI 指示與可重用的 AI skill 都以單一來源內容維護；薄包裝保留各 client 原生的 discovery path 與 scope 規則。 |
-| 以 profile 組合設定，不重複維護整套設定 | 本機 selector 將 personal 或 company context 與 managed 或 native AI harness 組合，並另外控制 continuity 偏好。 |
-| 跨 session 與 client 的連續性 | 一個 `.task-continuity/state.md` 跟著同一個工作目錄保存，讓其他支援的 session 從相同的目標、決策、阻塞事項、材料、驗證狀態與下一步繼續工作。 |
-| 範圍明確、可檢視的任務 | 明確啟動的工作流程會從 base 解析 workspace 與任務分支，只在隔離 worktree 中配置已核准的 ignored 本機檔案，套用驗證策略，並在獨立的發布核准後才發布，而且不會刪除分支。 |
+這些是 repository 在設定與權責界線上的架構保證。[工作流程會自動處理什麼](#工作流程會自動處理什麼)
+則說明任務流程如何在這些界線內運作。
 
-權責界線與驗證支援這四項核心能力，是貫穿整個系統的保證，不是另外新增的第五項能力。
+| 能力 | 結果 |
+| --- | --- |
+| 單一來源、原生交付 | 共用的 AI 指示與可重用的 AI skill 都從單一來源產生；薄 wrapper 保留各 client 原生的 discovery path 與 scope 規則。 |
+| Profile 組合，不重複維護整套設定 | 本機 selector 組合 personal 或 company context、managed 或 native harness 行為，以及 continuity 偏好，不需要複製整套設定目錄。 |
+| 跨平台交付 | 同一份 source state 可以渲染到 Windows 與 macOS 所需的原生 target path；client-specific source 則保留在各自的原生目錄。 |
+| 明確的權責界線 | repository 只管理明確交由它負責的 durable 設定；偏好、authentication、session/runtime state 與其他 application-owned data 留在本機。 |
+
+驗證與 decision records 讓這些保證可以被檢視，但不會另外增加一項 workflow 能力。
 
 這個儲存庫也會把應用程式擁有的偏好留在本機，支援 Windows 與 macOS 路徑，並在
 [架構決策紀錄](./docs/decisions/README.md)中記錄重要的設計取捨。
@@ -80,25 +83,21 @@ Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Co
 
 ## 系統總覽
 
-`home/` 是這個儲存庫用來管理 dotfiles 與 AI 設定的 chezmoi source state。[Chezmoi](https://www.chezmoi.io/)
-會把這些 source render 成應用程式實際讀取的原生 target。`scripts/` 與 `docs/` 同時支援設定層與工作流程層，提供
-bootstrap、診斷、安裝工具、測試與決策紀錄。
-
-這個總覽只聚焦設定如何交付：tracked source state 與本機 profile selector 先交給 Chezmoi
-組合，再分流到 shared adapter、portable skill delivery、client-specific delivery 與
-OS-specific delivery。Task continuity 與 task execution 會在下方的專門圖表說明；完整的
-source-to-client 對應請看 [customization support guide](./docs/customization-support.md)。
+這張圖同時呈現設定架構與 repository map。`home/` 是 chezmoi source state；`scripts/` 放置
+setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。本機 profile
+selector 會先進入 Chezmoi 組合，再分流到 shared adapter、portable skill delivery、
+client-specific delivery 與 OS-specific dotfile delivery。Task continuity 與 task execution
+會在下方的專門圖表說明；完整的 source-to-client 對應請看
+[customization support guide](./docs/customization-support.md)。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
 
-    subgraph sources["Tracked source state"]
-        sharedSource["Shared bodies<br/>home/.chezmoitemplates/rules · adapters"]:::source
-        portableSource["Portable skills<br/>home/dot_agents/skills"]:::source
-        clientSource["Client-specific sources<br/>home/dot_claude · dot_codex · dot_copilot"]:::source
-        osSource["OS-specific sources<br/>AppData · Library · shell · Git"]:::source
+    subgraph repository["Repository source and support"]
+        home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
+        support["scripts/<br/>bootstrap · install · manifests · diagnostics · tests · git-hooks<br/><br/>docs/<br/>setup · workflows · decisions"]:::support
     end
 
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
@@ -107,29 +106,24 @@ flowchart TB
         sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
-        osRoute["OS-specific delivery<br/>VS Code · shell · Git · Windows Terminal"]:::process
+        osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
     end
 
     aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
-    developerTargets["Developer targets<br/>VS Code · shell · Git · Windows Terminal"]:::target
-    side["Explicit/native side paths<br/>bootstrap · installers<br/>application-owned state remains local"]:::handoff
-
-    sharedSource --> compose
-    portableSource --> compose
-    clientSource --> compose
-    osSource --> compose
+    developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    home --> compose
     selectors --> compose
+    support -. "supports and documents" .-> compose
     compose --> sharedRoute --> aiTargets
     compose --> portableRoute --> aiTargets
     compose --> clientRoute --> aiTargets
     compose --> osRoute --> developerTargets
-    compose -.-> side
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef target fill:#dcfce7,stroke:#16a34a,color:#111827
-    classDef handoff fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef support fill:#f3f4f6,stroke:#4b5563,color:#111827
 ```
 
 `home/` 同時包含一般的 chezmoi source file 與 template。`.chezmoitemplates/` 中的可重用內容
@@ -487,32 +481,6 @@ Pre-commit hook 會將 staged source render 到暫存目錄，不會寫入 home 
 它會明確找到 Windows Git Bash。`scripts/tests/continuity-fixtures/` 下的 continuity fixture
 是人工的 model-behavior probe，不是即時的自動 agent 測試。它們使用 throwaway repository
 與刻意製造的 `state.md`，不要把 fixture 裡的 state 當成真實 working tree state。
-
-## 儲存庫結構
-
-~~~text
-home/                              chezmoi source state
-  .chezmoidata.yaml                共用 rule glob
-  .chezmoitemplates/               共用 body 與 OS-neutral data
-  dot_agents/skills/               可攜式與 host-gated skill
-  dot_claude/                      Claude Code 檔案與 adapter
-  dot_codex/                       Codex 檔案與 create-once config
-  dot_copilot/                     Copilot CLI 檔案、agent 與 skill
-  AppData/ · Library/              Windows 與 macOS VS Code target
-  dot_bashrc · dot_zshrc.tmpl      shell 啟動檔
-  dot_gitconfig.tmpl               Git identity 與 global excludes link
-  dot_config/git/ignore            private AI 與 continuity exclude
-  dot_local/share/                 worktree、runtime 與 notification helper
-
-scripts/bootstrap/                 手動新機設定
-scripts/install/                   Claude MCP installer
-scripts/manifests/                 MCP、VS Code extension 與 workflow 宣告
-scripts/workflows/                 workflow deletion tooling
-scripts/diagnostics/               doctor、usage 與 drift 報告
-scripts/tests/                     profile、continuity、worktree 與 runtime 套件
-scripts/git-hooks/                 pre-commit 與 Markdown link 驗證
-docs/                              setup、workflow、customization 與 ADR 指南
-~~~
 
 ## 接下來可以去哪裡
 

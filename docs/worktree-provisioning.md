@@ -38,6 +38,16 @@ This rule applies to both `workspace=checkout` and `workspace=worktree`, and can
 but their execution invocation must include it. The resolved echo and continuity `Verification` block
 show `branch_policy`, `flow`, and the resolved task branch.
 
+The workflow provides one explicit exception: `--force branch=<branch>`. Use it only when the user
+deliberately accepts a non-flow task branch. The invocation must name the complete branch, must not
+also supply `flow=`, and must keep continuity enabled so the resolved branch and
+`Policy bypass: --force` remain auditable. The exception records
+`branch_policy=company-flow-bypassed`; it does not bypass verification, base freshness, commit,
+publish authorization, or repository-specific safety rules. The rendered global Git pre-push hook
+provides defense in depth for direct pushes, while a repository-local `branch.policy=personal` or
+`project-exception` setting remains the explicit way to opt a repository out of the machine-wide
+company default.
+
 Effective `personal` context keeps the repository-standard branch naming contract and does not
 require `flow`. A project can explicitly declare `branch_policy=project-exception` in applicable
 repository instructions, name the allowed branch pattern and instruction source, and require an

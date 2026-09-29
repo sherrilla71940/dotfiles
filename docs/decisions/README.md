@@ -70,6 +70,7 @@ agent session.
 | [0044](./0044-three-run-task-invocation-styles.md) | Accepted | Support guided, prompted natural-language, and explicit run-task-end-to-end invocation styles with client-native question presentation |
 | [0045](./0045-coordinated-naming-cleanup.md) | Accepted | Complete the task-continuity and material-directory naming migration while retaining only useful workflow aliases |
 | [0046](./0046-retire-tracked-workflow-archives.md) | Accepted | Retire tracked workflow archives and use Git history for source recovery |
+| [0047](./0047-enforce-company-flow-with-explicit-bypass.md) | Accepted | Enforce the company-flow branch policy by default with an explicit, auditable workflow bypass |
 
 ## Template
 

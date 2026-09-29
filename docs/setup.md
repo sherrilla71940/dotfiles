@@ -315,6 +315,19 @@ The bootstrap helper does this. Run it by hand in a clone that has not been boot
 git config core.hooksPath scripts/git-hooks
 ```
 
+The rendered user Git configuration also sets `core.hooksPath` to `~/.config/git/hooks`, where the
+profile-managed pre-push hook enforces the company-flow policy when the effective machine context is
+`company`. The dotfiles repository keeps its explicit local `branch.policy=personal` exception, so
+this repository remains governed by its own repository-standard branch policy. Company application
+repositories inherit the machine-wide `company-flow` default unless their repository instructions
+declare a reviewed exception.
+
+The normal workflow-level exception is explicit `--force branch=<branch>`. The workflow records that
+exception in continuity and still requires verification, base freshness, commit, and publish
+authorization. Git hooks cannot reliably distinguish a user's intent from `git push --force`; a
+direct emergency hook bypass therefore uses Git's standard `--no-verify` option and should remain
+rare and separately reviewable.
+
 From the repository root, run `bash scripts/dev-env doctor` when diagnosing a machine. It reports
 the chezmoi source identity, resolved profile values, unapplied drift, Claude shared-skill links,
 and required tool versions without changing any target.

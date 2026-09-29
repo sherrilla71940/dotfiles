@@ -46,6 +46,14 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "repository validation enabled (core.hooksPath)"
 }
 
+# This user-level repository is intentionally exempt from the machine-wide company-flow default.
+git -C $repo config branch.policy personal
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not set the dotfiles branch-policy exception."
+} else {
+    Write-Host "dotfiles branch policy set to personal"
+}
+
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "winget is required. Install 'App Installer' from the Microsoft Store, then rerun."

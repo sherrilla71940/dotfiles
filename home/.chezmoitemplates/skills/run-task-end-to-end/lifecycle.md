@@ -17,8 +17,10 @@ Apply the resolved workspace and continuity policy before implementation:
   `branch_policy=company-flow` requires a `flow` value matching `^[0-9]{1,9}$` and uses the branch
   shape `flow/<flow>-<ascii-description>`. A project exception must be explicitly declared by
   repository instructions and must name the allowed pattern; a `feat/...` branch alone is never an
-  exception. Record `branch_policy`, `flow`, and the resolved task branch in continuity when state
-  is enabled.
+  exception. The only workflow bypass is explicit `--force branch=<branch>` with effective continuity
+  enabled. Record `branch_policy=company-flow-bypassed`, `Policy bypass: --force`, and the explicit
+  task branch in continuity. This exception changes only branch-policy enforcement; verification,
+  base freshness, commit, and publish authorization remain mandatory.
 - When effective `continuity` is `on`, initialize or resume `task-continuity` and record each
   material because a later session may need it again. Before initializing a different task, apply
   the continuity transition: resume the same task; stop for a different unfinished task until it is

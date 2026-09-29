@@ -171,8 +171,12 @@ if `branch=` is supplied, validate it as
 `personal` context keeps the existing repository-standard naming. An applicable repository
 instruction may explicitly declare `branch_policy=project-exception`, an allowed pattern, and its
 source; that exception requires an explicit `branch=` and is never inferred from a `feat/...` name.
-The resolved echo must show `branch_policy`, `flow`, and the complete task branch. Record the same
-policy and flow ID in continuity when effective continuity is enabled.
+The only workflow-level company exception is explicit `--force branch=<branch>`. It rejects `flow=`,
+requires effective continuity to remain enabled for auditability, and records
+`branch_policy=company-flow-bypassed` plus `Policy bypass: --force`. It does not bypass verification,
+base freshness, commit, or publish authorization. The resolved echo must show `branch_policy`, the
+policy bypass when present, and the complete task branch. Record the same policy and flow ID, or the
+explicit bypass marker, in continuity when effective continuity is enabled.
 
 Then establish the remote identity and fetch the user-provided base branch:
 

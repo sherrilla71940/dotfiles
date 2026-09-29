@@ -47,13 +47,13 @@ and records architectural trade-offs in [decision records](./docs/decisions/READ
 
 ## In practice
 
-The workflow exposes one primary entry point across supported AI clients: `/run-task-end-to-end`.
+The workflow is the same in both supported clients. Use `/run-task-end-to-end` in Claude Code or
+`$run-task-end-to-end` in Codex.
 
-Start with guided mode when you want the workflow to walk you through the choices. Invoke `/run-task-end-to-end` with no arguments.
+No-argument mode asks for the task, workspace, base, verification policy, continuity policy, and any context-specific required input. It uses native choice UI when the client provides one and a concise text fallback otherwise. `verification=agent` is the default verification policy and `continuity=auto` is the default continuity policy, but guided mode still exposes those choices.
 
-No-argument mode asks for the task, workspace, base, verification policy, continuity policy, and any context-specific required input. It uses native choice UI when the client provides one and a concise text fallback otherwise. It shows `agent` and `auto` as the defaults for verification and continuity, but guided mode still exposes those choices.
-
-Use the prompted form when you want to describe the task naturally. Append the request to `/run-task-end-to-end`, for example:
+Use the prompted form when you want to describe the task naturally. Append the request to the
+client-specific entry point, for example:
 
 `/run-task-end-to-end Use a worktree from feature/example and implement the changes from the attached specification.`
 
@@ -69,7 +69,18 @@ Partial structured input is also supported. For example, `/run-task-end-to-end w
 
 Context-specific repository policies can require additional task or branch metadata. When they do, the workflow requires that information explicitly rather than inferring internal conventions from branch names or task text. Project-specific branch exceptions must likewise be declared in repository instructions and supplied explicitly.
 
-Legacy workflow entry points remain available for compatibility, but they are not the primary invocation path.
+In a company-context application repository, provide the flow number whenever the applicable company
+branch policy requires one, regardless of invocation style:
+
+`/run-task-end-to-end workspace=worktree base=feat/example-base flow=<digits> task="Continue the example task"`
+
+This produces a branch in the form `flow/<digits>-<ascii-description>`. The company-flow rule
+applies only when the effective context is `company`; this dotfiles repository explicitly uses
+effective `personal` context while its own source is edited. A project-specific branch exception
+must be declared in repository instructions and supplied explicitly; the workflow does not infer
+one from a `feat/...` branch name.
+
+Legacy workflow entry points `$task-workflow` and `$worktree-task-workflow` remain available for compatibility, but they are not the primary invocation paths.
 
 ## System at a glance
 
@@ -78,26 +89,53 @@ renders that source into native targets that applications read. `scripts/` and `
 the configuration and workflow planes with bootstrap, diagnostics, installers, tests, and decision
 records.
 
-The diagram shows the configuration plane only: tracked source state flows through composition and
-native delivery to the surfaces that tools read. Task continuity and task execution are covered
-separately below. Detailed client-to-surface mappings belong in the
-[customization support guide](./docs/customization-support.md).
+This overview focuses on configuration delivery: tracked source state and machine-local profile
+selectors feed Chezmoi composition, then branch into shared adapters, portable skill delivery,
+client-specific delivery, and OS-specific delivery. Task continuity and task execution are shown
+in the dedicated diagrams below. The [customization support guide](./docs/customization-support.md)
+maps each source to the client surfaces that read it.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
-    sources["Tracked source state<br/>home/ · shared AI bodies · skills<br/>client and OS sources · dotfiles/helpers"]:::source
-    delivery["Composition and delivery<br/>chezmoi · templates · profile selectors<br/>wrappers · links/symlinks · explicit installers"]:::process
-    targets["Native developer surfaces<br/>Claude · Codex · Copilot · VS Code<br/>shell · Git · Windows Terminal"]:::target
-    sources --> delivery --> targets
+    selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
+
+    subgraph sources["Tracked source state"]
+        sharedSource["Shared bodies<br/>home/.chezmoitemplates/rules · adapters"]:::source
+        portableSource["Portable skills<br/>home/dot_agents/skills"]:::source
+        clientSource["Client-specific sources<br/>home/dot_claude · dot_codex · dot_copilot"]:::source
+        osSource["OS-specific sources<br/>AppData · Library · shell · Git"]:::source
+    end
+
+    compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
+
+    subgraph routes["Native delivery routes"]
+        sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
+        portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
+        clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
+        osRoute["OS-specific delivery<br/>VS Code · shell · Git · Windows Terminal"]:::process
+    end
+
+    aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
+    developerTargets["Developer targets<br/>VS Code · shell · Git · Windows Terminal"]:::target
+    side["Explicit/native side paths<br/>bootstrap · installers<br/>application-owned state remains local"]:::handoff
+
+    sharedSource --> compose
+    portableSource --> compose
+    clientSource --> compose
+    osSource --> compose
+    selectors --> compose
+    compose --> sharedRoute --> aiTargets
+    compose --> portableRoute --> aiTargets
+    compose --> clientRoute --> aiTargets
+    compose --> osRoute --> developerTargets
+    compose -.-> side
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef target fill:#dcfce7,stroke:#16a34a,color:#111827
-
-    style sources color:#111827
-    style delivery color:#111827
-    style targets color:#111827
+    classDef handoff fill:#dbeafe,stroke:#2563eb,color:#111827
 ```
 
 `home/` contains both plain chezmoi source files and templates. Reusable bodies in
@@ -108,8 +146,12 @@ their native directories.
 Where supported, clients provide native worktree creation and lifecycle controls. Repository-owned
 checks and fallbacks cover the remaining shared contract: an exact `origin/<base>` contract,
 portable handoff state, approved ignored-file provisioning, applicable verification, separate publish
-authorization, optional runtime isolation, and explicit workflow deletion with reviewed chezmoi cleanup. See [native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation)
-for the client-specific details.
+authorization, optional runtime isolation, and explicit workflow deletion with reviewed chezmoi cleanup.
+Worktree isolation does not automatically provide runtime isolation: `runtime=auto` requires the
+consuming project's descriptor and a successful health/process-ownership check. This repository
+itself stays in the primary checkout; ordinary project repositories may use worktrees. See
+[native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation) for the
+client-specific details.
 
 ## Start here
 
@@ -337,7 +379,9 @@ the resolution source.
 Both workspace modes share the same lifecycle: resolve the base and policies, prepare the workspace,
 establish the task branch, implement, review, verify/fix/retest, obtain separate publish
 authorization, refresh and reconcile the base, then commit/push/request and hand off or clean up.
-Only the worktree mode provisions ignored files and provides separate runtime isolation.
+Only the worktree mode provisions ignored files. Separate runtime isolation is optional: select
+`runtime=auto` with the consuming project's descriptor and verify its health/process-ownership check
+before claiming an isolated runtime.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280", "actorBkg": "#f3e8ff", "actorBorder": "#9333ea", "actorTextColor": "#111827", "actorLineColor": "#6b7280", "signalColor": "#6b7280", "signalTextColor": "#111827", "labelBoxBkgColor": "#f3f4f6", "labelBoxBorderColor": "#6b7280", "labelTextColor": "#111827", "loopTextColor": "#111827", "noteBkgColor": "#fef3c7", "noteBorderColor": "#d97706", "noteTextColor": "#111827"}}}%%

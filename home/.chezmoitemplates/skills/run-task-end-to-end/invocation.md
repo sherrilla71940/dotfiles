@@ -33,11 +33,11 @@ Examples:
 
 ```text
 {{ .invoke }}
-{{ .invoke }} Use a worktree from feat/water-fee and implement the frontend changes from the attached specification.
+{{ .invoke }} Use a worktree from feat/example-base and implement the frontend changes from the attached specification.
 {{ .invoke }} workspace=worktree task="Implement FE-04"
-{{ .invoke }} workspace=worktree Use a worktree from feat/water-fee and implement FE-04
+{{ .invoke }} workspace=worktree Use a worktree from feat/example-base and implement FE-04
 {{ .invoke }} workspace=checkout base=main task="Fix the README wording"
-{{ .invoke }} workspace=worktree base=feat/water-fee task="Implement the water-fee frontend changes from the attached specification"
+{{ .invoke }} workspace=worktree base=feat/example-base task="Implement the frontend changes from the attached specification"
 ```
 
 ## Task identity
@@ -156,10 +156,10 @@ explicit positional form so quoting and material boundaries remain machine-reada
 For example, parse only the clear parts of this request:
 
 ```text
-{{ .invoke }} Use a worktree from feat/water-fee and implement the frontend changes from the attached specification.
+{{ .invoke }} Use a worktree from feat/example-base and implement the frontend changes from the attached specification.
 ```
 
-Resolve `workspace=worktree`, `base=feat/water-fee`, and the task as the remaining implementation
+Resolve `workspace=worktree`, `base=feat/example-base`, and the task as the remaining implementation
 request. Mark those values as `source=prompt`, then ask only for unresolved required choices. Do not
 infer a workspace or base from wording that supports more than one interpretation. A partial
 structured request such as `workspace=worktree task="Implement FE-04"` keeps both argument values,
@@ -186,9 +186,9 @@ In order, the first matching rule wins:
 | anything else | bare token |
 
 The URL rule sits above the `=` rules deliberately. A query string contains `=`, so
-`https://www.figma.com/design/ABC/Screens?node-id=1-2` would otherwise be read as an option with
-the unknown key `https://www.figma.com/design/ABC/Screens?node-id` and rejected. Order alone fixes
-that; a URL is never parsed for options.
+`https://www.figma.com/design/example-file/Screens?node-id=1-2` would otherwise be read as an option
+with the unknown key `https://www.figma.com/design/example-file/Screens?node-id` and rejected. Order
+alone fixes that; a URL is never parsed for options.
 
 The accepted keys are:
 
@@ -300,7 +300,7 @@ When named options are present and ordinary bare text remains, preserve compatib
 positional forms first: a clear branch-shaped first token may fill `base`, and a clearly delimited
 task token may fill `task`. If the remaining text is ordinary task prose rather than an unambiguous
 positional value, treat it as a natural-language prompt combined with the named options. For example,
-`workspace=worktree Use a worktree from feat/water-fee and implement FE-04` keeps the explicit
+`workspace=worktree Use a worktree from feat/example-base and implement the example task` keeps the explicit
 workspace and resolves the clear base and task from `source=prompt`. If the text could be either a
 positional value or a prompt, stop and show the named `prompt=` form instead of guessing.
 
@@ -319,19 +319,19 @@ Quoted multi-word tasks and named options remain preferred when materials are pr
 `task=`, repeatable `materials=`, and `--infer-task` retain their current precedence.
 
 ```text
-{{ .invoke }} feat/CCTVPipiCons inspect the CCTV pipe record
-{{ .invoke }} feat/CCTVPipiCons "inspect the CCTV pipe record" "handoff.md"
-{{ .invoke }} base=feat/CCTVPipiCons task="inspect the CCTV pipe record" materials="handoff.md"
-{{ .invoke }} feat/CCTVPipiCons --infer-task "handoff.md" "screens.pptx"
-{{ .invoke }} feat/CCTVPipiCons --infer-task "https://www.figma.com/design/ABC/Screens?node-id=1-2"
-{{ .invoke }} "Implement FE-04 from the attached spec and target the MR against feat/water-fee"
-{{ .invoke }} prompt="Implement FE-04 from the attached spec" base=feat/water-fee materials="spec.pdf"
+{{ .invoke }} feat/example-base inspect the example task
+{{ .invoke }} feat/example-base "inspect the example task" "task-notes.md"
+{{ .invoke }} base=feat/example-base task="inspect the example task" materials="task-notes.md"
+{{ .invoke }} feat/example-base --infer-task "task-notes.md" "sample.pptx"
+{{ .invoke }} feat/example-base --infer-task "https://www.figma.com/design/example-file/Screens?node-id=1-2"
+{{ .invoke }} "Implement the example task from the attached spec and target the MR against feat/example-base"
+{{ .invoke }} prompt="Implement the example task from the attached spec" base=feat/example-base materials="spec.pdf"
 {{ .invoke }} phase=plan prompt="Read the migration notes and recommend whether to cherry-pick the feature commits"
 {{ .invoke }} workspace=checkout base=main task="Fix the README typo"
-{{ .invoke }} workspace=worktree base=feat/CCTVPipiCons task="Inspect the CCTV pipe record"
-{{ .invoke }} workspace=worktree base=feat/gisgraphdraggable-modify flow=15927 task="Continue sewer layer editing"
+{{ .invoke }} workspace=worktree base=feat/example-base task="Inspect the example task"
+{{ .invoke }} workspace=worktree base=feat/example-base flow=<digits> task="Continue the example task"
 {{ .invoke }} prompt="Use the current checkout to update the local validation message based on the attached notes"
-{{ .invoke }} prompt="Create a separate worktree to inspect the CCTV pipe record"
+{{ .invoke }} prompt="Create a separate worktree to inspect the example task"
 ```
 
 ## 4. Reject structural ambiguity
@@ -573,12 +573,12 @@ workspace  checkout                                    (source: argument | promp
   continuity requested auto                            (default outside guided mode; confirmation in guided mode)
   effective_continuity on                                (source: ai_continuity profile)
   branch_policy company-flow                             (source: effective company context)
-  flow       15927                                      (source: argument)
-  base branch feat/CCTVPipiCons
+  flow       <flow-number>                              (source: argument)
+  base branch feat/example-base
 base source prompt / MR metadata / explicit
-task       inspect the CCTV pipe record            (explicit or resolved)
-materials  handoff.md, screens.pptx, figma.com/design/ABC (node 1-2, fetched)
-  branch     flow/15927-cctv-pipe-inspection-record      (flow policy and description inferred)
+task       inspect the example task                  (explicit or resolved)
+materials  task-notes.md, sample.pptx, figma.com/design/example-file (node 1-2, fetched)
+  branch     flow/<flow-number>-example-task             (flow policy and description inferred)
 checkout   <current Git root>                          (checkout workspace)
 publish    not authorized                              (explicit authorization required)
 commit     commit | batch | zhtw
@@ -600,8 +600,8 @@ The Git preflight then adds a separate checkpoint before branch creation or work
 ```text
 origin fetch <redacted remote identity>
 origin push  <redacted remote identity>
-base branch feat/CCTVPipiCons
-base commit <full commit ID resolved from origin/feat/CCTVPipiCons>
+base branch feat/example-base
+base commit <full commit ID resolved from origin/feat/example-base>
 ```
 
 For rejection, show unresolved fields, the exact problem, and a corrected invocation when clear.

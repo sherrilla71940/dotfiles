@@ -2,18 +2,21 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-這個 Git repository 是我日常使用的開發環境設定、個人 dotfiles 與 AI 工具整合的單一來源。[Chezmoi](https://www.chezmoi.io/) 會把這些受管理的 source 渲染成各支援工具與作業系統實際使用的原生檔案。因此，共用的 AI 指示與可重用的工作流程只需要定義一次，就能交付給 Claude Code、Codex 與 GitHub Copilot；只屬於單一 client 的行為則留在該 client 自己的範圍內。這讓我可以更精確地控制各 client 的行為，不必維護多份副本，也不用擔心它們彼此漂移。這個 repository 也只管理我明確選擇由它負責的持久設定；容易變動的偏好、驗證資訊、session state 與其他由應用程式管理的資料則留在本機。
-
-Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Code 等 AI client 也能透過原生的 worktree 建立與生命週期支援，進一步利用這層隔離。不過，當多個 AI 輔助任務需要可靠地平行執行時，仍會遇到幾個問題：新的 worktree 可能缺少被 Git 忽略的本機檔案，多個同時執行的應用程式可能搶用同一個 runtime port，而 Git 無法記錄的任務脈絡可能仍綁在特定 session 或 client 上。
-
-我的工作流程補上這些缺口：提供每個任務需要且已核准的本機檔案；當專案提供所需的 runtime 設定時，為平行 worktree 分配不同的 runtime port；並保留每個工作目錄各自的 continuity 紀錄。它刻意將程式碼狀態與任務狀態分開：Git 仍是程式碼、分支與 commit 的權威來源；continuity 紀錄則保留 Git 無法表達的任務脈絡——任務要完成什麼、為什麼做出這些決定、哪些事情被阻塞或已驗證、哪些相關材料與參考資料屬於這項工作，以及下一步要做什麼。因為這份紀錄屬於任務，而不是某一次對話，另一個 session 或支援的 AI client 可以開啟同一個工作目錄，簡單輸入 `continue` 就能接手。由驗證策略決定的檢查，以及明確的發布核准，會形成兩道彼此獨立的 gate，通過後才發布分支供 review。
+這個 Git repository 集中管理我的跨平台開發環境，是整套設定的單一來源。[Chezmoi](https://www.chezmoi.io/) 會把 `home/` 下的受管理 source
+渲染成各支援工具與作業系統使用的原生檔案。共用的 AI 指示與可重用工作流程只保留一份 source body；只屬於特定
+client 的行為則留在該 client 的原生介面。儲存庫只管理我刻意交給它負責的持久設定，應用程式自己的偏好、認證、
+session state 與 runtime 資料則留在本機。
 
 **快速導覽：**
 
 * [工作流程會自動處理什麼](#工作流程會自動處理什麼)
 * [系統總覽](#系統總覽)
+* [Profile 與 AI harness 模式](#profile-與-ai-harness-模式)
 * [Task continuity](#task-continuity)
 * [任務生命週期與 workspace](#任務生命週期與-workspace)
+* [權責與隱私界線](#權責與隱私界線)
+* [驗證與回歸測試涵蓋範圍](#驗證與回歸測試涵蓋範圍)
+* [接下來可以去哪裡](#接下來可以去哪裡)
 
 > ⚠️ **個人設定提醒：** 這個儲存庫包含我的個人偏好，不是通用的預設設定。既有機器請先查看
 > `chezmoi diff`，只套用你確定要變更的 target。只有在覆寫這些個人設定沒有問題的機器上，才適合
@@ -30,64 +33,12 @@ Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Co
 | 判斷哪些項目 agent 可以自行驗證、哪些仍需要我檢查，以及失敗後哪些檢查必須重跑         | **協調驗證流程。** 依選定的 verification policy 執行可行的自動化、runtime、瀏覽器與互動式檢查；失敗時進入修正與重測循環，只在確實需要時要求我執行檢查或確認結果                                              |
 | 協調從實作完成到可以交付 review 的整個流程                          | **協調發布流程。** 將驗證與發布核准分開，發布前重新取得並整合最新的 target base，必要時重跑受影響的驗證，之後再 commit、push、建立 review request，並執行保留分支的清理                                     |
 
-## 核心能力
-
-這些是 repository 在設定與權責界線上的架構保證。[工作流程會自動處理什麼](#工作流程會自動處理什麼)
-則說明任務流程如何在這些界線內運作。
-
-| 能力 | 結果 |
-| --- | --- |
-| 單一來源、原生交付 | 共用的 AI 指示與可重用的 AI skill 都從單一來源產生；薄 wrapper 保留各 client 原生的 discovery path 與 scope 規則。 |
-| Profile 組合，不重複維護整套設定 | 本機 selector 組合 personal 或 company context、managed 或 native harness 行為，以及 continuity 偏好，不需要複製整套設定目錄。 |
-| 跨平台交付 | 同一份 source state 可以渲染到 Windows 與 macOS 所需的原生 target path；client-specific source 則保留在各自的原生目錄。 |
-| 明確的權責界線 | repository 只管理明確交由它負責的 durable 設定；偏好、authentication、session/runtime state 與其他 application-owned data 留在本機。 |
-
-驗證與 decision records 讓這些保證可以被檢視，但不會另外增加一項 workflow 能力。
-
-這個儲存庫也會把應用程式擁有的偏好留在本機，支援 Windows 與 macOS 路徑，並在
-[架構決策紀錄](./docs/decisions/README.md)中記錄重要的設計取捨。
-
-## 實際使用
-
-這套工作流程在兩個支援的 AI client 中完全相同：Claude Code 使用
-`/run-task-end-to-end`，Codex 使用 `$run-task-end-to-end`。
-
-無參數模式會詢問任務、workspace、base、verification policy、continuity policy，以及依情境真正必要的其他輸入。client 提供原生選擇介面時會優先使用；沒有結構化輸入時，則改用簡短的文字問題。`verification=agent` 是預設值，`continuity=auto` 也是預設值，但 guided mode 仍會讓你看到這些選項。
-
-如果想直接用自然語言描述任務，可以在對應的 client 入口後接著描述，例如：
-
-`/run-task-end-to-end Use a worktree from feature/example and implement the changes from the attached specification.`
-
-流程只會解析明確表達的內容，例如 `workspace=worktree` 與 `base=feature/example`，其餘尚未確定的選項才會再詢問。解析自 prompt 的值會在 resolved echo 中標示為 `prompt`；透過問題或選擇介面確認的值則標示為 `confirmation`。
-
-需要可重現、精確控制的操作時，可以使用 explicit arguments：
-
-`/run-task-end-to-end workspace=checkout base=main task="修正 README 文字"`
-
-`/run-task-end-to-end workspace=worktree base=feature/example task="實作附件規格中的變更"`
-
-也可以只提供部分結構化參數。例如 `/run-task-end-to-end workspace=worktree task="實作範例功能"` 會保留已明確提供的 workspace 與 task，只詢問剩下必要的 base。明確提供的值不會被重複詢問。
-
-特定 context 或 repository policy 可能要求額外的任務或分支資訊。遇到這類情況時，工作流程會要求明確提供必要資訊，不會從分支名稱或任務文字自行推斷內部慣例。專案若有例外的分支規則，也必須在 repository instructions 中明確宣告並提供。
-
-在 company context 的 application repository 中，只要適用的 company branch policy 要求 flow number，
-不論採用哪一種 invocation style 都必須提供：
-
-`/run-task-end-to-end workspace=worktree base=feat/example-base flow=<digits> task="Continue the example task"`
-
-這會產生 `flow/<digits>-<ascii-description>` 格式的分支。Company-flow 規則只在 effective context 是 `company` 時適用；
-這個 dotfiles repository 在編輯自身 source 時明確使用 effective `personal` context。若 project 有分支例外，
-必須先在 repository instructions 中宣告，再由使用者明確提供；workflow 不會從 `feat/...` 分支名稱自行推斷。
-
-舊的 workflow 入口 `$task-workflow` 與 `$worktree-task-workflow` 仍保留作為相容性用途，但不是主要呼叫方式。
-
 ## 系統總覽
 
 這張圖同時呈現設定架構與 repository map。`home/` 是 chezmoi source state；`scripts/` 放置
 setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。本機 profile
 selector 會先進入 Chezmoi 組合，再分流到 shared adapter、portable skill delivery、
-client-specific delivery 與 OS-specific dotfile delivery。Task continuity 與 task execution
-會在下方的專門圖表說明；完整的 source-to-client 對應請看
+client-specific delivery 與 OS-specific dotfile delivery。完整的 source-to-client 對應請看
 [customization support guide](./docs/customization-support.md)。
 
 ```mermaid
@@ -126,36 +77,16 @@ flowchart TB
     classDef support fill:#f3f4f6,stroke:#4b5563,color:#111827
 ```
 
-`home/` 同時包含一般的 chezmoi source file 與 template。`.chezmoitemplates/` 中的可重用內容
-會由各 client 的薄 wrapper 組合；可攜式 skill 維持單一共用來源，必要時再透過 link 或 symlink
-交付到 client 的原生 discovery 路徑。Client 專屬 source 則留在各自的原生目錄。
-
-在支援的情況下，client 會提供原生的 worktree 建立與生命週期控制。儲存庫自己的檢查與 fallback
-則補上共用契約的其餘部分：精確的 `origin/<base>` 契約、可跨 client 的交接 state、已核准
-ignored 檔案的配置、適用的驗證策略、獨立的發布核准、可選的 runtime 隔離，以及明確的 workflow deletion 與 reviewed chezmoi cleanup。
-Worktree isolation 不會自動等於 runtime isolation：`runtime=auto` 必須搭配 consuming project 的 descriptor，並通過
-health/process-ownership check。這個儲存庫本身固定使用 primary checkout；一般的 project repository 才可以使用
-worktree。各 client 的細節請看 [native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation)。
-
-## 從這裡開始
-
-- 新機或既有機器都先看[設定指南](./docs/setup.md)。既有 home 目錄要先檢查
-  `chezmoi diff`，再決定是否套用變更。
-- 在[chezmoi 工作流程](./docs/chezmoi-workflow.md)了解 source 與 target 的界線，以及日常
-  使用的指令。
-- 要執行需要隔離或跨 session 交接的較大型任務，先讀
-  [worktree 配置指南](./docs/worktree-provisioning.md)。
+`home/` 是 source state，渲染到 home 目錄的檔案則是 targets。這裡同時放一般的 chezmoi source file
+與 template；`.chezmoitemplates/` 中的可重用內容會由各 client 的薄 wrapper 組合。可攜式 skill 維持單一
+共用來源，必要時再透過 link 或 symlink 交付到 client 的原生 discovery 路徑；client 專屬 source 則留在
+各自的原生目錄。修改受管理的設定前，先用 `chezmoi diff` 預覽。詳細的 source filename 與 target ownership 規則請看
+[chezmoi 工作流程](./docs/chezmoi-workflow.md)；client delivery matrix 請看
+[customization support guide](./docs/customization-support.md)。
 
 ## Profile 與 AI harness 模式
 
-三個本機 selector 會改變渲染出的 client 設定與行為；這些 selector 不會 commit 進儲存庫。
-
-~~~toml
-[data]
-ai_context = "company"        # personal 或 company
-ai_continuity = "on"          # on 或 off
-ai_harness = "managed"        # managed 或 native
-~~~
+三個本機 selector 會共同決定渲染出的 client 設定；這些 selector 不會 commit 進儲存庫。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
@@ -200,39 +131,24 @@ flowchart TB
     style native color:#111827
 ```
 
-| Selector | 控制內容 | 預設值與界線 |
+| Selector | 作用 | 預設值與界線 |
 | --- | --- | --- |
-| `ai_context` | Personal 或 company context、artifact language 預設值，以及 application 與 project repository 的預設註解語言。 | 未設定時是 `personal`；其他值會讓 render 失敗。 |
-| `ai_continuity` | Managed 模式下的 continuity 偏好。 | 未設定時是 `on`；`off` 會移除自動 continuity 指引與回報。Native 模式會停用實際行為，但保留儲存的值。 |
-| `ai_harness` | 完整的 managed AI harness，或預設行為較少的 native AI harness。 | 未設定時是 `managed`；其他值會讓 render 失敗。只有在沒有 `ai_harness` 時，`ai_workflow` 才會作為 legacy alias 接受。 |
+| `ai_context` | 選擇 personal 或 company context，以及對應的語言預設值。 | 未設定時是 `personal`；其他值會讓 render 失敗。 |
+| `ai_continuity` | 設定 managed 模式下的 continuity 偏好。 | 未設定時是 `on`；`off` 會移除自動 continuity 指引與回報。任務層級的 `continuity=on|off` 可以覆寫它。 |
+| `ai_harness` | 選擇 managed 或 native AI harness。 | 未設定時是 `managed`；只有在沒有 `ai_harness` 時，`ai_workflow` 才會作為 legacy alias 接受。 |
 
-**AI harness** 是包覆在 AI client 外的指示、skill、生命週期與交付層；它不是託管模型，也不
-是模型執行環境。Managed 模式加入儲存庫提供的生命週期指引與回報；native 模式保留共用 AI
-內容與 client-native 交付介面，並讓這些工作流程動作維持明確啟動。
-
-渲染後的組合是 `shared baseline + context + AI harness behavior + effective continuity`。
-Managed AI harness 也會加入生命週期回報、通知，以及 Claude 的 worktree 啟動檢查。Native AI
-harness 則保留共用指示、skill、statusline、輕量通知、delivery wrapper 與私人檔案保護，但
-continuity 和 worktree 生命週期動作都必須明確啟動。兩種模式都不會隱式啟動會改變狀態的工作流程。
-
-Selector 變更會影響之後重新 render 的設定與新啟動的 session。這個儲存庫的根目錄
-`AGENTS.md` 規定在此儲存庫工作時，實際使用 `personal` context，即使機器的 selector
-設定為 `company`。Artifact language 預設值會影響 commit 與 worktree request 文字，以及
-部分 Copilot 指引；不會翻譯分支名稱、路徑、指令、使用者層級 dotfile 或本 README。
+**AI harness** 是包覆在 AI client 外的指示、skill、生命週期與交付層。Managed 模式加入儲存庫提供的
+生命週期指引與回報；native 模式保留共用內容與 client-native 交付，同時讓生命週期動作維持明確啟動。
+Profile 變更會影響之後重新 render 的設定與新啟動的 session。
 
 完整組合規則請看 [chezmoi 工作流程的 AI profile 章節](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
 與 [AI customization support 指南](./docs/customization-support.md#ai-profile-dimensions)。
 
 ## Task continuity
 
-連續性屬於一個實體 working tree，不只適用於 linked worktree，也適用於 primary checkout。它是
-本機交接紀錄，不是專案文件，也不是工作完成的證明。每個實體 checkout 最多只有一個作用中的
-任務與 `.task-continuity/state.md`；新建立的 worktree 不會帶入其他 worktree 的 continuity
-state。新的任務如果遇到另一個未完成的 state，必須先完成、park 或放棄原任務；如果遇到已完成
-的 active state，流程會先執行 completion gate，再把它以不衝突的名稱移到
-`.task-continuity/parked/` 保存，然後在 continuity 啟用時為新任務建立新的 active state。
-這個保存動作不需要先確認刪除，也不會因為舊 state 已完成就要求改用 `continuity=off`。
-已完成的 state 不會被直接覆寫；要刪除 parked record，仍是另外一個需要確認的清理動作。
+Continuity 屬於一個工作目錄，包括 primary checkout 與 linked worktree。它是暫時性的交接狀態，
+不是專案文件，也不是工作完成的證明。每個工作目錄最多只有一個 active task 與一個
+`.task-continuity/state.md`；新建立的 worktree 不會帶入其他 worktree 的 continuity state。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
@@ -263,85 +179,29 @@ flowchart TD
     style durable color:#111827
 ```
 
-本機 continuity state 是工作 session 的交接紀錄。當資訊需要在這個 state 之外持續存在，或決策
-被延後／尚未解決時，工作流程會使用 durable handoff、reference 或 issue 紀錄，並在 `state.md`
-保留指向。
+Continuity 會記錄目前的目標、階段、決策、阻塞事項、驗證狀態、下一步，以及指向 durable material 的連結。
+Git 仍是程式碼、分支、commit 與測試結果的權威來源。穩定的參考輸入放在 `task-materials`，可重複使用的測試
+輸入放在 `test-materials`，可持續更新的協作紀錄放在 `handoffs`；`.task-continuity` 只保留暫時性的任務狀態與指向這些紀錄的連結。
 
-State 會記錄已知時的簡短任務標籤、目標、階段、決策、假設、阻塞事項、驗證狀態、材料參照
-與來源，以及下一步。新的 workflow state 也會保留任務分支、選定的 base branch、不變的 base
-commit，以及相容用的 `Started from` commit。Parking 會保留這些識別資訊，不會只剩檔名或分支
-名稱。
+同一個工作目錄要開始另一個任務前，原本未完成的任務必須先完成、park 或放棄。流程不會默默覆寫 active state。
+已完成的 active state 可以保留識別資訊，移到 `.task-continuity/parked/`，讓新任務在 continuity 開啟時直接建立
+新的 active state；這不需要先確認刪除，也不需要改用 `continuity=off`。刪除 parked state 仍是另外一個需要確認的動作。
 
-材料與 continuity surface 各自有明確的語意：
-
-| Surface | 用途 |
-| --- | --- |
-| `~/Documents/task-materials/` | 穩定的參考輸入，例如規格、截圖、試算表、來源文件與外部參考檔案。「穩定」表示它有可持續使用的識別與位置，不代表內容不可修改；流程不會隨意編輯這些資料。 |
-| `~/Documents/test-materials/` | 可重複使用的測試輸入與 fixture，例如範例檔案、手動測試輸入及可重現的測試產物。 |
-| `~/Documents/handoffs/` | 可持續更新的 durable 協作紀錄，例如 PM/BE 交接筆記、延後的決策、尚未解決的依賴，以及負責人或狀態紀錄。 |
-| `.task-continuity/` | 暫時性的操作型任務狀態：目前目標、階段、阻塞事項、驗證狀態、下一步，以及指向上述 durable 資料的連結。 |
-
-這些目錄都位於儲存庫之外，不會被複製進 worktree。
-
-當 checkout 回到某個具名分支、但沒有 active state 時，流程會先檢查 parked records。只有在分支
-完全相同、record 同時包含任務與起始 commit 資訊、起始 commit 仍在目前 `HEAD` 的歷史中，而且
-目前請求與記錄的任務及目標相符時，才會選取唯一的候選並還原。多個候選、舊格式 record、只有
-分支相符、detached `HEAD`，或任務意圖衝突時，都必須明確選檔或取得確認；單靠分支不會自動選取
-state。Claude Code 與 Codex 在 managed 模式且 continuity 開啟時會自動回報生命週期事件。Copilot
-可以遵循同一套協定，但目前沒有自動的生命週期 hook；native 模式仍保留 continuity skill，可由
-使用者明確啟動。
-
-當 state 與 checkout 不一致時，Git 仍是權威來源。連續性不能取代 commit、分支檢查、測試
-結果或使用者核准。如果實作與已核准的 artifact 不同，請將差異分類為已接受的 scope 差異、
-延後的相依工作，或尚未解決的決策；後兩者需要持久化的 handoff 或 issue 紀錄，`state.md`
-只保留指向該紀錄的連結。
-
-State 因為隱私與便利性而被 Git 忽略；它沒有加密，不能放入憑證。當同一個實體目錄要開始
-另一個未完成的任務時，先把現有 state 放到 `.task-continuity/parked/`，不要直接覆寫。
-請參考 [worktree 的 continuity 界線](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
-與 [task-continuity skill](./home/dot_agents/skills/task-continuity/SKILL.md)。舊的
-`.project-continuity/` 只作為一次性的遷移來源。確認 `.task-continuity/` 不存在後，才能搬移完整目錄；不能默默合併、覆寫或刪除任何一個 state 目錄。
-
-## Source state 與原生 target
-
-Chezmoi 將 `home/` 下的檔案視為 **source state**：這個儲存庫會編輯並 commit 的設定。
-寫入 home 目錄的檔案則是工具與應用程式實際讀取的 **target**。根目錄的 `.chezmoiroot`
-指定 `home/`；套用這個儲存庫不會建立 `~/home/` 目錄。
-
-修改受管理的設定時，請編輯 `home/` 下的 source，先用 `chezmoi diff` 預覽渲染後的結果，
-確認 target 變更後再套用。除非你刻意將 application ownership 提升為儲存庫責任，否則請
-讓 application-owned 值留在 target。
-
-Source 檔名本身帶有行為。`dot_` 會轉成開頭的 `.`，`.tmpl` 會啟用 template render，
-`create_`、`modify_` 與 `symlink_` 等 prefix 則控制 target 的處理方式。新增或重新命名
-source 檔案前，先讀[來源狀態規則](./docs/chezmoi-workflow.md#source-filename-rules)。
-
-儲存庫會讓共用內容保持共用，但不假設所有 client 都可以互換：
-
-| 內容 | 來源與交付方式 |
-| --- | --- |
-| 共用的 AI 指示 | 一份內容會 inline 到 Claude、Codex 與 Copilot 的原生檔案；薄 wrapper 只加入該 client 支援的 metadata。Codex 不支援 import 或 path-scoped 規則。 |
-| 可攜式 skill | 一個真實 skill 位於 `home/dot_agents/skills/`，渲染到 `~/.agents/skills`。Claude 透過個別 symlink 使用可攜式 skill；host gate metadata 會阻止 Codex-targeted skill 被錯誤的 host 自動呼叫。 |
-| Client 專屬 skill、agent、command 與 MCP | 保留在對應 client 的 source 目錄中，不建立容易誤導的 tool-neutral 副本。 |
-| 作業系統專屬檔案 | 共用內容透過 wrapper 渲染到 Windows 與 macOS 各自的 target 路徑。 |
-
-[AI customization support table](./docs/customization-support.md#what-the-support-table-answers)
-會把每項能力對應到擁有它的 source path，以及實際讀取它的各個 client surface。完整 adapter
-矩陣、目前的 discovery path，以及新增 Codex-targeted skill 的規則也都放在該指南。
-
-主要工作流程 skill 各自負責不同範圍：[run-task-end-to-end](./home/dot_agents/skills/run-task-end-to-end/SKILL.md)
-協調整個生命週期，[task-continuity](./home/dot_agents/skills/task-continuity/SKILL.md)
-管理交接 state，[worktree-manifest](./home/dot_agents/skills/worktree-manifest/SKILL.md) 檢視或建立
-已核准的 ignored 檔案 allowlist。Runtime 隔離則由專案提供的 descriptor 與[專門指南](./docs/worktree-runtime.md)
-獨立處理。
+新的 state 會保留任務與 Git 識別資訊，包括任務分支、base branch、不變的 base commit，以及相容用的
+`Started from` commit。請由 [task-continuity skill](./home/dot_agents/skills/task-continuity/SKILL.md) 處理遷移、parking、
+branch-aware discovery、reconcile 與 cleanup；[worktree provisioning guide](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
+則說明 worktree 的界線。State 會被 Git 忽略、沒有加密，不能放入憑證。
 
 ## 任務生命週期與 workspace
 
-任務流程是明確啟動的機制，主要用於分支、驗證、continuity 或發布狀態需要留下完整脈絡的工作。
-需要依序處理、可以安全使用目前 checkout 的任務，使用 `workspace=checkout`；只要兩個任務需要各自的
-未提交變更、分支、runtime port 或程序，就使用 `workspace=worktree`。Workspace 必須由 argument 或
-prompt 明確指定；如果無法解析，流程會在執行前先詢問，並回報解析來源。
-隔離需求選擇模式，並在執行前顯示結果。
+[`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) skill 是受管理任務的生命週期協調器。
+它把 workspace 的選擇與準備、task continuity、已核准的本機檔案配置、可選的 runtime 隔離、策略化驗證、
+發布核准，以及最後的分支交接，串成一套明確的工作流程。其他 skill 與專案 descriptor 各自負責專門範圍；
+`run-task-end-to-end` 負責安排執行順序，並維持共用的任務狀態。
+
+需要依序處理、可以安全使用目前 checkout 的任務，使用 `workspace=checkout`；只要兩個任務需要各自的未提交
+變更、分支、runtime port 或程序，就使用 `workspace=worktree`。Workspace 必須由 argument 或 prompt 明確指定；
+如果無法解析，流程會在執行前先詢問，並回報解析來源。
 
 兩種 workspace 共用同一套生命週期：解析 base 與 policy、準備 workspace、建立任務分支、實作、review、
 驗證／修正／重測、取得獨立的發布核准、重新確認並整合 base，最後 commit、push、建立 MR/PR，再進行
@@ -389,52 +249,43 @@ sequenceDiagram
     end
 ```
 
-詳細的 [worktree provisioning guide](./docs/worktree-provisioning.md#workflow-sequence) 會說明這個
-流程背後的佈建檢查、原生 client 路徑、runtime 隔離與清理契約。
+詳細的 [worktree provisioning guide](./docs/worktree-provisioning.md#workflow-sequence) 會說明流程背後的
+佈建檢查、原生 client 路徑、runtime 隔離、驗證、發布與清理契約。兩種 workspace 都會固定任務的 selected
+base 並建立任務分支；checkout workspace 留在目前的實體 checkout，只有 worktree 會配置已核准的 ignored
+檔案並支援選用的 runtime 隔離。不同任務各自保留 workspace、分支與 continuity state；client 交接則重新開啟
+同一個工作目錄。
 
-兩種 workspace 都會將任務固定在 selected base，並建立任務分支。Checkout workspace 留在目前的
-實體 checkout；原生 client 保留各自的 worktree 擁有權，儲存庫的 fallback 只會為隔離的 worktree
-配置已核准的 ignored 檔案，不會隱含複製 tracked application configuration 或 external folder。
-Checkout workspace 不宣稱具備 worktree isolation，也不會提供獨立的 runtime port。
+### Invocation styles
 
-詳細的 [worktree 生命週期](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)
-會說明 client 路徑、材料處理、provisioning readiness、runtime 隔離、驗證、發布核准 gate 與
-保留任務分支的清理方式。不同任務各自保留自己的 workspace、分支與 continuity state；client 交接則重新
-開啟同一個工作目錄。
+Claude Code 與 Codex 都使用 `/run-task-end-to-end`。這套工作流程支援三種呼叫方式：
 
-## 這個環境實際提供什麼
+- **Guided：** 不帶參數啟動，讓流程詢問任務、workspace、base、verification policy、continuity
+  policy，以及依情境真正必要的其他輸入。預設值是 `verification=agent` 與 `continuity=auto`。
+- **Prompted：** 接著輸入自然語言，例如 `/run-task-end-to-end Use a worktree from feature/example
+  and implement the attached specification.` 流程只解析明確表達的值，其餘選項才會再詢問。
+- **Explicit：** 提供結構化參數來精確控制，例如
+  `/run-task-end-to-end workspace=worktree base=feature/example task="Implement the example feature"`。
 
-README 首頁只呈現主要的原生介面與支援邊界；完整矩陣與操作流程則放在各自的專門指南中。
+也可以只提供部分結構化參數。例如 `/run-task-end-to-end workspace=worktree task="實作範例功能"` 會保留
+已明確提供的 workspace 與 task，只詢問剩下必要的 base。Prompt 解析的值會標示為 `prompt`；透過問題
+確認的值則標示為 `confirmation`。
 
-| 領域 | 代表內容 |
-| --- | --- |
-| AI client 與 editor host | Claude Code、Codex、GitHub Copilot CLI 與 VS Code 提供共用 instructions、原生 skill 與 agent、MCP 宣告、hook，以及選定的設定；各 host 只會讀取自己支援的部分。 |
-| Dotfile 與開發工具 | 跨平台 shell 啟動檔、Git identity 與 alias、worktree helper、Windows Terminal 值，以及 OS-specific VS Code target。 |
-| Workflow 支援 | Bootstrap script、installer、manifest、`scripts/diagnostics/dev-env-doctor.sh` 等診斷工具、回歸測試套件與 [ADR](./docs/decisions/README.md)。 |
-| 隔離與材料 provenance | 可選的每 worktree HTTP port、health check 與 lease；分類後的參考資料與測試輸入，以及記錄的路徑與 provenance。請看 [worktree runtime](./docs/worktree-runtime.md) 與 [workflow material handling](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)。 |
-| Parity 與 lifecycle | Windows/macOS source body parity 與針對性檢查。Workflow deletion 只處理明確列出的 tracked source inventory，generated target 透過 chezmoi removal 處理；continuity、secret 與 application state 留在外部。請看 [workflow deletion](./docs/workflow-deletion.md)。 |
-
-開發者體驗層包含跨平台的 Claude status line：
-
-![三列 status line：顯示 model 與 effort level 及 session name；顯示 working directory、Git branch 與 dirty-file count；以及 context 使用量和兩個 rate-limit window 及其重設時間。](./docs/images/statusline.png)
-
-Status line 會顯示 model 與 effort level、session name、working directory、Git branch 與檔案
-狀態、context 使用量，以及五小時與七天 rate-limit window 的重設時間。Bash 與 PowerShell
-版本會做 parity check，也會計算 CJK 與 emoji 寬度，讓窄終端機仍維持可讀。
+特定 repository policy 可能要求額外的任務或分支資訊。工作流程會明確要求必要值，不會從分支名稱或任務
+文字自行推斷；任何專案專屬的例外，都必須先在 repository instructions 中宣告。舊的 workflow 入口
+`task-workflow` 與 `worktree-task-workflow` 仍保留給既有 prompt 與 client history 使用。
 
 ## 權責與隱私界線
 
-對於應用程式擁有的設定，儲存庫只管理最小必要的範圍：刻意指定的持久性 key 或結構。容易
-變動的偏好、認證、歷史紀錄、cache、session/runtime state，以及應用程式未來新增的值，除非
-刻意納入儲存庫管理，否則都留在本機。
+對於應用程式擁有的設定，儲存庫只管理刻意指定的持久性 key 或結構。容易變動的偏好、認證、
+歷史紀錄、cache、session/runtime state，以及應用程式未來新增的值，除非刻意納入儲存庫管理，
+否則都留在本機。完整的 ownership 與套用流程請看 [setup guide](./docs/setup.md)。
 
-| Target | 由儲存庫管理 | 由 Application 或使用者管理 |
+| Surface | 由儲存庫管理 | 由 Application 或使用者管理 |
 | --- | --- | --- |
-| Claude `settings.json` | 透過 deep-merge template 管理 durable environment、hook、status line 與 update-channel 值。 | Model、effort、theme、permission、plugin、project state 與未來新增的 key。 |
-| Codex `config.toml` | 只有在檔案不存在時提供預設值。 | 既有的 trust、runtime、marketplace 與 session state。 |
-| Windows Terminal `settings.json` | 選定的 durable 值，以及完整的 `actions` 與 `keybindings` 陣列。 | Generated profile 與其他未列名設定。 |
-| VS Code user files | 透過 OS-specific wrapper 管理 tracked settings、keybindings 與 MCP source。 | Workspace storage、authentication、extension cache 與 runtime data。 |
-| Claude user MCP state | 透過 add-missing installer 管理非機密宣告。 | Authentication 與其餘的 `~/.claude.json`。 |
+| Claude settings | Durable environment、hook、status line 與 update-channel 值。 | Model、permission、plugin、project state 與未來新增的 key。 |
+| Codex config | 只有在檔案不存在時提供預設值。 | Trust、runtime、marketplace 與 session state。 |
+| Windows Terminal 與 VS Code | 選定的 durable 設定、keybinding 與 MCP source。 | Generated profile、workspace storage、authentication、cache 與 runtime data。 |
+| Claude user MCP state | 非機密宣告。 | Authentication 與其餘的 `~/.claude.json`。 |
 
 全域 Git exclude file 會保護私人 client 檔案與 continuity state，避免它們被意外追蹤：
 
@@ -452,30 +303,19 @@ Status line 會顯示 model 與 effort level、session name、working directory�
 ## 驗證與回歸測試涵蓋範圍
 
 這個儲存庫使用本機自動化測試套件、策略化的驗證流程，以及獨立的發布核准 gate。儲存庫沒有設定 CI
-workflow，因此本機測試通過不代表 CI 已執行。
+workflow，因此本機測試通過不代表 CI 已執行。完整的驗證流程請看 [setup guide](./docs/setup.md)。
 
-Pre-commit hook 會將 staged source render 到暫存目錄，不會寫入 home 目錄，並檢查：
+Pre-commit hook 會將 staged source render 到暫存目錄，不會寫入 home 目錄，並檢查 source identity、
+filename 安全性、skill parity、client adapter、共用 rule body、status-line parity 與 Markdown link。
 
-- source identity 與所有 staged path；因為這個 checkout 的 Git index 由多個 process 共用；
-- filename attribute 安全性與 skill file-count parity；
-- Claude skill symlink 與 Codex host gate；
-- Claude 與 Copilot 共用 rule body 是否 byte-identical；
-- Codex render 後的 `AGENTS.md` 沒有 YAML frontmatter；
-- 任一 status-line 實作變更時，Bash 與 PowerShell 版本是否 parity；以及
-- 相對 Markdown link 與 heading fragment。
+受保護的行為變更時，執行對應的 focused suite：
 
-受保護的行為變更時，手動執行針對該行為的測試：
-
-| 行為 | 本機檢查 |
+| 範圍 | 本機檢查 |
 | --- | --- |
-| Windows worktree 配置 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-git-worktree-provision.ps1` |
-| macOS worktree 配置 | `bash scripts/tests/test-git-worktree-provision.sh` |
-| Continuity 生命週期與復原 | `bash scripts/tests/test-task-continuity.sh` |
-| Task workflow workspace 與 policy contract | `bash scripts/tests/test-run-task-end-to-end.sh` |
-| Task workflow invocation styles 與 client fallback | `bash scripts/tests/test-run-task-invocation.sh` |
-| AI profile 組合與 selector | `bash scripts/tests/test-ai-configuration-profiles.sh` |
-| Workflow deletion 與 Git recovery | `bash scripts/tests/test-workflow-delete.sh` |
-| Runtime descriptor、allocation 與 port lease | `python scripts/tests/test-worktree-runtime.py -v` |
+| Worktree provisioning | `test-git-worktree-provision.ps1` 或 `test-git-worktree-provision.sh` |
+| Continuity 與 task workflow | `test-task-continuity.sh`、`test-run-task-end-to-end.sh`、`test-run-task-invocation.sh` |
+| Profile 與 workflow deletion | `test-ai-configuration-profiles.sh`、`test-workflow-delete.sh` |
+| Runtime isolation | `test-worktree-runtime.py -v` |
 
 在 Windows PowerShell 中，請透過 `.\scripts\tests\run-git-bash-tests.ps1` 執行 Bash 測試；
 它會明確找到 Windows Git Bash。`scripts/tests/continuity-fixtures/` 下的 continuity fixture

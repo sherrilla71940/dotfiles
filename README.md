@@ -2,18 +2,22 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-I use this repository as the single source for my development environment, bringing my personal dotfiles and AI tooling together in one Git-tracked repository. [Chezmoi](https://www.chezmoi.io/) renders that managed source into the native files expected by each supported tool and operating system. Shared AI instructions and reusable workflows can therefore be defined once and delivered to Claude Code, Codex, and GitHub Copilot, while behavior that only belongs to one client can stay scoped there. This gives me fine-grained control without maintaining duplicate copies across AI clients and worrying about them drifting out of sync. The repository also manages only the durable settings I intentionally own, while volatile preferences, authentication, session state, and other application-owned data stay local.
-
-Git’s built-in worktree support already provides strong source-code isolation, and AI clients such as Claude Code can build on it with native worktree creation and lifecycle support. However, several problems still appear when multiple AI-assisted tasks need to run reliably in parallel: a fresh worktree may be missing ignored local files, multiple app instances can compete for the same runtime port, and task context that Git does not capture can remain tied to a particular session or client.
-
-My workflow fills those gaps by provisioning the approved local files each task needs, giving parallel worktrees separate runtime ports when the project provides the required runtime configuration, and keeping a per-working-directory continuity record. It deliberately separates code state from task state: Git remains authoritative for code, branches, and commits, while the continuity record preserves the story around that state — what the task is trying to accomplish, why decisions were made, what is blocked or verified, which relevant materials and references are part of the task, and what should happen next. Because that record belongs to the task rather than one conversation, another session or supported AI client can open the same working directory and resume with a simple “continue.” Policy-driven verification and explicit publish authorization provide separate gates before the branch is published for review.
+I use this repository as the single source for my cross-platform developer environment. [Chezmoi](https://www.chezmoi.io/)
+renders the managed source under `home/` into native files for supported tools and operating systems.
+Shared AI instructions and reusable workflows have one source body, while client-specific behavior stays
+in native client surfaces. The repository owns only deliberate durable settings; application-owned
+preferences, authentication, session state, and runtime data remain local.
 
 **Jump to:**
 
 * [What the workflow automates](#what-the-workflow-automates)
 * [System at a glance](#system-at-a-glance)
+* [Profiles and AI harness modes](#profiles-and-ai-harness-modes)
 * [Task continuity](#task-continuity)
 * [Task lifecycle and workspaces](#task-lifecycle-and-workspaces)
+* [Ownership and privacy boundaries](#ownership-and-privacy-boundaries)
+* [Validation and regression coverage](#validation-and-regression-coverage)
+* [Where to go next](#where-to-go-next)
 
 > ⚠️ **Personal configuration:** This repository contains my preferences, not a neutral default.
 > On an existing machine, review `chezmoi diff` and apply only the targets you intend to change.
@@ -30,70 +34,14 @@ My workflow fills those gaps by provisioning the approved local files each task 
 | Decide what the agent can verify itself, what still needs my checking, and what must be rerun after a failure                   | Coordinate verification. Apply the selected verification policy across feasible automated, runtime, browser, and interactive checks, loop through fix-and-retest when needed, and request only checks or acceptance that actually require me                                                                                         |
 | Coordinate the path from completed implementation to reviewable work                                                            | Coordinate publication. Keep verification separate from publish authorization, refresh and reconcile the target base before publication, rerun affected verification when necessary, then commit, push, request review, and perform branch-preserving cleanup                                                                        |
 
-## Core capabilities
-
-These are repository-level configuration and ownership guarantees. [What the workflow automates](#what-the-workflow-automates)
-describes the task operations that use these boundaries.
-
-| Capability                            | Result                                                                                                                                                                                                                  |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One source, native delivery           | Shared AI instructions and reusable AI skills have one source body. Thin wrappers preserve each client's native discovery and scope rules.                                                                             |
-| Profile composition without duplication | Machine-local selectors compose personal or company context, managed or native harness behavior, and continuity preference without duplicating configuration trees.                                                    |
-| Cross-platform delivery               | The same source state renders to the native target paths required by Windows and macOS, while client-specific sources remain in their native directories.                                                               |
-| Deliberate ownership boundaries       | The repository manages only the durable settings it intentionally owns. Preferences, authentication, session/runtime state, and other application-owned data remain local.                                               |
-
-Validation and decision records make these guarantees reviewable; they do not add another workflow
-capability.
-
-The repository also keeps application-owned preferences local, supports Windows and macOS paths,
-and records architectural trade-offs in [decision records](./docs/decisions/README.md).
-
-## In practice
-
-The workflow is the same in both supported clients. Use `/run-task-end-to-end` in Claude Code or
-`$run-task-end-to-end` in Codex.
-
-No-argument mode asks for the task, workspace, base, verification policy, continuity policy, and any context-specific required input. It uses native choice UI when the client provides one and a concise text fallback otherwise. `verification=agent` is the default verification policy and `continuity=auto` is the default continuity policy, but guided mode still exposes those choices.
-
-Use the prompted form when you want to describe the task naturally. Append the request to the
-client-specific entry point, for example:
-
-`/run-task-end-to-end Use a worktree from feature/example and implement the changes from the attached specification.`
-
-The workflow parses only clear values, such as `workspace=worktree` and `base=feature/example`, and asks only for unresolved choices. Prompt-derived values remain marked as `prompt`; confirmed answers are marked as `confirmation` in the resolved echo.
-
-Use explicit arguments for deterministic or power-user operation:
-
-`/run-task-end-to-end workspace=checkout base=main task="Fix the README wording"`
-
-`/run-task-end-to-end workspace=worktree base=feature/example task="Implement the changes from the attached specification"`
-
-Partial structured input is also supported. For example, `/run-task-end-to-end workspace=worktree task="Implement the example feature"` keeps the explicit workspace and task, then asks only for the remaining required base. Explicit values bypass redundant questions.
-
-Context-specific repository policies can require additional task or branch metadata. When they do, the workflow requires that information explicitly rather than inferring internal conventions from branch names or task text. Project-specific branch exceptions must likewise be declared in repository instructions and supplied explicitly.
-
-In a company-context application repository, provide the flow number whenever the applicable company
-branch policy requires one, regardless of invocation style:
-
-`/run-task-end-to-end workspace=worktree base=feat/example-base flow=<digits> task="Continue the example task"`
-
-This produces a branch in the form `flow/<digits>-<ascii-description>`. The company-flow rule
-applies only when the effective context is `company`; this dotfiles repository explicitly uses
-effective `personal` context while its own source is edited. A project-specific branch exception
-must be declared in repository instructions and supplied explicitly; the workflow does not infer
-one from a `feat/...` branch name.
-
-Legacy workflow entry points `$task-workflow` and `$worktree-task-workflow` remain available for compatibility, but they are not the primary invocation paths.
-
 ## System at a glance
 
 This diagram combines the configuration architecture with the repository map. `home/` is the
 chezmoi source state; `scripts/` supports setup, diagnostics, installers, and validation; and
 `docs/` contains operating guides and decision records. Machine-local profile selectors feed
 Chezmoi composition, which branches into shared adapters, portable skill delivery, client-specific
-delivery, and OS-specific dotfile delivery. Task continuity and task execution are shown in the
-dedicated diagrams below. The [customization support guide](./docs/customization-support.md) maps
-each source to the client surfaces that read it.
+delivery, and OS-specific dotfile delivery. The [customization support guide](./docs/customization-support.md)
+maps each source to the client surfaces that read it.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
@@ -131,41 +79,17 @@ flowchart TB
     classDef support fill:#f3f4f6,stroke:#4b5563,color:#111827
 ```
 
-`home/` contains both plain chezmoi source files and templates. Reusable bodies in
-`.chezmoitemplates/` feed thin client wrappers; portable skills remain a shared source and use
-links or symlinks when a client needs a native discovery location. Client-specific sources stay in
-their native directories.
-
-Where supported, clients provide native worktree creation and lifecycle controls. Repository-owned
-checks and fallbacks cover the remaining shared contract: an exact `origin/<base>` contract,
-portable handoff state, approved ignored-file provisioning, applicable verification, separate publish
-authorization, optional runtime isolation, and explicit workflow deletion with reviewed chezmoi cleanup.
-Worktree isolation does not automatically provide runtime isolation: `runtime=auto` requires the
-consuming project's descriptor and a successful health/process-ownership check. This repository
-itself stays in the primary checkout; ordinary project repositories may use worktrees. See
-[native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation) for the
-client-specific details.
-
-## Start here
-
-- Set up a new or existing machine with the [setup guide](./docs/setup.md). Review `chezmoi diff`
-  before applying changes to an existing home directory.
-- Learn the source-versus-target boundary and daily commands in the
-  [chezmoi workflow](./docs/chezmoi-workflow.md).
-- For a substantial or isolation-sensitive task, read the
-  [worktree provisioning guide](./docs/worktree-provisioning.md).
+`home/` is source state, and the files rendered into the home directory are targets. It contains
+plain chezmoi source files and templates. Reusable bodies in `.chezmoitemplates/` feed thin client
+wrappers; portable skills remain a shared source and use links or symlinks when a client needs a
+native discovery location; client-specific sources stay in their native directories. Preview a
+managed change with `chezmoi diff` before applying it. The [chezmoi workflow guide](./docs/chezmoi-workflow.md)
+covers source filenames and target ownership; the [customization support guide](./docs/customization-support.md)
+covers the client delivery matrix.
 
 ## Profiles and AI harness modes
 
-Three machine-local selectors change the rendered client configuration and behavior. The selectors
-are not committed.
-
-```toml
-[data]
-ai_context = "company"        # personal or company
-ai_continuity = "on"          # on or off
-ai_harness = "managed"        # managed or native
-```
+Three machine-local selectors compose the rendered client configuration. They are not committed.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
@@ -210,46 +134,27 @@ flowchart TB
     style native color:#111827
 ```
 
-| Selector        | Controls                                                                                                                           | Default and boundary                                                                                                                                  |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ai_context`    | Personal or company context, artifact-language default, and the default comment language for application and project repositories. | Missing means `personal`; other values fail rendering.                                                                                                |
-| `ai_continuity` | The managed-mode continuity preference.                                                                                            | Missing means `on`; `off` removes automatic continuity guidance and reporting. Native mode suppresses the effective behavior but preserves the value. |
-| `ai_harness`    | The complete managed AI harness or the lower-opinionated native AI harness.                                                        | Missing means `managed`; other values fail rendering. `ai_workflow` remains a legacy alias only when `ai_harness` is absent.                          |
+| Selector | Role | Default and boundary |
+| --- | --- | --- |
+| `ai_context` | Selects personal or company context and its language defaults. | Missing means `personal`; other values fail rendering. |
+| `ai_continuity` | Sets the managed-mode continuity preference. | Missing means `on`; `off` removes automatic continuity guidance and reporting. Task-level `continuity=on|off` can override it. |
+| `ai_harness` | Selects the managed or native AI harness. | Missing means `managed`; `ai_workflow` remains a legacy alias only when `ai_harness` is absent. |
 
-An **AI harness** is the repository's instruction, skill, lifecycle, and delivery layer around an AI
-client. It is not a hosted model or model runtime. Managed mode adds repository-owned lifecycle
-guidance and reporting; native mode keeps the shared AI content and client-native delivery surfaces
-while leaving those workflow actions explicit.
-
-The rendered composition is `shared baseline + context + AI harness behavior + effective continuity`.
-Managed AI harness mode also adds lifecycle reporting, notifications, and Claude's worktree-launch
-check. Native AI harness mode keeps shared instructions, skills, statusline, lightweight
-notifications, delivery wrappers, and private-file protection, but leaves continuity and worktree
-lifecycle actions explicit. Neither mode starts a state-changing workflow implicitly.
-
-Selector changes affect newly rendered configuration and newly started sessions. This repository's
-root `AGENTS.md` requires the effective `personal` context while work happens here, even on a
-machine whose selector is `company`. The artifact-language default affects commit and worktree
-request text and selected Copilot guidance; it does not translate branch names, paths, commands,
-user-level dotfiles, or this README.
+An **AI harness** is the instruction, skill, lifecycle, and delivery layer around an AI client. Managed
+mode adds repository-owned lifecycle guidance and reporting. Native mode keeps shared content and
+client-native delivery while leaving lifecycle actions explicit. Profile changes affect newly rendered
+configuration and newly started sessions.
 
 Read the [AI profile section of the chezmoi workflow](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
-and the [customization support guide](./docs/customization-support.md#ai-profile-dimensions) for
-the full composition rules.
+and the [customization support guide](./docs/customization-support.md#ai-profile-dimensions) for the
+full composition rules.
 
 ## Task continuity
 
-Continuity belongs to one working directory, including the primary checkout and linked worktrees. It
-is a local handoff record, not project documentation and not proof that work is complete. Each
-working directory has at most one active task and one `.task-continuity/state.md`; a newly created
-worktree starts without another worktree's continuity state.
-
-When a new task finds a different unfinished state, the existing task must be finished, parked, or
-abandoned first. When it finds a completed active state, the workflow reconciles it through the
-completion gate and moves it to `.task-continuity/parked/` with a non-colliding name. A fresh active
-state can then be created for the new task when continuity is enabled; no deletion confirmation or
-`continuity=off` override is required for this preservation move. Completed state is never silently
-overwritten, and deleting the parked record remains a separate, confirmation-gated cleanup action.
+Continuity belongs to one working directory, including the primary checkout and linked worktrees.
+It is transient handoff state, not project documentation or proof that work is complete. Each working
+directory has at most one active task and one `.task-continuity/state.md`; a new worktree starts without
+another worktree's continuity state.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
@@ -280,94 +185,37 @@ flowchart TD
     style durable color:#111827
 ```
 
-Local continuity state is the working-session record. When information must outlive that state—or a
-decision is deferred or unresolved—the workflow uses a durable handoff, reference, or issue record
-and keeps its pointer in `state.md`.
+Continuity records the current objective, phase, decisions, blockers, verification status, next action,
+and pointers to durable materials. Git remains authoritative for code, branches, commits, and test
+results. Stable reference inputs belong in `task-materials`, reusable test inputs in `test-materials`,
+and durable updateable coordination records in `handoffs`; `.task-continuity` keeps only the transient
+task state and pointers to those records.
 
-The state records a short task label when known, the objective, phase, decisions, assumptions,
-blockers, verification state, material references and provenance, and the next action. New workflow
-records also retain the task branch, selected base branch, immutable base commit, and compatibility
-`Started from` commit. Parking preserves this identity metadata; it does not reduce a task to a
-filename or a branch name.
+An unfinished task must be finished, parked, or abandoned before a different task uses the same
+working directory. The workflow never silently overwrites active state. A completed active state may
+move to `.task-continuity/parked/` with its identity preserved, allowing a fresh active state without
+deletion confirmation or a `continuity=off` override; deleting parked state remains a separate,
+confirmation-gated action.
 
-The material and continuity surfaces have distinct roles:
-
-| Surface | Role |
-| --- | --- |
-| `~/Documents/task-materials/` | Stable reference inputs such as specifications, screenshots, spreadsheets, source documents, and external reference files. Stable means that the material has an identity and location intended for reuse; it does not mean immutable, and the workflow does not casually edit it. |
-| `~/Documents/test-materials/` | Reusable test inputs and fixtures such as sample files, manual-test inputs, and reproducible testing artifacts. |
-| `~/Documents/handoffs/` | Durable, updateable coordination records such as PM/BE notes, deferred decisions, unresolved dependencies, and ownership or status notes. |
-| `.task-continuity/` | Transient operational task state: the current objective, phase, blockers, verification status, next action, and pointers to the durable materials above. |
-
-These directories remain outside the repository and are not copied into worktrees.
-
-When a checkout returns to a named branch with no active state, the workflow can inspect parked
-records. It restores a single candidate only when the branch matches exactly, the record contains
-task and start-commit metadata, the start commit is reachable from the current `HEAD`, and the
-current request matches the recorded task and objective. Multiple candidates, legacy records, a
-branch-only match, detached `HEAD`, or conflicting task intent require explicit selection or
-confirmation. Claude Code and Codex report lifecycle events automatically in managed mode when
-continuity is enabled. Copilot can follow the same protocol without an automatic lifecycle hook,
-and native mode keeps the continuity skill available for explicit use.
-
-Git remains the authority when state and the checkout disagree. Continuity never replaces a
-commit, branch check, test result, or user approval. If implementation differs from an approved
-artifact, classify the difference as accepted scope, a deferred dependency, or an unresolved
-decision; the latter two need a durable handoff or issue record, with only its pointer kept in
-`state.md`.
-
-The state is Git-ignored for privacy and convenience. It is not encrypted and must not contain
-credentials. When a different unfinished task starts in the same physical directory, the existing
-state is parked under `.task-continuity/parked/` instead of being overwritten. See the
-[worktree continuity boundary](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
-and the [task-continuity skill](./home/dot_agents/skills/task-continuity/SKILL.md). Legacy
-`.project-continuity/` state is accepted only for one-time migration. Move the complete directory
-to `.task-continuity/` only after confirming that the canonical directory does not exist; never
-merge, overwrite, or delete either state directory silently.
-
-## Source state and native targets
-
-Chezmoi treats the files under `home/` as **source state**: the configuration this repository
-edits and commits. The files written into the home directory are **targets**: the files tools and
-applications read. The root `.chezmoiroot` selects `home/`; applying the repository does not create
-a `~/home/` directory.
-
-When changing a managed setting, edit the source under `home/`, preview the rendered result with
-`chezmoi diff`, and apply only after reviewing the target changes. Leave application-owned values in
-the target unless you intentionally promote them into repository ownership.
-
-Source filenames carry behavior. `dot_` becomes a leading `.`, `.tmpl` enables rendering, and
-prefixes such as `create_`, `modify_`, and `symlink_` control target handling. Read the
-[source-state rules](./docs/chezmoi-workflow.md#source-filename-rules) before adding or renaming a
-source file.
-
-The repository keeps shared content shared without pretending that clients are interchangeable:
-
-| Content                                           | Source and delivery                                                                                                                                                                                                                        |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Shared AI instructions                            | One body is inlined into Claude, Codex, and Copilot native files. Thin wrappers add only the metadata each client supports. Codex receives no imports or path-scoped rules.                                                                |
-| Portable skills                                   | One real skill under `home/dot_agents/skills/` renders to `~/.agents/skills`. Claude reaches portable skills through individual symlinks; host-gated metadata prevents a Codex-targeted skill from automatic invocation by the wrong host. |
-| Client-specific skills, agents, commands, and MCP | Native files remain under the relevant client source directory. The repository does not create a misleading tool-neutral copy.                                                                                                             |
-| OS-specific files                                 | Shared bodies use wrappers for Windows and macOS target paths.                                                                                                                                                                             |
-
-The [AI customization support table](./docs/customization-support.md#what-the-support-table-answers)
-maps each capability to its source path and every client surface that reads it. It also documents
-the full adapter matrix, current discovery paths, and the rule for adding a Codex-targeted skill.
-
-The main workflow skills stay focused: [run-task-end-to-end](./home/dot_agents/skills/run-task-end-to-end/SKILL.md)
-coordinates the lifecycle, [task-continuity](./home/dot_agents/skills/task-continuity/SKILL.md)
-owns the handoff state, and [worktree-manifest](./home/dot_agents/skills/worktree-manifest/SKILL.md)
-reviews or creates the approved ignored-file allowlist. Runtime isolation remains a separate
-project-provided descriptor and [focused guide](./docs/worktree-runtime.md).
+New records retain task and Git identity, including the task branch, base branch, immutable base commit,
+and compatibility `Started from` commit. The [task-continuity skill](./home/dot_agents/skills/task-continuity/SKILL.md)
+owns migration, parking, branch-aware discovery, reconciliation, and cleanup rules. The
+[worktree provisioning guide](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
+covers the worktree boundary. State remains Git-ignored, is not encrypted, and must not contain credentials.
 
 ## Task lifecycle and workspaces
 
-The task workflow is an explicit opt-in for work whose branch, verification, continuity, or
-publishing state benefits from a recorded lifecycle. Use `workspace=checkout` for a sequential task
-that can safely use the current physical checkout, and `workspace=worktree` whenever two tasks need
-independent uncommitted changes, branches, runtime ports, or processes. Workspace selection must be
-explicit or clearly stated in the prompt; otherwise the workflow asks before execution and reports
-the resolution source.
+The [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) skill is the lifecycle
+coordinator for a managed task. It combines workspace selection and preparation, task continuity,
+approved local-file provisioning, optional runtime isolation, policy-driven verification, publish
+authorization, and final branch handoff into one explicit workflow. Supporting skills and project
+descriptors own their focused concerns; `run-task-end-to-end` coordinates their order and the shared
+task state.
+
+Use `workspace=checkout` for a sequential task that can safely use the current physical checkout, and
+`workspace=worktree` whenever two tasks need independent uncommitted changes, branches, runtime ports,
+or processes. Workspace selection must be explicit or clearly stated in the prompt; otherwise the
+workflow asks before execution and reports the resolution source.
 
 Both workspace modes share the same lifecycle: resolve the base and policies, prepare the workspace,
 establish the task branch, implement, review, verify/fix/retest, obtain separate publish
@@ -418,59 +266,49 @@ sequenceDiagram
 ```
 
 The focused [worktree provisioning guide](./docs/worktree-provisioning.md#workflow-sequence) expands
-the provisioning checks, native client paths, runtime isolation, and cleanup contract behind this
-sequence.
+the provisioning checks, native client paths, runtime isolation, verification, publication, and
+cleanup contract. Both workspace modes pin the task to the selected base and establish a task branch;
+the checkout workspace stays in the current physical checkout, while only worktrees receive approved
+ignored-file provisioning and optional runtime isolation. Separate tasks keep their workspaces,
+branches, and continuity state independent, while a client handoff reopens the same working directory.
 
-Both workspace modes pin the task to the selected base and establish a task branch. The checkout
-workspace stays in the current physical checkout. Native clients retain their own worktree
-ownership; repository fallbacks provision only approved ignored files for isolated worktrees and
-refuse implicit copies of tracked application configuration or external folders. The checkout
-workspace does not claim worktree isolation or a separate runtime port.
+### Invocation styles
 
-The focused [worktree provisioning guide](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step)
-carries the client paths, material handling, provisioning readiness, runtime isolation, verification,
-publish-authorization gate, and branch-preserving cleanup details. Separate tasks keep their
-workspaces, branches, and continuity state independent, while a client handoff reopens the same
-working directory.
+Use `/run-task-end-to-end` in Claude Code and Codex. The workflow supports three invocation styles:
 
-## What the environment delivers
+- **Guided:** invoke it without arguments. The workflow asks for the task, workspace, base,
+  verification policy, continuity policy, and any context-specific required input. The defaults
+  are `verification=agent` and `continuity=auto`.
+- **Prompted:** append a natural-language request, such as `/run-task-end-to-end Use a worktree
+  from feature/example and implement the attached specification.` The workflow parses only clear
+  values and asks for unresolved choices.
+- **Explicit:** provide structured arguments for deterministic operation, such as
+  `/run-task-end-to-end workspace=worktree base=feature/example task="Implement the example feature"`.
 
-The landing page shows the native surfaces and supporting boundaries; focused guides carry the full
-matrices and procedures.
+Partial structured input is also supported. For example,
+`/run-task-end-to-end workspace=worktree task="Implement the example feature"` keeps the explicit
+workspace and task, then asks only for the remaining base. Prompt-derived values are marked as
+`prompt`; confirmed values are marked as `confirmation` in the resolved echo.
 
-| Area                         | Representative contents                                                                                                                                                                                                                                                                                    |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AI clients and editor hosts  | Claude Code, Codex, GitHub Copilot CLI, and VS Code expose shared instructions, native skills and agents, MCP declarations, hooks, and selected settings; each host reads the subset it supports.                                                                                                          |
-| Dotfiles and developer tools | Cross-platform shell startup, Git identity and aliases, worktree helpers, Windows Terminal values, and OS-specific VS Code targets.                                                                                                                                                                        |
-| Workflow support             | Bootstrap scripts, installers, manifests, diagnostics such as `scripts/diagnostics/dev-env-doctor.sh`, regression suites, and [ADRs](./docs/decisions/README.md).                                                                                                                                          |
-| Isolation and provenance     | Optional per-worktree HTTP ports with health checks and leases; classified reference and test materials with recorded paths and provenance. See [worktree runtime](./docs/worktree-runtime.md) and [workflow material handling](./docs/worktree-provisioning.md#what-the-task-workflow-does-at-each-step). |
-| Parity and lifecycle         | Windows/macOS source-body parity and focused checks. Workflow deletion uses explicit tracked source inventories and chezmoi removal; continuity, secrets, and application state stay outside. See [workflow deletion](./docs/workflow-deletion.md). |
+Repository-specific policies can require additional task or branch metadata. The workflow asks for
+required values explicitly instead of inferring them from branch names or task text. Declare any
+project-specific exceptions in repository instructions. Compatibility aliases `task-workflow` and
+`worktree-task-workflow` remain available for existing prompts and client history.
 
-The developer-experience layer includes a cross-platform Claude status line:
-
-![Three status-line rows: model and effort level with the session name; the working directory and
-Git branch with a dirty-file count; and the context used alongside both rate-limit windows with
-their reset times.](./docs/images/statusline.png)
-
-The status line shows the model and effort level, session name, working directory, Git branch and
-file status, context usage, and the five-hour and seven-day rate-limit windows with their reset
-times. Bash and PowerShell implementations are parity-checked and measure CJK and emoji width for
-narrow terminals.
 
 ## Ownership and privacy boundaries
 
-For application-owned configuration, the repository claims the narrowest useful surface: deliberate
-durable keys or structures. Volatile preferences, authentication, history, caches, session/runtime
-state, and future application-owned values remain local unless intentionally promoted into repository
-ownership.
+For application-owned configuration, the repository claims only deliberate durable keys or structures.
+Preferences, authentication, history, caches, session/runtime state, and future application-owned values
+remain local unless intentionally promoted into repository ownership. See the [setup guide](./docs/setup.md)
+for the ownership and application procedures.
 
-| Target                           | Repository owns                                                                                   | Application or user owns                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Claude `settings.json`           | Durable environment, hooks, status line, and update-channel values through a deep-merge template. | Model, effort, theme, permissions, plugins, project state, and future keys. |
-| Codex `config.toml`              | Defaults only when the file does not exist.                                                       | Existing trust, runtime, marketplace, and session state.                    |
-| Windows Terminal `settings.json` | Selected durable values and the complete `actions` and `keybindings` arrays.                      | Generated profiles and other unnamed settings.                              |
-| VS Code user files               | Tracked settings, keybindings, and MCP sources through OS-specific wrappers.                      | Workspace storage, authentication, extension caches, and runtime data.      |
-| Claude user MCP state            | Non-secret declarations through an add-missing installer.                                         | Authentication and the rest of `~/.claude.json`.                            |
+| Surface | Repository owns | Application or user owns |
+| --- | --- | --- |
+| Claude settings | Durable environment, hooks, status line, and update-channel values. | Model, permissions, plugins, project state, and future keys. |
+| Codex config | Defaults only when the file does not exist. | Trust, runtime, marketplace, and session state. |
+| Windows Terminal and VS Code | Selected durable settings, keybindings, and MCP sources. | Generated profiles, workspace storage, authentication, caches, and runtime data. |
+| Claude user MCP state | Non-secret declarations. | Authentication and the rest of `~/.claude.json`. |
 
 The global Git exclude file protects private client files and continuity state from accidental
 tracking:
@@ -489,32 +327,21 @@ values. Authenticate clients locally and keep credentials out of `home/`.
 ## Validation and regression coverage
 
 The repository uses local automated suites under a policy-driven verification contract and a separate
-publish-authorization gate. No repository CI workflow is configured, so a passing local suite is not
-a claim that CI ran.
+publish-authorization gate. No repository CI workflow is configured, so a passing local suite does not
+mean that CI ran. The [setup guide](./docs/setup.md) describes the full validation procedure.
 
-The pre-commit hook renders staged source into a temporary directory, never into the home directory,
-and checks:
+The pre-commit hook renders staged source into a temporary directory and checks source identity,
+filename safety, skill parity, client adapters, shared rule bodies, status-line parity, and Markdown
+links.
 
-- source identity and every staged path, which matters because this checkout's Git index is shared;
-- filename-attribute safety and skill file-count parity;
-- Claude skill links and Codex host gates;
-- byte-identical shared rule bodies between Claude and Copilot;
-- no YAML frontmatter in Codex's rendered `AGENTS.md`;
-- Bash and PowerShell status-line parity when either implementation changes; and
-- relative Markdown links and heading fragments.
+Run the focused suites when the protected behavior changes:
 
-Run the focused suites by hand when the protected behavior changes:
-
-| Behavior                                       | Local check                                                                                             |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Windows worktree provisioning                  | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-git-worktree-provision.ps1` |
-| macOS worktree provisioning                    | `bash scripts/tests/test-git-worktree-provision.sh`                                                     |
-| Continuity lifecycle and recovery              | `bash scripts/tests/test-task-continuity.sh`                                                    |
-| Task workflow workspace and policy contract    | `bash scripts/tests/test-run-task-end-to-end.sh`                                                        |
-| Task workflow invocation styles and host fallbacks | `bash scripts/tests/test-run-task-invocation.sh`                                                      |
-| AI profile composition and selectors           | `bash scripts/tests/test-ai-configuration-profiles.sh`                                                  |
-| Workflow deletion and Git recovery             | `bash scripts/tests/test-workflow-delete.sh`                                                           |
-| Runtime descriptor, allocation, and port lease | `python scripts/tests/test-worktree-runtime.py -v`                                                      |
+| Area | Local checks |
+| --- | --- |
+| Worktree provisioning | `test-git-worktree-provision.ps1` or `test-git-worktree-provision.sh` |
+| Continuity and task workflow | `test-task-continuity.sh`, `test-run-task-end-to-end.sh`, `test-run-task-invocation.sh` |
+| Profiles and workflow deletion | `test-ai-configuration-profiles.sh`, `test-workflow-delete.sh` |
+| Runtime isolation | `test-worktree-runtime.py -v` |
 
 On Windows PowerShell, run Bash-based suites through
 `.\scripts\tests\run-git-bash-tests.ps1`; it resolves Windows Git Bash explicitly. The continuity

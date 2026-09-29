@@ -1,8 +1,12 @@
+{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 [user]
 	email = sherrilla71940@gmail.com
 	name = Aaron Sherrill
 [core]
 	excludesFile = {{ .chezmoi.homeDir }}/.config/git/ignore
+	hooksPath = {{ .chezmoi.homeDir }}/.config/git/hooks
+[branch]
+	policy = {{ if eq $profile.ai_context "company" }}company-flow{{ else }}personal{{ end }}
 {{ if eq .chezmoi.os "windows" }}
 [alias]
 	wt-add = "!powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$HOME/.local/share/git-worktree-provision.ps1\" add"

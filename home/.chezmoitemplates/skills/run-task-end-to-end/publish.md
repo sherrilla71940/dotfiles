@@ -15,8 +15,10 @@ The publish contract depends on the resolved workspace:
   resolved echo and must not silently fall back to the current branch or forge default.
 - Publish uses the task branch resolved at invocation. Reconcile it with continuity and the resolved
   `branch_policy` before pushing: a `company-flow` task must still match
-  `^flow/[0-9]{1,9}(?:-[A-Za-z0-9_-]+)?$` and the recorded `flow` ID, while a project exception
-  must still have its recorded repository-instruction source. Do not rename the branch during the
+  `^flow/[0-9]{1,9}(?:-[A-Za-z0-9_-]+)?$` and the recorded `flow` ID, while a
+  `company-flow-bypassed` task must still have the recorded explicit branch and
+  `Policy bypass: --force`. A project exception must still have its recorded
+  repository-instruction source. Do not rename the branch or silently add a bypass during the
   publish step to repair a policy mismatch.
 
 ## Integrate the current base before publishing

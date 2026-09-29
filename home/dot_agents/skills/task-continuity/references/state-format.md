@@ -51,7 +51,8 @@ The phase another session should resume from.
 - Base branch: `<workflow base branch, when a task workflow selected one>`
 - Origin fetch: `<redacted origin identity, when a task workflow selected one>`
 - Origin push: `<redacted push identity, when a task workflow selected one>`
-- Branch policy: `<company-flow / repository-standard / project-exception, when a task workflow selected one>`
+- Branch policy: `<company-flow / company-flow-bypassed / repository-standard / project-exception, when a task workflow selected one>`
+- Policy bypass: `<explicit policy override, such as --force; required when company-flow-bypassed>`
 - Flow: `<one to nine digit flow ID, when company-flow selected>`
 - Status: `<clean / modified / concise description>`
 - Delivery: `<not applicable / commit pending / local-only complete / publish pending / published / publish declined>`
@@ -66,6 +67,9 @@ The phase another session should resume from.
 - New workflow-created records should include a short stable `Task` label, the exact `Branch`, the
   immutable `Base commit`, and the selected `Base branch`. Keep `Started from` and set it to the same
   immutable commit as `Base commit`; `Started from` remains the compatibility field for older records.
+- A `company-flow-bypassed` record must preserve the explicit `Branch` and `Policy bypass: --force`
+  fields unchanged while active or parked. The bypass is branch-policy-only; it never records a
+  verification or publish exemption.
 - `Task` plus `Objective` plus the immutable `Base commit` (or legacy `Started from`) forms the task
   identity. These fields detect an obvious mismatch when a working tree is reused for a different
   task; do not add version or identifier machinery beyond them.

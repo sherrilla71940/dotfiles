@@ -19,6 +19,7 @@ presentation only; they do not add a workspace, verification, continuity, or pub
    unresolved or required choices.
 3. **Explicit structured invocation.** Supply named or positional arguments such as `workspace=`,
    `base=`, and `task=`. Explicit values preserve `source=argument` and bypass redundant questions.
+   The `--force` flag is also explicit-only and is never inferred from natural-language wording.
 
 A partially specified structured invocation remains the explicit style: combine its argument values
 with safely parsed prompt values, defaults, and confirmation questions. Do not invent a fourth
@@ -179,6 +180,7 @@ In order, the first matching rule wins:
 | `--infer-task` | flag, equivalent to `infer-task=true` |
 | `--no-agent-test` | flag, equivalent to the deprecated `agent-test=false` alias |
 | `--open-code` | flag, equivalent to `open-code=true` |
+| `--force` | explicit company-flow policy bypass; requires `branch=...` |
 | any other `--...` token | error: unknown flag |
 | begins `http://` or `https://` | material |
 | `<key>=<value>` with a known key | option |
@@ -218,6 +220,11 @@ The accepted keys are:
 | `continuity` | `auto`, `on`, or `off` | `auto` |
 | `isolation` | deprecated `worktree`, `in-place`, or `auto` alias | `auto` requires explicit workspace resolution |
 
+The explicit `--force` flag is a narrow company-flow policy override. It requires an explicit
+`branch=...`, records `company-flow-bypassed` and `Policy bypass: --force` in continuity, and does
+not bypass verification, base freshness, commit, publish authorization, or any repository-specific
+safety rule. It is invalid together with `flow=` and is rejected in effective `personal` context.
+
 An explicit `en` or `zhtw` value for `lang` overrides the active context default.
 
 `infer-task`, the deprecated `agent-test`, and `open-code` accept exactly `true` and `false`,
@@ -238,6 +245,10 @@ context while its own source is edited.
   task branch. It requires `flow=<digits>`, where `flow` matches `^[0-9]{1,9}$`, and generates
   `flow/<flow>-<ascii-description>` from the task. A supplied `branch=` must match
   `^flow/[0-9]{1,9}(?:-[A-Za-z0-9_-]+)?$` and its number must match `flow=`.
+- An explicit `--force branch=<branch>` is the only workflow-level exception. It requires a complete
+  explicit branch name, rejects `flow=`, records `branch_policy=company-flow-bypassed` and
+  `Policy bypass: --force`, and leaves every verification and publishing gate in force. Keep
+  continuity enabled for this path so the exception remains auditable at the push boundary.
 - Effective `personal` context uses the existing repository-standard branch naming contract and
   does not require `flow=`. Supplying `flow=` in that mode is an error rather than an ignored
   option.
@@ -359,6 +370,10 @@ Stop and create nothing for any of these:
 | the positional base resolves to a file or contains whitespace | it is in the wrong slot; use prompt intake or `base=` |
 | `branch=` together with `type=`, `slug=`, or `suffix=` | two branch names were described |
 | company-flow execution without `flow=` | the company branch identity is incomplete |
+| company-flow execution with `--force` but without an explicit `branch=` | the exception is not safely scoped |
+| `--force` together with `flow=` | the normal policy and the exception conflict |
+| `--force` in effective `personal` context | the bypass has no meaning and is likely accidental |
+| `--force` with effective continuity `off` | the exception would not have an auditable continuity record |
 | `flow=` that is empty, non-numeric, longer than nine digits, or used outside company-flow | the flow identity is invalid or ambiguous |
 | company-flow `branch=` outside `^flow/[0-9]{1,9}(?:-[A-Za-z0-9_-]+)?$` | the task branch violates the company policy |
 | company-flow `branch=` whose number differs from `flow=` | the flow and branch identities conflict |
@@ -486,8 +501,9 @@ material content or changing Git state. Show all three in the resolved echo. Use
       `company-flow`; effective `personal` uses the existing repository-standard policy. A declared
       `project-exception` must name its instruction source and allowed pattern. For an execution task
       that creates a branch, enforce the selected policy before switching or creating anything: require
-      and validate `flow=` for `company-flow`, require and validate an explicit `branch=` for a
-      project exception, and do not treat a branch-shaped name as evidence of an exception.
+      and validate `flow=` for `company-flow`, or accept the explicit `--force branch=...` exception
+      with continuity enabled. Require and validate an explicit `branch=` for a project exception, and
+      do not treat a branch-shaped name as evidence of an exception.
 
 Both workspace modes share the same branch contract:
 
@@ -640,5 +656,7 @@ verify the named `origin/<base>` is permitted, but it is not permission to start
 
 Resume with the resolved `phase=execute` invocation only after the user approves the plan. If the
 effective branch policy is `company-flow` and no flow was supplied, include `flow=<digits>` in that
-invocation rather than inventing an ID. An explicit execution request still passes through the
+invocation rather than inventing an ID. An explicit execution request may use
+`--force branch=<explicit-branch>` instead when the user deliberately accepts the recorded policy
+exception. An explicit execution request still passes through the
 resolved echo and all normal provisioning gates before changing the worktree.

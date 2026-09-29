@@ -43,6 +43,13 @@ else
   printf 'Could not set core.hooksPath, so the validation hook will not run. Is %s a Git checkout?\n' "$repo" >&2
 fi
 
+# This user-level repository is intentionally exempt from the machine-wide company-flow default.
+if git -C "$repo" config branch.policy personal 2>/dev/null; then
+  printf 'dotfiles branch policy set to personal\n'
+else
+  printf 'Could not set the dotfiles branch-policy exception.\n' >&2
+fi
+
 
 if ! command -v brew >/dev/null 2>&1; then
   printf 'Homebrew is required. Install it from https://brew.sh, then rerun this script.\n' >&2

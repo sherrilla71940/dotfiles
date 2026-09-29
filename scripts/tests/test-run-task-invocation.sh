@@ -77,12 +77,12 @@ for value in \
 done
 
 assert_contains "$readme" '/run-task-end-to-end'
-assert_contains "$readme" '$run-task-end-to-end'
-assert_contains "$readme" 'No-argument mode asks for the task, workspace, base'
+assert_contains "$readme" 'Use `/run-task-end-to-end` in Claude Code and Codex'
+assert_contains "$readme" 'The defaults'
+assert_contains "$readme" '`verification=agent` and `continuity=auto`'
 assert_contains "$readme" 'Partial structured input is also supported'
-assert_contains "$readme" '$task-workflow'
-assert_contains "$readme" '$worktree-task-workflow'
-assert_contains "$readme_zh" '無參數模式會詢問任務、workspace、base'
+assert_contains "$readme" 'Compatibility aliases `task-workflow` and'
+assert_contains "$readme_zh" 'Claude Code 與 Codex 都使用 `/run-task-end-to-end`'
 assert_contains "$readme_zh" '也可以只提供部分結構化參數'
 
 assert_contains "$adr" 'three first-class invocation styles'

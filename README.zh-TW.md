@@ -13,7 +13,7 @@ session state 與 runtime 資料則留在本機。
 * [系統總覽](#系統總覽)
 * [Profile 與 AI harness 模式](#profile-與-ai-harness-模式)
 * [Task continuity](#task-continuity)
-* [任務生命週期與 workspace](#任務生命週期與-workspace)
+* [`run-task-end-to-end`](#run-task-end-to-end)
 * [權責與隱私界線](#權責與隱私界線)
 * [驗證與回歸測試涵蓋範圍](#驗證與回歸測試涵蓋範圍)
 * [接下來可以去哪裡](#接下來可以去哪裡)
@@ -192,7 +192,7 @@ Git 仍是程式碼、分支、commit 與測試結果的權威來源。穩定的
 branch-aware discovery、reconcile 與 cleanup；[worktree provisioning guide](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
 則說明 worktree 的界線。State 會被 Git 忽略、沒有加密，不能放入憑證。
 
-## 任務生命週期與 workspace
+## `run-task-end-to-end`
 
 [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) skill 是受管理任務的生命週期協調器。
 它把 workspace 的選擇與準備、task continuity、已核准的本機檔案配置、可選的 runtime 隔離、策略化驗證、

@@ -14,7 +14,7 @@ preferences, authentication, session state, and runtime data remain local.
 * [System at a glance](#system-at-a-glance)
 * [Profiles and AI harness modes](#profiles-and-ai-harness-modes)
 * [Task continuity](#task-continuity)
-* [Task lifecycle and workspaces](#task-lifecycle-and-workspaces)
+* [`run-task-end-to-end`](#run-task-end-to-end)
 * [Ownership and privacy boundaries](#ownership-and-privacy-boundaries)
 * [Validation and regression coverage](#validation-and-regression-coverage)
 * [Where to go next](#where-to-go-next)
@@ -203,7 +203,7 @@ owns migration, parking, branch-aware discovery, reconciliation, and cleanup rul
 [worktree provisioning guide](./docs/worktree-provisioning.md#how-each-worktree-receives-ignored-files)
 covers the worktree boundary. State remains Git-ignored, is not encrypted, and must not contain credentials.
 
-## Task lifecycle and workspaces
+## `run-task-end-to-end`
 
 The [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) skill is the lifecycle
 coordinator for a managed task. It combines workspace selection and preparation, task continuity,

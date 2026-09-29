@@ -645,8 +645,8 @@ worktree lifecycle. Neither choice deletes the task branch.
 
 ## What the task workflow does at each step
 
-The root [`README.md`](../README.md#task-lifecycle-and-workspaces) shows the lifecycle as a
-recruiter-facing sequence. This section defines the provisioning and verification behavior behind
+The root [`README.md`](../README.md#run-task-end-to-end) shows the `run-task-end-to-end` lifecycle
+as a reader-facing sequence. This section defines the provisioning and verification behavior behind
 each step.
 
 ### Workflow sequence

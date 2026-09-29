@@ -30,17 +30,20 @@ My workflow fills those gaps by provisioning the approved local files each task 
 | Decide what the agent can verify itself, what still needs my checking, and what must be rerun after a failure                   | Coordinate verification. Apply the selected verification policy across feasible automated, runtime, browser, and interactive checks, loop through fix-and-retest when needed, and request only checks or acceptance that actually require me                                                                                         |
 | Coordinate the path from completed implementation to reviewable work                                                            | Coordinate publication. Keep verification separate from publish authorization, refresh and reconcile the target base before publication, rerun affected verification when necessary, then commit, push, request review, and perform branch-preserving cleanup                                                                        |
 
-## Core Capabilities
+## Core capabilities
 
-| Pillar                                 | Result                                                                                                                                                                                                                                          |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One source, native targets             | Shared AI instructions and reusable AI skills have one source body. Thin wrappers preserve each client's native discovery and scope rules.                                                                                                      |
-| Profiles without duplicated trees      | Machine-local selectors compose personal or company context with a managed or native AI harness, plus an independent continuity preference.                                                                                                     |
-| Continuity across sessions and clients | One `.task-continuity/state.md` stays with one working directory so another supported session can resume from the same objective, decisions, blockers, materials, verification state, and next action.                                      |
-| Scoped, reviewable tasks               | An explicit workflow resolves a workspace and task branch from a base, provisions approved ignored files only for isolated worktrees, applies a verification policy, and requires separate publish authorization before publication. |
+These are repository-level configuration and ownership guarantees. [What the workflow automates](#what-the-workflow-automates)
+describes the task operations that use these boundaries.
 
-Ownership boundaries and validation support all four pillars; they are guarantees across the system,
-not a separate fifth pillar.
+| Capability                            | Result                                                                                                                                                                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One source, native delivery           | Shared AI instructions and reusable AI skills have one source body. Thin wrappers preserve each client's native discovery and scope rules.                                                                             |
+| Profile composition without duplication | Machine-local selectors compose personal or company context, managed or native harness behavior, and continuity preference without duplicating configuration trees.                                                    |
+| Cross-platform delivery               | The same source state renders to the native target paths required by Windows and macOS, while client-specific sources remain in their native directories.                                                               |
+| Deliberate ownership boundaries       | The repository manages only the durable settings it intentionally owns. Preferences, authentication, session/runtime state, and other application-owned data remain local.                                               |
+
+Validation and decision records make these guarantees reviewable; they do not add another workflow
+capability.
 
 The repository also keeps application-owned preferences local, supports Windows and macOS paths,
 and records architectural trade-offs in [decision records](./docs/decisions/README.md).
@@ -84,27 +87,22 @@ Legacy workflow entry points `$task-workflow` and `$worktree-task-workflow` rema
 
 ## System at a glance
 
-`home/` is the chezmoi source state for this repository's dotfiles and AI configuration. [Chezmoi](https://www.chezmoi.io/)
-renders that source into native targets that applications read. `scripts/` and `docs/` support both
-the configuration and workflow planes with bootstrap, diagnostics, installers, tests, and decision
-records.
-
-This overview focuses on configuration delivery: tracked source state and machine-local profile
-selectors feed Chezmoi composition, then branch into shared adapters, portable skill delivery,
-client-specific delivery, and OS-specific delivery. Task continuity and task execution are shown
-in the dedicated diagrams below. The [customization support guide](./docs/customization-support.md)
-maps each source to the client surfaces that read it.
+This diagram combines the configuration architecture with the repository map. `home/` is the
+chezmoi source state; `scripts/` supports setup, diagnostics, installers, and validation; and
+`docs/` contains operating guides and decision records. Machine-local profile selectors feed
+Chezmoi composition, which branches into shared adapters, portable skill delivery, client-specific
+delivery, and OS-specific dotfile delivery. Task continuity and task execution are shown in the
+dedicated diagrams below. The [customization support guide](./docs/customization-support.md) maps
+each source to the client surfaces that read it.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
 
-    subgraph sources["Tracked source state"]
-        sharedSource["Shared bodies<br/>home/.chezmoitemplates/rules · adapters"]:::source
-        portableSource["Portable skills<br/>home/dot_agents/skills"]:::source
-        clientSource["Client-specific sources<br/>home/dot_claude · dot_codex · dot_copilot"]:::source
-        osSource["OS-specific sources<br/>AppData · Library · shell · Git"]:::source
+    subgraph repository["Repository source and support"]
+        home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
+        support["scripts/<br/>bootstrap · install · manifests · diagnostics · tests · git-hooks<br/><br/>docs/<br/>setup · workflows · decisions"]:::support
     end
 
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
@@ -113,29 +111,24 @@ flowchart TB
         sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
-        osRoute["OS-specific delivery<br/>VS Code · shell · Git · Windows Terminal"]:::process
+        osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
     end
 
     aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
-    developerTargets["Developer targets<br/>VS Code · shell · Git · Windows Terminal"]:::target
-    side["Explicit/native side paths<br/>bootstrap · installers<br/>application-owned state remains local"]:::handoff
-
-    sharedSource --> compose
-    portableSource --> compose
-    clientSource --> compose
-    osSource --> compose
+    developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    home --> compose
     selectors --> compose
+    support -. "supports and documents" .-> compose
     compose --> sharedRoute --> aiTargets
     compose --> portableRoute --> aiTargets
     compose --> clientRoute --> aiTargets
     compose --> osRoute --> developerTargets
-    compose -.-> side
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef target fill:#dcfce7,stroke:#16a34a,color:#111827
-    classDef handoff fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef support fill:#f3f4f6,stroke:#4b5563,color:#111827
 ```
 
 `home/` contains both plain chezmoi source files and templates. Reusable bodies in
@@ -528,32 +521,6 @@ On Windows PowerShell, run Bash-based suites through
 fixtures under `scripts/tests/continuity-fixtures/` are manual model-behavior probes, not live
 automated agent tests. They use throwaway repositories and deliberately fabricated `state.md`
 files; never treat a fixture state as the real working tree state.
-
-## Repository layout
-
-```text
-home/                              chezmoi source state
-  .chezmoidata.yaml                shared rule globs
-  .chezmoitemplates/               shared bodies and OS-neutral data
-  dot_agents/skills/               portable and host-gated skills
-  dot_claude/                      Claude Code files and adapters
-  dot_codex/                       Codex files and create-once config
-  dot_copilot/                     Copilot CLI files, agents, and skills
-  AppData/ · Library/              Windows and macOS VS Code targets
-  dot_bashrc · dot_zshrc.tmpl      shell startup files
-  dot_gitconfig.tmpl               Git identity and global excludes link
-  dot_config/git/ignore             private AI and continuity excludes
-  dot_local/share/                 worktree, runtime, and notification helpers
-
-scripts/bootstrap/                 manual new-machine setup
-scripts/install/                   Claude MCP installers
-scripts/manifests/                 MCP, VS Code extension, and workflow declarations
-scripts/workflows/                 workflow deletion tooling
-scripts/diagnostics/               doctor, usage, and drift reports
-scripts/tests/                     profile, continuity, worktree, and runtime suites
-scripts/git-hooks/                 pre-commit and Markdown link validation
-docs/                              setup, workflow, customization, and ADR guides
-```
 
 ## Where to go next
 

@@ -52,7 +52,7 @@ for value in \
   'material, or application state changes' \
   'A partial' \
   'structured request such as' \
-  'workspace=worktree Use a worktree from feat/water-fee' \
+  'workspace=worktree Use a worktree from feat/example-base' \
   'branch names'; do
   assert_contains "$shared" "$value"
 done

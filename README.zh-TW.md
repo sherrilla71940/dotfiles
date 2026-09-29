@@ -2,28 +2,35 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-這個 Git repository 是我日常使用的開發環境設定、個人 dotfiles 與 AI 工具整合的單一來源。共用的 AI 指示與可重用的工作流程可以定義一次，再交付給 Claude Code、Codex 與 GitHub Copilot；只屬於單一 client 的行為則留在該 client 自己的範圍內。這讓我可以更精確地控制各 client 的行為，不必維護多份副本，也不用擔心它們彼此漂移。這個 repository 也只管理我明確選擇由它負責的持久設定；容易變動的偏好、驗證資訊、session state 與其他由應用程式管理的資料則留在本機。
+這個 Git repository 是我日常使用的開發環境設定、個人 dotfiles 與 AI 工具整合的單一來源。[Chezmoi](https://www.chezmoi.io/) 會把這些受管理的 source 渲染成各支援工具與作業系統實際使用的原生檔案。因此，共用的 AI 指示與可重用的工作流程只需要定義一次，就能交付給 Claude Code、Codex 與 GitHub Copilot；只屬於單一 client 的行為則留在該 client 自己的範圍內。這讓我可以更精確地控制各 client 的行為，不必維護多份副本，也不用擔心它們彼此漂移。這個 repository 也只管理我明確選擇由它負責的持久設定；容易變動的偏好、驗證資訊、session state 與其他由應用程式管理的資料則留在本機。
 
 Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Code 等 AI client 也能透過原生的 worktree 建立與生命週期支援，進一步利用這層隔離。不過，當多個 AI 輔助任務需要可靠地平行執行時，仍會遇到幾個問題：新的 worktree 可能缺少被 Git 忽略的本機檔案，多個同時執行的應用程式可能搶用同一個 runtime port，而 Git 無法記錄的任務脈絡可能仍綁在特定 session 或 client 上。
 
-我的工作流程補上這些缺口：提供每個任務需要且已核准的本機檔案；當專案定義了執行方式時，為平行 worktree 分配不同 runtime port；並保留每個工作目錄的 continuity 紀錄。它刻意將程式碼狀態與任務狀態分開：Git 仍是目前程式碼、分支與 commit 的權威來源；continuity 紀錄則保留 Git 無法表達的任務脈絡——任務要完成什麼、為什麼做出這些決定、哪些事情被阻塞或已驗證、哪些相關材料與參考資料是這項工作的一部分，以及下一步要做什麼。因為這份紀錄屬於任務，而不是某一次對話，另一個 session 或支援的 AI client 可以開啟同一個工作目錄，簡單輸入 `continue` 就能接手。由驗證策略決定的檢查，以及明確的發布核准，會形成兩道獨立的 gate，通過後才發布分支供 review。
-
-[Chezmoi](https://www.chezmoi.io/) 會將受管理的 source 渲染成各支援工具與作業系統所期待的原生檔案。設定層和工作流程層搭配運作，讓 AI client 能在定義好的界線內工作；Git、驗證與明確的發布核准仍然是權威依據。
+我的工作流程補上這些缺口：提供每個任務需要且已核准的本機檔案；當專案提供所需的 runtime 設定時，為平行 worktree 分配不同的 runtime port；並保留每個工作目錄各自的 continuity 紀錄。它刻意將程式碼狀態與任務狀態分開：Git 仍是程式碼、分支與 commit 的權威來源；continuity 紀錄則保留 Git 無法表達的任務脈絡——任務要完成什麼、為什麼做出這些決定、哪些事情被阻塞或已驗證、哪些相關材料與參考資料屬於這項工作，以及下一步要做什麼。因為這份紀錄屬於任務，而不是某一次對話，另一個 session 或支援的 AI client 可以開啟同一個工作目錄，簡單輸入 `continue` 就能接手。由驗證策略決定的檢查，以及明確的發布核准，會形成兩道彼此獨立的 gate，通過後才發布分支供 review。
 
 **快速導覽：**
 
-- [實際使用](#實際使用)
-- [系統總覽](#系統總覽)
-- [Profile 與 AI harness 模式](#profile-與-ai-harness-模式)
-- [Task continuity](#task-continuity)
-- [任務生命週期與 workspace](#任務生命週期與-workspace)
-- [接下來可以去哪裡](#接下來可以去哪裡)
+* [工作流程會自動處理什麼](#工作流程會自動處理什麼)
+* [系統總覽](#系統總覽)
+* [Task continuity](#task-continuity)
+* [任務生命週期與 workspace](#任務生命週期與-workspace)
 
 > ⚠️ **個人設定提醒：** 這個儲存庫包含我的個人偏好，不是通用的預設設定。既有機器請先查看
 > `chezmoi diff`，只套用你確定要變更的 target。只有在覆寫這些個人設定沒有問題的機器上，才適合
 > 大範圍套用這個儲存庫。
 
-## 這個儲存庫提供什麼
+## 工作流程會自動處理什麼
+
+| 沒有這套工作流程時，我需要                                      | 使用這套工作流程後，系統會                                                                                                                                 |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 在新的 session 繼續工作時，重新整理或說明任務脈絡                      | **保留跨 session 的任務脈絡。** 為每個工作目錄保留 continuity state，記錄目標、階段、決策、假設、阻塞事項、驗證狀態、任務識別資訊與下一步，讓另一個 session 或支援的 AI client 能將這些狀態與目前工作目錄及 Git 重新核對後繼續任務 |
+| 追蹤每項任務分別需要哪些規格、截圖、試算表、測試輸入、handoff 與其他材料           | **整理材料並建立與任務的關聯。** 將穩定的任務材料、可重複使用的測試材料與 durable handoff 和暫時性的任務狀態分開，同時記錄材料的路徑與來源                                                              |
+| 每次想平行處理同一個 repository 的另一項任務時，另外建立並準備 worktree 與分支 | **準備隔離的任務 workspace。** 解析 base 與任務分支、建立或選擇 workspace、將已核准的 ignored／本機檔案配置到 worktree，並讓每項任務的分支、工作目錄與 continuity state 彼此獨立                     |
+| 為同時執行的多個任務環境選擇並記住不同的 runtime port，避免 port 衝突       | **處理 runtime 隔離。** 使用專案提供的 runtime 設定自動分配不同的 port，讓隔離的 worktree 能同時執行並測試各自的應用程式 instance，而不會發生 port 衝突                                        |
+| 判斷哪些項目 agent 可以自行驗證、哪些仍需要我檢查，以及失敗後哪些檢查必須重跑         | **協調驗證流程。** 依選定的 verification policy 執行可行的自動化、runtime、瀏覽器與互動式檢查；失敗時進入修正與重測循環，只在確實需要時要求我執行檢查或確認結果                                              |
+| 協調從實作完成到可以交付 review 的整個流程                          | **協調發布流程。** 將驗證與發布核准分開，發布前重新取得並整合最新的 target base，必要時重跑受影響的驗證，之後再 commit、push、建立 review request，並執行保留分支的清理                                     |
+
+## 核心能力
 
 | 核心能力 | 結果 |
 | --- | --- |
@@ -39,68 +46,37 @@ Git 內建的 worktree 支援已經能提供良好的程式碼隔離；Claude Co
 
 ## 實際使用
 
-這套流程在兩個 client 中都支援三種正式的呼叫方式。Claude Code 使用
-`/run-task-end-to-end` 呼叫 skill；Codex 使用 `$run-task-end-to-end`。Codex 也有供內建功能使用的
-slash command，但目前 OpenAI 的 skill 文件以 `$skill-name` 作為 skill 語法（參考
-[OpenAI skill 文件](https://developers.openai.com/plugins/build/skills)）。以下範例以
-`<run-task>` 代表各 client 的對應寫法。
+這套工作流程在兩個支援的 AI client 中完全相同：Claude Code 使用
+`/run-task-end-to-end`，Codex 使用 `$run-task-end-to-end`。
 
-如果希望流程一步一步帶你完成設定，請直接輸入不帶參數的 `<run-task>`。
+無參數模式會詢問任務、workspace、base、verification policy、continuity policy，以及依情境真正必要的其他輸入。client 提供原生選擇介面時會優先使用；沒有結構化輸入時，則改用簡短的文字問題。`verification=agent` 是預設值，`continuity=auto` 也是預設值，但 guided mode 仍會讓你看到這些選項。
 
-無參數模式會詢問任務、workspace、base、verification policy、continuity policy，以及依情境
-真正必要的其他輸入。client 提供原生選擇介面時會優先使用；沒有結構化輸入時，則改用簡短的
-文字問題。verification 的預設值 `agent` 與 continuity 的預設值 `auto` 仍會清楚標示，但 guided
-mode 會讓你看到這些選項。
+如果想直接用自然語言描述任務，可以在對應的 client 入口後接著描述，例如：
 
-如果想直接用自然語言描述任務，請在 `<run-task>` 後接著描述任務，例如：`<run-task> Use a worktree from feat/water-fee and implement the frontend changes from the attached specification.`
+`/run-task-end-to-end Use a worktree from feature/example and implement the changes from the attached specification.`
 
-流程只會解析明確表達的內容，例如 `workspace=worktree` 與 `base=feat/water-fee`，其餘尚未
-確定的選項才會再詢問。解析自 prompt 的值會在 resolved echo 中標示為 `prompt`；透過問題或
-選擇介面確認的值會標示為 `confirmation`。
+流程只會解析明確表達的內容，例如 `workspace=worktree` 與 `base=feature/example`，其餘尚未確定的選項才會再詢問。解析自 prompt 的值會在 resolved echo 中標示為 `prompt`；透過問題或選擇介面確認的值則標示為 `confirmation`。
 
-需要可重現、精確控制的操作，請使用 explicit arguments：
+需要可重現、精確控制的操作時，可以使用 explicit arguments：
 
-`<run-task> workspace=checkout base=main task="修正 README 文字"`
+`/run-task-end-to-end workspace=checkout base=main task="修正 README 文字"`
 
-`<run-task> workspace=worktree base=feat/water-fee task="實作 water-fee 前端變更"`
+`/run-task-end-to-end workspace=worktree base=feature/example task="實作附件規格中的變更"`
 
-也可以只提供部分結構化參數。例如 `<run-task> workspace=worktree task="Implement FE-04"`
-會保留已明確提供的 workspace 與 task，只詢問剩下必要的 base。明確提供的值不會被重複詢問。
+也可以只提供部分結構化參數。例如 `/run-task-end-to-end workspace=worktree task="實作範例功能"` 會保留已明確提供的 workspace 與 task，只詢問剩下必要的 base。明確提供的值不會被重複詢問。
 
-在 company context 的應用程式儲存庫中，只要適用的 company branch policy 要求 flow number，
-不論採用哪一種呼叫方式，都必須提供：
+特定 context 或 repository policy 可能要求額外的任務或分支資訊。遇到這類情況時，工作流程會要求明確提供必要資訊，不會從分支名稱或任務文字自行推斷內部慣例。專案若有例外的分支規則，也必須在 repository instructions 中明確宣告並提供。
 
-`<run-task> workspace=worktree base=feat/gisgraphdraggable-modify flow=15927 task="Continue sewer layer editing"`
+在 company context 的 application repository 中，只要適用的 company branch policy 要求 flow number，
+不論採用哪一種 invocation style 都必須提供：
 
-這會解析成 `flow/15927-sewer-layer-editing`。只有 effective context 是 `company` 時才套用
-company-flow 規則；編輯這個 dotfiles 儲存庫本身時，根目錄指示會覆寫 machine selector，使用
-effective `personal` context。若專案要使用例外的分支格式，必須在 repository instructions 中
-明確宣告並明確提供 `branch=`；流程不會只因為分支名稱看起來像 `feat/...` 就自行推斷例外。
+`/run-task-end-to-end workspace=worktree base=feat/example-base flow=<digits> task="Continue the example task"`
 
-`$task-workflow` 與 `$worktree-task-workflow` 仍保留作為相容性入口，不是主要呼叫方式。
+這會產生 `flow/<digits>-<ascii-description>` 格式的分支。Company-flow 規則只在 effective context 是 `company` 時適用；
+這個 dotfiles repository 在編輯自身 source 時明確使用 effective `personal` context。若 project 有分支例外，
+必須先在 repository instructions 中宣告，再由使用者明確提供；workflow 不會從 `feat/...` 分支名稱自行推斷。
 
-如果 explicit arguments 或自然語言 prompt 都無法解析 workspace，流程會在切換或建立分支、建立
-worktree 前先詢問。真正的無參數模式一定會顯示 workspace 選項。Resolved echo 也會顯示每個值是
-來自 argument、prompt，還是使用者確認。
-
-Prompt intake 會先解析任務、提供的材料、workspace、verification policy 與已驗證的 MR/PR target，再進入同一套工作流程：
-
-`解析 workspace/policy → 準備 workspace → 建立任務分支 → 視 continuity 設定記錄脈絡 → 實作 → review → 驗證／修正／重測 → 發布核准 → 發布供 review`
-
-Worktree workspace 會把任務目錄、分支與交接脈絡綁在一起，解析精確的 base 與 MR/PR target，並從
-`.worktreeinclude` 或 client 原生機制補上任務缺少的已核准 ignored 檔案；如果專案提供 descriptor
-並選擇 `runtime=auto`，流程還會為每個 worktree 配置 port 並執行 health check。Checkout workspace
-則留在目前的 checkout，但仍會從解析出的 base 建立任務分支；不會配置 ignored 檔案，也不會宣稱有
-獨立的 runtime port。`verification=agent` 是預設值：先執行 agent 能完成的自動化、runtime、瀏覽器與互動式
-驗證，只在確實需要使用者介入時詢問。`verification=balanced` 會再要求使用者明確接受，`user` 則只執行
-非互動式檢查，把瀏覽器與手動驗證留給使用者。`continuity=auto`
-直接沿用 active profile 的 `ai_continuity` 設定，`on` 與 `off` 則是任務層級的覆寫。驗證通過不代表
-可以直接發布。
-
-以提問、評估或閱讀材料為主的 prompt 會先停在唯讀的規劃階段；要變更專案狀態，請明確說
-`proceed` 或使用 `phase=execute`。每個實體 checkout 最多只有一個作用中的任務與 continuity
-state；parking 可以保留依序切換任務時的脈絡，但不能讓同一個 checkout 同時安全承載多個任務。
-流程不會複製 tracked configuration 或 external secret。
+舊的 workflow 入口 `$task-workflow` 與 `$worktree-task-workflow` 仍保留作為相容性用途，但不是主要呼叫方式。
 
 ## 系統總覽
 
@@ -108,25 +84,52 @@ state；parking 可以保留依序切換任務時的脈絡，但不能讓同一�
 會把這些 source render 成應用程式實際讀取的原生 target。`scripts/` 與 `docs/` 同時支援設定層與工作流程層，提供
 bootstrap、診斷、安裝工具、測試與決策紀錄。
 
-下圖只呈現設定層：tracked source state 經過組合與原生交付，流向各工具實際讀取的 surface。
-專案連續性與任務執行會在下文分別說明。完整的 client-to-surface 對應請看
-[customization support guide](./docs/customization-support.md)。
+這個總覽只聚焦設定如何交付：tracked source state 與本機 profile selector 先交給 Chezmoi
+組合，再分流到 shared adapter、portable skill delivery、client-specific delivery 與
+OS-specific delivery。Task continuity 與 task execution 會在下方的專門圖表說明；完整的
+source-to-client 對應請看 [customization support guide](./docs/customization-support.md)。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
-    sources["已追蹤的 source state<br/>home/ · 共用 AI 本文 · skill<br/>client 與 OS source · dotfile／輔助檔案"]:::source
-    delivery["組合與交付<br/>chezmoi · template · profile selector<br/>wrapper · link/symlink · 明確的 installer"]:::process
-    targets["原生開發 surface<br/>Claude · Codex · Copilot · VS Code<br/>shell · Git · Windows Terminal"]:::target
-    sources --> delivery --> targets
+    selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
+
+    subgraph sources["Tracked source state"]
+        sharedSource["Shared bodies<br/>home/.chezmoitemplates/rules · adapters"]:::source
+        portableSource["Portable skills<br/>home/dot_agents/skills"]:::source
+        clientSource["Client-specific sources<br/>home/dot_claude · dot_codex · dot_copilot"]:::source
+        osSource["OS-specific sources<br/>AppData · Library · shell · Git"]:::source
+    end
+
+    compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
+
+    subgraph routes["Native delivery routes"]
+        sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
+        portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
+        clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
+        osRoute["OS-specific delivery<br/>VS Code · shell · Git · Windows Terminal"]:::process
+    end
+
+    aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
+    developerTargets["Developer targets<br/>VS Code · shell · Git · Windows Terminal"]:::target
+    side["Explicit/native side paths<br/>bootstrap · installers<br/>application-owned state remains local"]:::handoff
+
+    sharedSource --> compose
+    portableSource --> compose
+    clientSource --> compose
+    osSource --> compose
+    selectors --> compose
+    compose --> sharedRoute --> aiTargets
+    compose --> portableRoute --> aiTargets
+    compose --> clientRoute --> aiTargets
+    compose --> osRoute --> developerTargets
+    compose -.-> side
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef target fill:#dcfce7,stroke:#16a34a,color:#111827
-
-    style sources color:#111827
-    style delivery color:#111827
-    style targets color:#111827
+    classDef handoff fill:#dbeafe,stroke:#2563eb,color:#111827
 ```
 
 `home/` 同時包含一般的 chezmoi source file 與 template。`.chezmoitemplates/` 中的可重用內容
@@ -135,8 +138,10 @@ flowchart TB
 
 在支援的情況下，client 會提供原生的 worktree 建立與生命週期控制。儲存庫自己的檢查與 fallback
 則補上共用契約的其餘部分：精確的 `origin/<base>` 契約、可跨 client 的交接 state、已核准
-ignored 檔案的配置、適用的驗證策略、獨立的發布核准、可選的 runtime 隔離，以及明確的 workflow deletion 與 reviewed chezmoi cleanup。各
-client 的細節請看 [native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation)。
+ignored 檔案的配置、適用的驗證策略、獨立的發布核准、可選的 runtime 隔離，以及明確的 workflow deletion 與 reviewed chezmoi cleanup。
+Worktree isolation 不會自動等於 runtime isolation：`runtime=auto` 必須搭配 consuming project 的 descriptor，並通過
+health/process-ownership check。這個儲存庫本身固定使用 primary checkout；一般的 project repository 才可以使用
+worktree。各 client 的細節請看 [native-first worktree delegation](./docs/worktree-provisioning.md#native-first-delegation)。
 
 ## 從這裡開始
 
@@ -346,7 +351,8 @@ prompt 明確指定；如果無法解析，流程會在執行前先詢問，並�
 
 兩種 workspace 共用同一套生命週期：解析 base 與 policy、準備 workspace、建立任務分支、實作、review、
 驗證／修正／重測、取得獨立的發布核准、重新確認並整合 base，最後 commit、push、建立 MR/PR，再進行
-交接或清理。只有 worktree workspace 會配置 ignored 檔案與獨立 runtime。
+交接或清理。只有 worktree workspace 會配置 ignored 檔案。獨立 runtime 是選用功能：必須搭配 consuming
+project 的 descriptor 與 `runtime=auto`，並通過 health/process-ownership check 後，才能宣稱 runtime 已隔離。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280", "actorBkg": "#f3e8ff", "actorBorder": "#9333ea", "actorTextColor": "#111827", "actorLineColor": "#6b7280", "signalColor": "#6b7280", "signalTextColor": "#111827", "labelBoxBkgColor": "#f3f4f6", "labelBoxBorderColor": "#6b7280", "labelTextColor": "#111827", "loopTextColor": "#111827", "noteBkgColor": "#fef3c7", "noteBorderColor": "#d97706", "noteTextColor": "#111827"}}}%%

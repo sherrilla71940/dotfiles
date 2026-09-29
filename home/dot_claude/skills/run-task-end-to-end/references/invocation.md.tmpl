@@ -1,7 +1,7 @@
 {{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {{ includeTemplate "skills/run-task-end-to-end/invocation.md" (dict
   "invoke" "/run-task-end-to-end"
-  "worktreeExample" "<repo>/.claude/worktrees/cctv-pipe-inspection-record"
+  "worktreeExample" "<repo>/.claude/worktrees/example-task"
   "cleanupValues" "`ask`, `auto`, or `keep`"
   "cleanupDefault" "ask"
   "langDefault" $profile.artifact_language

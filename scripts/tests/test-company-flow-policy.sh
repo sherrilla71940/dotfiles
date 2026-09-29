@@ -55,20 +55,4 @@ assert_success project_exception project-exception feat/legacy-task
 assert_failure invalid_policy unsupported feat/legacy-task
 assert_success recorded_bypass company-flow feat/legacy-task $'Branch: feat/legacy-task\nBranch policy: company-flow-bypassed\nPolicy bypass: --force'
 
-push_option_repo="$work_directory/push-option"
-mkdir -p "$push_option_repo"
-git -C "$push_option_repo" init -q
-git -C "$push_option_repo" config user.email test@example.invalid
-git -C "$push_option_repo" config user.name test
-git -C "$push_option_repo" config branch.policy company-flow
-if ! printf 'refs/heads/feat/legacy-task %s refs/heads/feat/legacy-task %s\n' \
-    1111111111111111111111111111111111111111 \
-    0000000000000000000000000000000000000000 |
-    (cd "$push_option_repo" &&
-      GIT_PUSH_OPTION_COUNT=1 \
-      GIT_PUSH_OPTION_0='company-flow-bypass=--force' \
-      bash "$hook") >/dev/null 2>&1; then
-  fail 'explicit push option bypass should have been accepted'
-fi
-
 printf 'company-flow policy tests: default, exceptions, and explicit bypass OK\n'

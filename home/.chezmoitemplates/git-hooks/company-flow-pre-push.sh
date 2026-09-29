@@ -25,17 +25,6 @@ is_flow_branch() {
   [[ "$1" =~ ^flow/[0-9]{1,9}(-[A-Za-z0-9_-]+)?$ ]]
 }
 
-has_explicit_bypass() {
-  local count="${GIT_PUSH_OPTION_COUNT:-0}" index option option_var
-  [[ "$count" =~ ^[0-9]+$ ]] || return 1
-  for ((index = 0; index < count; index++)); do
-    option_var="GIT_PUSH_OPTION_$index"
-    option="${!option_var-}"
-    [[ "$option" == 'company-flow-bypass=--force' ]] && return 0
-  done
-  return 1
-}
-
 has_recorded_workflow_bypass() {
   local state="$repo/.task-continuity/state.md"
   [[ -f "$state" ]] || return 1
@@ -51,7 +40,7 @@ while read -r local_ref local_oid remote_ref remote_oid; do
   branch="${local_ref#refs/heads/}"
   is_flow_branch "$branch" && continue
 
-  if has_explicit_bypass || has_recorded_workflow_bypass "$branch"; then
+  if has_recorded_workflow_bypass "$branch"; then
     printf 'company-flow policy: explicit --force bypass accepted for %s.\n' "$branch" >&2
     continue
   fi

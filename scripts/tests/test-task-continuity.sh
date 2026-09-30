@@ -101,6 +101,7 @@ case "$(printf '%s' "$collision_stop_output" | jq -r '.systemMessage // ""')" in
   *"both .task-continuity/ and legacy .project-continuity/"*) ;;
   *) printf 'expected the Stop collision notice, got: %s\n' "$collision_stop_output" >&2; exit 1 ;;
 esac
+printf '%s' "$collision_stop_output" | jq -e '.hookSpecificOutput.hookEventName == "Stop" and .hookSpecificOutput.additionalContext == .systemMessage' >/dev/null
 rmdir "$fixture/.project-continuity"
 
 # With no Objective section there is nothing to name, so the plain notice is used.
@@ -220,6 +221,8 @@ case "$behind_message" in
   *"behind the work"*"last reconciled 2 commits ago"*"Rewrite"*"whole"*) ;;
   *) printf 'expected the behind-the-work notice, got: %s\n' "$behind_message" >&2; exit 1 ;;
 esac
+behind_output="$(stop_notice)"
+printf '%s' "$behind_output" | jq -e '.hookSpecificOutput.hookEventName == "Stop" and .hookSpecificOutput.additionalContext == .systemMessage' >/dev/null
 case "$behind_message" in
   *"no longer in this history"*)
     printf 'a commit that is still an ancestor must not read as lost history\n' >&2; exit 1 ;;

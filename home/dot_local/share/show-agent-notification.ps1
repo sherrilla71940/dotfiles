@@ -121,11 +121,15 @@ try {
 # desk is the case this cannot serve at all, whatever the banner does, and that belongs to a
 # notification that reaches a phone rather than to a longer toast.
 # Codex sends no notification_type - it has no Notification event, only lifecycle ones - so
-# its SessionEnd is mapped to a type here. Without this the switch falls to default and the
-# toast is silently dropped, which is how the previous Codex hook failed unnoticed.
+# its SessionEnd is mapped to a type here. SubagentStop is likewise a lifecycle event shared by
+# Claude Code's terminal and VS Code hosts; map it to the same background-agent completion toast
+# instead of relying on the Agent-view-only agent_completed notification.
 $notificationType = [string]$payload.notification_type
 if (-not $notificationType -and [string]$payload.hook_event_name -eq "SessionEnd") {
     $notificationType = "session_end"
+}
+if (-not $notificationType -and [string]$payload.hook_event_name -eq "SubagentStop") {
+    $notificationType = "agent_completed"
 }
 switch ($notificationType) {
     "permission_prompt" {
@@ -209,9 +213,9 @@ try {
     exit 1
 }
 
-# session_end is only ever raised by the Codex hook; every other type comes from Claude's
-# Notification event. An unregistered identity drops the toast silently, so each falls back to
-# the always-present Windows PowerShell identity rather than to the other client's.
+# session_end is only ever raised by the Codex hook; SubagentStop and every other type come from
+# Claude. An unregistered identity drops the toast silently, so each falls back to the always-
+# present Windows PowerShell identity rather than to the other client's.
 if ($notificationType -eq "session_end") {
     $preferredAumid = $codexAumid
     $preferredShortcut = $codexShortcut

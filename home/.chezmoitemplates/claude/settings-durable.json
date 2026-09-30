@@ -67,6 +67,16 @@
           { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
         ]
       }
+    ],
+    {{/* `agent_completed` is emitted by the Notification event only while Claude's Agent view
+         is open. SubagentStop is the host-neutral lifecycle event, so it keeps completion toasts
+         working in the VS Code extension as well as the terminal client. */}}
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
+        ]
+      }
     ]{{ if $isManaged }},
     "SessionStart": [
       {

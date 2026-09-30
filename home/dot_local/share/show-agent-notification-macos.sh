@@ -22,10 +22,14 @@ fi
 notification_type="$(printf '%s' "$input" | jq -r '.notification_type // empty')"
 
 # Codex sends no notification_type - it has no Notification event, only lifecycle ones - so its
-# SessionEnd is mapped to a type here. Without this the case below falls to its default and the
-# banner is silently dropped, which is how the previous Codex hook failed unnoticed.
+# SessionEnd is mapped to a type here. SubagentStop is likewise a lifecycle event shared by
+# Claude Code's terminal and VS Code hosts; map it to the same background-agent completion banner
+# instead of relying on the Agent-view-only agent_completed notification.
 if [[ -z "$notification_type" ]]   && [[ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" == "SessionEnd" ]]; then
   notification_type="session_end"
+fi
+if [[ -z "$notification_type" ]]   && [[ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" == "SubagentStop" ]]; then
+  notification_type="agent_completed"
 fi
 
 # The Windows copy keeps a toast on screen until dismissed when a notification means work is

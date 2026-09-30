@@ -368,8 +368,10 @@ check_profile() {
   assert_contains "$destination/.agents/skills/task-continuity/agents/openai.yaml" 'allow_implicit_invocation: false'
   assert_contains "$destination/.agents/skills/worktree-manifest/agents/openai.yaml" 'allow_implicit_invocation: false'
 
+  assert_contains "$destination/.claude/settings.json" 'show-agent-notification'
+  assert_contains "$destination/.claude/settings.json" 'SubagentStop'
+
   if [[ "$harness" == managed ]]; then
-    assert_contains "$destination/.claude/settings.json" 'show-agent-notification'
     assert_contains "$destination/.claude/settings.json" 'check-worktree-launch'
     assert_contains "$destination/.codex/hooks.json" 'show-agent-notification'
     if [[ "$continuity" == on ]]; then
@@ -481,10 +483,18 @@ printf '%s\n' '{
       {"type": "command", "command": "bash $HOME/.local/share/show-agent-notification-macos.sh"},
       {"type": "command", "command": "bash $HOME/custom-notification.sh"}
     ]}],
+    "SubagentStop": [{"hooks": [
+      {"type": "command", "command": "bash $HOME/.local/share/show-agent-notification-macos.sh"},
+      {"type": "command", "command": "bash $HOME/custom-subagent-stop.sh"}
+    ]}],
     "SessionStart": [{"hooks": [
       {"type": "command", "command": "bash $HOME/.claude/hooks/check-worktree-launch.sh"},
       {"type": "command", "command": "bash $HOME/.local/share/maintain-task-continuity.sh"},
+      {"type": "command", "command": "bash $HOME/.local/share/maintain-project-continuity.sh"},
       {"type": "command", "command": "bash $HOME/custom-session-start.sh"}
+    ]}],
+    "Stop": [{"hooks": [
+      {"type": "command", "command": "bash $HOME/.local/share/maintain-project-continuity.sh"}
     ]}]
   }
 }' > "$hook_merge_destination/.claude/settings.json"
@@ -497,9 +507,11 @@ assert_json "$hook_merge_destination/.claude/settings.json"
 assert_contains "$hook_merge_destination/.claude/settings.json" '"customSetting": "preserve"'
 assert_contains "$hook_merge_destination/.claude/settings.json" 'custom-notification.sh'
 assert_contains "$hook_merge_destination/.claude/settings.json" 'custom-session-start.sh'
+assert_contains "$hook_merge_destination/.claude/settings.json" 'custom-subagent-stop.sh'
 assert_contains "$hook_merge_destination/.claude/settings.json" 'show-agent-notification'
 assert_not_contains "$hook_merge_destination/.claude/settings.json" 'check-worktree-launch'
 assert_not_contains "$hook_merge_destination/.claude/settings.json" 'maintain-task-continuity.sh'
+assert_not_contains "$hook_merge_destination/.claude/settings.json" 'maintain-project-continuity.sh'
 printf 'profile tests: native hook merge preserves unrelated settings OK\n'
 
 invalid_context="$work_directory/invalid-context.yaml"

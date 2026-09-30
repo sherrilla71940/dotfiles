@@ -38,15 +38,16 @@ preferences, authentication, session state, and runtime data remain local.
 
 This diagram combines the configuration architecture with the repository map. `home/` is the
 chezmoi source state; `scripts/` supports setup, diagnostics, installers, and validation; and
-`docs/` contains operating guides and decision records. Machine-local profile selectors feed
-Chezmoi composition, which branches into shared adapters, portable skill delivery, client-specific
-delivery, and OS-specific dotfile delivery. The [customization support guide](./docs/customization-support.md)
-maps each source to the client surfaces that read it.
+`docs/` contains operating guides and decision records. Machine-local profile inputs feed Chezmoi
+composition, which branches into shared adapters, portable skill delivery, client-specific delivery,
+and OS-specific dotfile delivery. The next diagram explains the selector combinations and their
+behavior. The [customization support guide](./docs/customization-support.md) maps each source to
+the client surfaces that read it.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
-    selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
+    profile["Machine-local profile inputs<br/>details below"]:::choice
 
     subgraph repository["Repository source and support"]
         home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
@@ -55,8 +56,8 @@ flowchart TB
 
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
 
-    subgraph routes["Native delivery routes"]
-        sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
+    subgraph routes["Rendered delivery routes"]
+        sharedRoute["Shared adapters<br/>thin wrappers · client-native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
         osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
@@ -65,7 +66,7 @@ flowchart TB
     aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
     developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
     home --> compose
-    selectors --> compose
+    profile --> compose
     support -. "supports and documents" .-> compose
     compose --> sharedRoute --> aiTargets
     compose --> portableRoute --> aiTargets

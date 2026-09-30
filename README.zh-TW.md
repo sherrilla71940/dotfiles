@@ -36,15 +36,15 @@ session state 與 runtime 資料則留在本機。
 ## 系統總覽
 
 這張圖同時呈現設定架構與 repository map。`home/` 是 chezmoi source state；`scripts/` 放置
-setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。本機 profile
-selector 會先進入 Chezmoi 組合，再分流到 shared adapter、portable skill delivery、
-client-specific delivery 與 OS-specific dotfile delivery。完整的 source-to-client 對應請看
-[customization support guide](./docs/customization-support.md)。
+setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。圖中的本機 profile
+input 只表示組合設定的入口；selector 的詳細行為請看下一張圖。Chezmoi 組合後，設定會再分流到
+shared adapter、portable skill delivery、client-specific delivery 與 OS-specific dotfile delivery。
+完整的 source-to-client 對應請看 [customization support guide](./docs/customization-support.md)。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
-    selectors["Machine-local profile selectors<br/>ai_context · ai_harness · ai_continuity"]:::choice
+    profile["Machine-local profile inputs<br/>詳見下方 profile 圖"]:::choice
 
     subgraph repository["Repository source and support"]
         home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
@@ -53,8 +53,8 @@ flowchart TB
 
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
 
-    subgraph routes["Native delivery routes"]
-        sharedRoute["Shared adapters<br/>thin wrappers · native metadata"]:::process
+    subgraph routes["渲染後的 delivery routes"]
+        sharedRoute["Shared adapters<br/>thin wrappers · client-native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
         osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
@@ -63,7 +63,7 @@ flowchart TB
     aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
     developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
     home --> compose
-    selectors --> compose
+    profile --> compose
     support -. "supports and documents" .-> compose
     compose --> sharedRoute --> aiTargets
     compose --> portableRoute --> aiTargets

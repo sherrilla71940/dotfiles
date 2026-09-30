@@ -458,10 +458,14 @@ strategy before provisioning begins.
 Worktree isolation covers source and Git state, not running services or their ports. For browser or
 runtime testing from an isolated worktree, invoke the task workflow with `runtime=auto` before
 starting the server, and use the consuming project's authoritative tracked `.worktree-runtime.json`.
-Without that descriptor, source isolation remains valid but concurrent runtime testing is not
-guaranteed; report that limitation before starting a server. Tasks that do not need browser/runtime
-testing may leave runtime off. This preserves strong guarantees when runtime isolation is explicitly
-chosen without making every task or project use a rigid runtime harness.
+`runtime=auto` requires that descriptor to validate, inject a port, and define a health URL. If the
+descriptor is missing, invalid, or cannot inject a port, enter the interactive descriptor-setup gate:
+inspect project candidates, confirm the runtime fields, show the complete descriptor, and obtain
+explicit confirmation before creating or repairing the tracked file. If setup is declined or cannot
+be completed, offer `runtime=off` explicitly or stop; do not silently fall back to the project's
+ordinary fixed-port startup. Tasks that do not need browser/runtime testing may leave runtime off.
+This preserves strong guarantees when runtime isolation is explicitly chosen without making every
+task or project use a rigid runtime harness.
 
 The wrapper options are:
 

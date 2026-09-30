@@ -29,7 +29,7 @@ session state 與 runtime 資料則留在本機。
 | 在新的 session 繼續工作時，重新整理或說明任務脈絡                      | **保留跨 session 的任務脈絡。** 為每個工作目錄保留 continuity state，記錄目標、階段、決策、假設、阻塞事項、驗證狀態、任務識別資訊與下一步，讓另一個 session 或支援的 AI client 能將這些狀態與目前工作目錄及 Git 重新核對後繼續任務 |
 | 追蹤每項任務分別需要哪些規格、截圖、試算表、測試輸入、handoff 與其他材料           | **整理材料並建立與任務的關聯。** 將穩定的任務材料、可重複使用的測試材料與 durable handoff 和暫時性的任務狀態分開，同時記錄材料的路徑與來源                                                              |
 | 每次想平行處理同一個 repository 的另一項任務時，另外建立並準備 worktree 與分支 | **準備隔離的任務 workspace。** 解析 base 與任務分支、建立或選擇 workspace、將已核准的 ignored／本機檔案配置到 worktree，並讓每項任務的分支、工作目錄與 continuity state 彼此獨立                     |
-| 為同時執行的多個任務環境選擇並記住不同的 runtime port，避免 port 衝突       | **處理 runtime 隔離。** 使用專案提供的 runtime 設定自動分配不同的 port，讓隔離的 worktree 能同時執行並測試各自的應用程式 instance，而不會發生 port 衝突                                        |
+| 為同時執行的多個任務環境選擇並記住不同的 runtime port，避免 port 衝突       | **處理選用的 runtime 隔離。** 只有在使用 `workspace=worktree`、`runtime=auto` 且專案提供有效 descriptor 時，才會分配並進行 health check；若 descriptor 缺少，流程會引導互動式設定 |
 | 判斷哪些項目 agent 可以自行驗證、哪些仍需要我檢查，以及失敗後哪些檢查必須重跑         | **協調驗證流程。** 依選定的 verification policy 執行可行的自動化、runtime、瀏覽器與互動式檢查；失敗時進入修正與重測循環，只在確實需要時要求我執行檢查或確認結果                                              |
 | 協調從實作完成到可以交付 review 的整個流程                          | **協調發布流程。** 將驗證與發布核准分開，發布前重新取得並整合最新的 target base，必要時重跑受影響的驗證，之後再 commit、push、建立 review request，並執行保留分支的清理                                     |
 
@@ -205,8 +205,11 @@ branch-aware discovery、reconcile 與 cleanup；[worktree provisioning guide](.
 
 兩種 workspace 共用同一套生命週期：解析 base 與 policy、準備 workspace、建立任務分支、實作、review、
 驗證／修正／重測、取得獨立的發布核准、重新確認並整合 base，最後 commit、push、建立 MR/PR，再進行
-交接或清理。只有 worktree workspace 會配置 ignored 檔案。獨立 runtime 是選用功能：必須搭配 consuming
-project 的 descriptor 與 `runtime=auto`，並通過 health/process-ownership check 後，才能宣稱 runtime 已隔離。
+交接或清理。只有 worktree workspace 會配置 ignored 檔案。獨立 runtime 是選用功能：必須搭配有效的
+consuming project descriptor 與 `runtime=auto`。如果 descriptor 缺少或無效，流程會先檢查可用設定，
+互動式建立完整 descriptor，並在寫入 consuming project 前要求確認。若設定被拒絕或無法完成，
+runtime 階段會停止，或由使用者明確選擇 `runtime=off`；流程不會默默使用固定 port，也不會宣稱
+瀏覽器或 runtime 結果已在該 worktree 中完成隔離驗證。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280", "actorBkg": "#f3e8ff", "actorBorder": "#9333ea", "actorTextColor": "#111827", "actorLineColor": "#6b7280", "signalColor": "#6b7280", "signalTextColor": "#111827", "labelBoxBkgColor": "#f3f4f6", "labelBoxBorderColor": "#6b7280", "labelTextColor": "#111827", "loopTextColor": "#111827", "noteBkgColor": "#fef3c7", "noteBorderColor": "#d97706", "noteTextColor": "#111827"}}}%%

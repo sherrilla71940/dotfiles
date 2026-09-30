@@ -35,6 +35,14 @@ worktree. A `workspace=checkout` task also cannot claim a separate runtime port 
 consuming project explicitly documents a safe current-checkout lease; otherwise leave
 `runtime=off`.
 
+`runtime=auto` is a requested runtime contract, not a best-effort hint. The consuming project must
+provide a valid `.worktree-runtime.json` with port injection and a health URL. If the descriptor is
+missing, invalid, or cannot inject a port, the workflow offers interactive descriptor setup before
+server startup. It may inspect project configuration for candidate values, but it must show the
+complete descriptor and obtain explicit confirmation before creating or repairing the tracked file.
+If setup is declined or cannot be completed, the user can choose `runtime=off` explicitly or stop.
+The workflow must never silently fall back to the project's ordinary fixed-port startup.
+
 This preserves the harness boundary: strong runtime guarantees apply when the workflow is
 explicitly chosen, without forcing every task or every project into a rigid harness.
 
@@ -129,8 +137,8 @@ The helper:
 The provisioning check and this runtime helper report different states. A worktree can be
 `provisioning-ready` while its runtime remains `runtime-unverified`; only a successful descriptor
 health check that also verifies process ownership reports `runtime-health-verified`. If the
-descriptor is absent, invalid, or cannot inject a port, keep the runtime state unverified and do
-not claim that browser results came from this worktree.
+descriptor is absent, invalid, or cannot inject a port, the runtime phase cannot start and remains
+unverified; do not claim that browser results came from this worktree.
 
 The saved assignment is a preference, not a reservation. Another process may already own it when
 the worktree resumes. Automatic selection moves to the next available candidate within the bounded

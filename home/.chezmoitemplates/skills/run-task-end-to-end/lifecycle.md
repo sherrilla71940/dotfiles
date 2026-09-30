@@ -182,14 +182,22 @@ python "$HOME/.local/share/worktree-runtime.py" start [--port <explicit-port>]
 The helper keeps the preferred port assignment outside the worktree, keyed to the physical
 worktree, acquires an inter-process lease before starting the server, retries bounded collisions,
 and verifies both the health URL and the listening process. Keep it running in a dedicated terminal
-for the selected verification run. If `runtime=auto` was not selected, report that no per-worktree port guarantee
-was provided before starting the server. If the descriptor is absent, report that runtime isolation
-is unconfigured;
-source and Git isolation remain valid, but concurrent runtime testing is not guaranteed. If the
-descriptor cannot inject a port, report parallel runtime execution as unsupported rather than
-silently testing another worktree's server. `runtime=off` uses the project's ordinary startup
-procedure only for tasks that do not require isolated browser/runtime testing, and must state that
-no per-worktree port guarantee was provided.
+for the selected verification run. `runtime=auto` is a requested contract: validate the descriptor
+before starting the server. If the descriptor is absent, invalid, or cannot inject a port, enter the
+interactive descriptor-setup gate:
+
+1. Report the missing or invalid fields and inspect project configuration only for candidate values.
+2. Ask the user to confirm the start command, `{port}` token or port environment variable, port range,
+   health URL, timeout, and working directory when applicable.
+3. Show the complete descriptor and obtain explicit confirmation before creating or repairing the
+   tracked `.worktree-runtime.json` in the consuming project.
+4. Validate the saved descriptor, then run the normal port lease, health, and process-ownership checks.
+
+If setup is declined or cannot be completed, offer an explicit `runtime=off` choice or stop. Do not
+silently start the ordinary fixed-port server. If `runtime=off` is chosen, report that no per-worktree
+port guarantee was provided and use the project's ordinary startup procedure only for tasks that do
+not require isolated browser/runtime testing. Never claim that browser/runtime results came from this
+worktree without the descriptor health and process-ownership check.
 
 The descriptor may classify databases, caches, queues, Docker services, and external services as
 `per-worktree`, `shared-safe`, or `unsupported`. V1 reports those classifications but does not

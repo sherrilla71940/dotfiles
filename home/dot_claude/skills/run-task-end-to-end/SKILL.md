@@ -120,11 +120,15 @@ policy bypass when present, and the complete task branch. Record the same policy
 explicit bypass marker, in continuity when effective continuity is enabled.
 
 Runtime isolation is required for browser or runtime testing from an isolated worktree. When the
-invocation selects `runtime=auto`, use the tracked `.worktree-runtime.json` descriptor and the
-rendered `~/.local/share/worktree-runtime.py` helper. If `runtime=auto` is not selected, report
-that no per-worktree port guarantee was provided before starting the server, and do not claim that
-browser/runtime results came from this worktree. Tasks that do not need an application server may
-leave runtime off.
+invocation selects `runtime=auto`, validate the tracked `.worktree-runtime.json` descriptor before
+starting the server and use the rendered `~/.local/share/worktree-runtime.py` helper. If the
+descriptor is missing, invalid, or cannot inject a port, offer the interactive descriptor-setup
+gate: inspect candidates, confirm the runtime fields, show the complete descriptor, and ask before
+creating or repairing the tracked project file. If setup is declined or cannot be completed, offer
+an explicit `runtime=off` choice or stop; never silently fall back to a fixed port. If `runtime=auto`
+is not selected, report that no per-worktree port guarantee was provided before starting the server,
+and do not claim that browser/runtime results came from this worktree. Tasks that do not need an
+application server may leave runtime off.
 
 That path is deliberate, not a copy of a terminal habit. `EnterWorktree` moves the session
 without an approval prompt only inside the repository's `.claude/worktrees/`, and no permission

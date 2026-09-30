@@ -2,3 +2,4 @@
 .agents/skills/workflow-restore
 .claude/skills/workflow-archive
 .claude/skills/workflow-restore
+.local/share/maintain-project-continuity.sh

@@ -405,7 +405,9 @@ recorded commit that has left the history - rebased, reset, or belonging to anot
 - means the recorded starting point cannot be trusted. A recorded commit that is still an
 ancestor but more than one commit behind means a checkpoint opportunity passed without the file
 being rewritten; one commit behind is work in flight and stays silent, because a notice after
-every commit is one readers learn to ignore. The script never reads or copies the transcript.
+every commit is one readers learn to ignore. Stop notices remain in `systemMessage` for the user
+and are also returned as `hookSpecificOutput.additionalContext` so Claude can act on them in the
+terminal or VS Code extension. The script never reads or copies the transcript.
 
 With `ai_continuity = "off"`, the continuity guidance and continuity lifecycle hook are absent, but
 managed notifications and Claude's worktree-launch check remain. With `ai_harness = "native"`,

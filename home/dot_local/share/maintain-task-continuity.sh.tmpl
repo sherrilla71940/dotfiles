@@ -518,6 +518,28 @@ combine_notices() {
     '{systemMessage:($first + " " + $second)}'
 }
 
+# Stop hook output has two consumers. `systemMessage` reaches the person using Claude Code,
+# while `hookSpecificOutput.additionalContext` is the part Claude itself receives as hook
+# feedback. Keep both in sync so a stale-state warning is actionable in the Agents view, the
+# VS Code extension, and Codex without requiring the user to paste the warning back.
+emit_notice() {
+  local notice="$1"
+
+  [[ -n "$notice" ]] || return 0
+  if [[ "$event_name" == "Stop" ]]; then
+    printf '%s\n' "$notice" | jq '
+      if (.systemMessage // "") == "" then .
+      else .hookSpecificOutput = {
+        hookEventName: "Stop",
+        additionalContext: .systemMessage
+      }
+      end
+    '
+  else
+    printf '%s\n' "$notice"
+  fi
+}
+
 # A response carries at most one system message. Drift comes first because a state file describing
 # the wrong commit or branch actively misleads the next reader, but the completion and metadata
 # notices still accompany it so reconciliation cannot permanently hide cleanup work.
@@ -544,9 +566,7 @@ report_continuity_notice() {
   notice="$(combine_notices "$notice" "$parked_notice")"
   notice="$(combine_notices "$notice" "$metadata_notice")"
   notice="$(combine_notices "$notice" "$parked_branch_notice")"
-  if [[ -n "$notice" ]]; then
-    printf '%s\n' "$notice"
-  fi
+  emit_notice "$notice"
 }
 
 report_parked_notices() {
@@ -559,7 +579,7 @@ report_parked_notices() {
   parked_branch_notice="$(report_parked_branch_candidates "$root")"
   placeholder_notice="$(combine_notices "$placeholder_notice" "$finished_notice")"
   placeholder_notice="$(combine_notices "$placeholder_notice" "$metadata_notice")"
-  combine_notices "$placeholder_notice" "$parked_branch_notice"
+  emit_notice "$(combine_notices "$placeholder_notice" "$parked_branch_notice")"
 }
 
 ensure_private_state_path() {
@@ -665,7 +685,7 @@ case "$event_name" in
     if [[ -n "$root" ]]; then
       if collision_notice="$(report_continuity_directory_collision "$root")"; then
         if [[ -n "$collision_notice" ]]; then
-          printf '%s\n' "$collision_notice"
+          emit_notice "$collision_notice"
           exit 0
         fi
       fi
@@ -681,7 +701,7 @@ case "$event_name" in
     if [[ -n "$root" ]]; then
       if collision_notice="$(report_continuity_directory_collision "$root")"; then
         if [[ -n "$collision_notice" ]]; then
-          printf '%s\n' "$collision_notice"
+          emit_notice "$collision_notice"
           exit 0
         fi
       fi

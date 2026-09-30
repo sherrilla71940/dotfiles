@@ -277,13 +277,21 @@ before creating the worktree whether to open the exact path in a new VS Code win
 Open or handoff control. Do not ask this question for a native client path or a non-interactive
 automation caller. Report the absolute worktree path either way.
 
-`runtime=auto` opts into the consuming repository's tracked `.worktree-runtime.json` descriptor
-and the user-level runtime helper. It is appropriate only when the task includes an application
-whose development server supports the descriptor's port injection method. `runtime=off` leaves
-runtime startup to the project or user. A `port=` override is rejected unless runtime isolation is
-enabled; an occupied explicit port is an error rather than a silent substitution. The `checkout`
-route rejects `runtime=auto` unless the consuming project documents a safe current-checkout lease;
-the workflow must not claim per-worktree runtime isolation for a checkout task.
+`runtime=auto` is an explicit runtime contract, not a best-effort hint. It opts into the consuming
+repository's tracked `.worktree-runtime.json` descriptor and the user-level runtime helper, and it
+requires that the descriptor exist, validate, inject a port, and define a health URL before the
+workflow starts the server. If the descriptor is missing, invalid, or cannot inject a port, enter
+the interactive descriptor-setup gate before server startup: offer to inspect project candidates,
+collect or confirm the start command, port injection, range, health URL, and related fields, show
+the complete descriptor, and ask for explicit confirmation before creating or repairing the tracked
+`.worktree-runtime.json` in the consuming project. If setup is declined or cannot be completed,
+offer an explicit `runtime=off` choice or stop; never silently fall back to the project's ordinary
+fixed-port startup.
+`runtime=off` leaves runtime startup to the project or user and provides no per-worktree port
+guarantee. A `port=` override is rejected unless runtime isolation is enabled; an occupied explicit
+port is an error rather than a silent substitution. The `checkout` route rejects `runtime=auto`
+unless the consuming project documents a safe current-checkout lease; the workflow must not claim
+per-worktree runtime isolation for a checkout task.
 
 `workspace`, `verification`, `continuity`, `base`, `runtime`, and the effective branch policy are resolved before material
 content is read. Explicit task options override profile and repository defaults. `verification`

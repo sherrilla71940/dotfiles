@@ -80,12 +80,16 @@ workspace. Resolve `checkout` or `worktree` from clear prompt intent or user con
 any branch switch, branch creation, or worktree creation.
 
 For an application task that starts a server for browser or runtime testing in an isolated
-worktree, `runtime=auto` is required. Use the consuming project's tracked
-`.worktree-runtime.json` descriptor; an explicit `port=<number>` may override its preferred
-allocation. If `runtime=auto` is not selected, report that no per-worktree port guarantee exists
-before starting the server, and do not claim that browser/runtime results came from this worktree.
-Leave runtime at its default `off` for tasks that do not need an application server; this workflow
-is not a mandatory runtime harness.
+worktree, `runtime=auto` is required. It is a requested contract, not a best-effort hint: validate
+the consuming project's tracked `.worktree-runtime.json` descriptor before starting the server.
+If the descriptor is missing, invalid, or cannot inject a port, offer the interactive descriptor-
+setup gate: inspect candidates, confirm the runtime fields, show the complete descriptor, and ask
+before creating or repairing the tracked project file. If setup is declined or cannot be completed,
+offer an explicit `runtime=off` choice or stop; never silently fall back to a fixed port. An explicit
+`port=<number>` may override a valid descriptor's preferred allocation.
+If `runtime=auto` is not selected, report that no per-worktree port guarantee exists and do not
+claim that browser/runtime results came from this worktree. Leave runtime at its default `off` for
+tasks that do not need an application server; this workflow is not a mandatory runtime harness.
 
 After invocation resolution, a new `checkout` or `worktree` task requires a resolved `base` unless
 repository instructions provide a stricter local override. Both modes establish the task branch from

@@ -36,42 +36,51 @@ preferences, authentication, session state, and runtime data remain local.
 
 ## System at a glance
 
-This diagram combines the configuration architecture with the repository map. `home/` is the
-chezmoi source state; `scripts/` supports setup, diagnostics, installers, and validation; and
-`docs/` contains operating guides and decision records. Machine-local profile inputs feed Chezmoi
-composition, which branches into shared adapters, portable skill delivery, client-specific delivery,
-and OS-specific dotfile delivery. The next diagram explains the selector combinations and their
-behavior. The [customization support guide](./docs/customization-support.md) maps each source to
-the client surfaces that read it.
+This diagram is a left-to-right topology of the configuration architecture and repository map.
+`home/` is the chezmoi source state; `scripts/` supports setup, diagnostics, installers, and
+validation; and `docs/` contains operating guides and decision records. Machine-local profile inputs
+and repository sources feed Chezmoi composition, which branches into delivery routes and rendered
+targets. The next diagram uses a decision tree to explain selector behavior. The [customization
+support guide](./docs/customization-support.md) maps each source to the client surfaces that read it.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
-flowchart TB
-    profile["Machine-local profile inputs<br/>details below"]:::choice
+flowchart LR
 
     subgraph repository["Repository source and support"]
+        direction TB
         home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
         support["scripts/<br/>bootstrap · install · manifests · diagnostics · tests · git-hooks<br/><br/>docs/<br/>setup · workflows · decisions"]:::support
     end
 
+    profile["Machine-local profile inputs<br/>details below"]:::choice
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
 
     subgraph routes["Rendered delivery routes"]
+        direction TB
         sharedRoute["Shared adapters<br/>thin wrappers · client-native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
         osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
     end
 
-    aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
-    developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    subgraph targets["Rendered targets"]
+        direction TB
+        aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
+        developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    end
+
     home --> compose
     profile --> compose
     support -. "supports and documents" .-> compose
-    compose --> sharedRoute --> aiTargets
-    compose --> portableRoute --> aiTargets
-    compose --> clientRoute --> aiTargets
-    compose --> osRoute --> developerTargets
+    compose --> sharedRoute
+    compose --> portableRoute
+    compose --> clientRoute
+    compose --> osRoute
+    sharedRoute --> aiTargets
+    portableRoute --> aiTargets
+    clientRoute --> aiTargets
+    osRoute --> developerTargets
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
@@ -90,46 +99,46 @@ covers the client delivery matrix.
 
 ## Profiles and AI harness modes
 
-Three machine-local selectors compose the rendered client configuration. They are not committed.
+Three machine-local selectors shape the rendered client configuration. They are not committed. This
+decision tree shows the important dependency: `ai_continuity` changes the managed branch, while
+native mode keeps continuity explicit regardless of the stored `on` or `off` value.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     baseline["Shared baseline"]:::base
-    context["ai_context<br/>personal | company"]:::choice
-    harness["AI harness<br/>managed | native"]:::choice
-    continuity["ai_continuity<br/>on | off"]:::choice
-    compose["Compose rendered profile"]:::process
-    effective{"Effective combination"}:::check
+    context["ai_context<br/>personal | company<br/>artifact-language context"]:::choice
+    profile["Apply context to shared baseline"]:::process
+    harness{"ai_harness<br/>managed | native"}:::decision
+    continuity{"ai_continuity<br/>on | off<br/>managed mode"}:::decision
     managedOn["managed + on<br/>automatic continuity guidance and reporting"]:::result
     managedOff["managed + off<br/>no automatic continuity; managed notifications and launch check remain"]:::result
     native["native + on/off<br/>continuity skill remains explicit"]:::result
 
-    baseline --> compose
-    context --> compose
-    harness --> compose
-    continuity --> compose
-    compose --> effective
-    effective -->|"managed + on"| managedOn
-    effective -->|"managed + off"| managedOff
-    effective -->|"native + on/off"| native
+    baseline --> profile
+    context --> profile
+    profile --> harness
+    harness -->|"managed"| continuity
+    continuity -->|"on"| managedOn
+    continuity -->|"off"| managedOff
+    harness -->|"native"| native
 
     classDef base fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#111827
     classDef check fill:#f3f4f6,stroke:#4b5563,color:#111827
     classDef result fill:#dcfce7,stroke:#16a34a,color:#111827
     class baseline base
-    class context,harness,continuity choice
-    class compose process
-    class effective check
+    class context choice
+    class profile process
+    class harness,continuity decision
     class managedOn,managedOff,native result
     style baseline color:#111827
     style context color:#111827
+    style profile color:#111827
     style harness color:#111827
     style continuity color:#111827
-    style compose color:#111827
-    style effective color:#111827
     style managedOn color:#111827
     style managedOff color:#111827
     style native color:#111827

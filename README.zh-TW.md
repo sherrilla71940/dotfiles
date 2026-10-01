@@ -35,40 +35,50 @@ session state 與 runtime 資料則留在本機。
 
 ## 系統總覽
 
-這張圖同時呈現設定架構與 repository map。`home/` 是 chezmoi source state；`scripts/` 放置
-setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。圖中的本機 profile
-input 只表示組合設定的入口；selector 的詳細行為請看下一張圖。Chezmoi 組合後，設定會再分流到
-shared adapter、portable skill delivery、client-specific delivery 與 OS-specific dotfile delivery。
-完整的 source-to-client 對應請看 [customization support guide](./docs/customization-support.md)。
+這張圖用由左到右的拓撲呈現設定架構與 repository map。`home/` 是 chezmoi source state；`scripts/`
+放置 setup、診斷、installer 與驗證工具；`docs/` 則放操作指南與 decision records。本機 profile
+設定和 repository source 會一起送進 Chezmoi 組合，接著分流到不同的 delivery route，再產生各種
+rendered target。下一張圖改用 decision tree 說明 selector 的行為。完整的 source-to-client 對應請看
+[customization support guide](./docs/customization-support.md)。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
-flowchart TB
-    profile["Machine-local profile inputs<br/>詳見下方 profile 圖"]:::choice
+flowchart LR
 
     subgraph repository["Repository source and support"]
+        direction TB
         home["home/<br/>.chezmoitemplates · dot_agents/skills<br/>dot_claude · dot_codex · dot_copilot<br/>OS-specific dotfile sources"]:::source
         support["scripts/<br/>bootstrap · install · manifests · diagnostics · tests · git-hooks<br/><br/>docs/<br/>setup · workflows · decisions"]:::support
     end
 
+    profile["Machine-local profile inputs<br/>詳見下方 profile 圖"]:::choice
     compose["Chezmoi composition<br/>templates · profile layers<br/>filename attributes"]:::process
 
     subgraph routes["渲染後的 delivery routes"]
+        direction TB
         sharedRoute["Shared adapters<br/>thin wrappers · client-native metadata"]:::process
         portableRoute["Portable skill delivery<br/>~/.agents/skills<br/>Claude skill links"]:::process
         clientRoute["Client-specific delivery<br/>native agents · commands · MCP"]:::process
         osRoute["OS-specific dotfile delivery<br/>native paths · wrappers"]:::process
     end
 
-    aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
-    developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    subgraph targets["渲染後的 targets"]
+        direction TB
+        aiTargets["AI client targets<br/>Claude Code · Codex · Copilot"]:::target
+        developerTargets["Dotfile targets<br/>OS-specific native configuration"]:::target
+    end
+
     home --> compose
     profile --> compose
     support -. "supports and documents" .-> compose
-    compose --> sharedRoute --> aiTargets
-    compose --> portableRoute --> aiTargets
-    compose --> clientRoute --> aiTargets
-    compose --> osRoute --> developerTargets
+    compose --> sharedRoute
+    compose --> portableRoute
+    compose --> clientRoute
+    compose --> osRoute
+    sharedRoute --> aiTargets
+    portableRoute --> aiTargets
+    clientRoute --> aiTargets
+    osRoute --> developerTargets
 
     classDef source fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#fef3c7,stroke:#d97706,color:#111827
@@ -86,46 +96,46 @@ flowchart TB
 
 ## Profile 與 AI harness 模式
 
-三個本機 selector 會共同決定渲染出的 client 設定；這些 selector 不會 commit 進儲存庫。
+三個本機 selector 會共同決定渲染出的 client 設定；這些 selector 不會 commit 進儲存庫。下面的
+decision tree 特別標出它們的依賴關係：`ai_continuity` 只會改變 managed 分支；native 模式不論
+儲存的是 `on` 或 `off`，continuity 都必須明確啟動。
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     baseline["共用基線"]:::base
-    context["ai_context<br/>personal | company"]:::choice
-    harness["AI harness<br/>managed | native"]:::choice
-    continuity["ai_continuity<br/>on | off"]:::choice
-    compose["組合渲染後的設定"]:::process
-    effective{"實際結果"}:::check
+    context["ai_context<br/>personal | company<br/>artifact 語言 context"]:::choice
+    profile["將 context 套用到共用基線"]:::process
+    harness{"ai_harness<br/>managed | native"}:::decision
+    continuity{"ai_continuity<br/>on | off<br/>managed 模式"}:::decision
     managedOn["managed + on<br/>自動 continuity 指引與生命週期回報"]:::result
     managedOff["managed + off<br/>不自動執行 continuity；保留 managed 通知與啟動檢查"]:::result
     native["native + on/off<br/>continuity skill 仍需明確啟動"]:::result
 
-    baseline --> compose
-    context --> compose
-    harness --> compose
-    continuity --> compose
-    compose --> effective
-    effective -->|"managed + on"| managedOn
-    effective -->|"managed + off"| managedOff
-    effective -->|"native + on/off"| native
+    baseline --> profile
+    context --> profile
+    profile --> harness
+    harness -->|"managed"| continuity
+    continuity -->|"on"| managedOn
+    continuity -->|"off"| managedOff
+    harness -->|"native"| native
 
     classDef base fill:#dbeafe,stroke:#2563eb,color:#111827
     classDef choice fill:#f3e8ff,stroke:#9333ea,color:#111827
     classDef process fill:#f3e8ff,stroke:#9333ea,color:#111827
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#111827
     classDef check fill:#f3f4f6,stroke:#4b5563,color:#111827
     classDef result fill:#dcfce7,stroke:#16a34a,color:#111827
     class baseline base
-    class context,harness,continuity choice
-    class compose process
-    class effective check
+    class context choice
+    class profile process
+    class harness,continuity decision
     class managedOn,managedOff,native result
     style baseline color:#111827
     style context color:#111827
+    style profile color:#111827
     style harness color:#111827
     style continuity color:#111827
-    style compose color:#111827
-    style effective color:#111827
     style managedOn color:#111827
     style managedOff color:#111827
     style native color:#111827

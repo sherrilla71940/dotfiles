@@ -145,6 +145,32 @@ try {
         Assert-True (Test-Path -LiteralPath (Join-Path $target ".git")) "The worktree was not created."
     }
 
+    Invoke-Case "identify concurrent adds by their requested paths" {
+        $repo = New-FixtureRepository "concurrent-adds"
+        $targetA = Join-Path $testRoot "concurrent-add-a"
+        $targetB = Join-Path $testRoot "concurrent-add-b"
+        $outputA = Join-Path $testRoot "concurrent-add-a.out"
+        $outputB = Join-Path $testRoot "concurrent-add-b.out"
+        $powershell = (Get-Command powershell.exe).Source
+        $argumentsA = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $toolPath, "add", "--skip-copy", "--", "--detach", $targetA, "HEAD")
+        $argumentsB = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $toolPath, "add", "--skip-copy", "--", "--detach", $targetB, "HEAD")
+        $processA = Start-Process -FilePath $powershell -ArgumentList $argumentsA -WorkingDirectory $repo -RedirectStandardOutput $outputA -RedirectStandardError ($outputA + ".err") -PassThru
+        $processB = Start-Process -FilePath $powershell -ArgumentList $argumentsB -WorkingDirectory $repo -RedirectStandardOutput $outputB -RedirectStandardError ($outputB + ".err") -PassThru
+        foreach ($process in @($processA, $processB)) {
+            if (-not $process.WaitForExit(30000)) {
+                $process.Kill()
+                throw "A concurrent provisioning process did not finish within 30 seconds."
+            }
+            $process.Refresh()
+        }
+        $outputTextA = [IO.File]::ReadAllText($outputA) + [IO.File]::ReadAllText($outputA + ".err")
+        $outputTextB = [IO.File]::ReadAllText($outputB) + [IO.File]::ReadAllText($outputB + ".err")
+        Assert-True $outputTextA.Contains("Worktree: ") "Concurrent provisioning process A did not report its requested worktree. Output: $outputTextA"
+        Assert-True $outputTextB.Contains("Worktree: ") "Concurrent provisioning process B did not report its requested worktree. Output: $outputTextB"
+        Assert-True (Test-Path -LiteralPath (Join-Path $targetA ".git")) "Concurrent worktree A was not created."
+        Assert-True (Test-Path -LiteralPath (Join-Path $targetB ".git")) "Concurrent worktree B was not created."
+    }
+
     Invoke-Case "resolve target-base manifest before creation" {
         $repo = New-FixtureRepository "target-base-manifest"
         $target = Join-Path $testRoot "target-base-manifest-target"

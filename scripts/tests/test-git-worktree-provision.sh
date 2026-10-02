@@ -131,6 +131,62 @@ case_no_manifest() {
     [[ -f "$target/.git" ]]
 }
 
+case_concurrent_adds() {
+    new_repository concurrent-adds || return 1
+    local repository=$fixture_repository
+    local shim_directory="$test_root/concurrent-adds-bin"
+    local barrier="$test_root/concurrent-adds-barrier"
+    local shim="$shim_directory/git"
+    local target_a="$test_root/concurrent-add-a" target_b="$test_root/concurrent-add-b"
+    local output_a="$test_root/concurrent-add-a.out" output_b="$test_root/concurrent-add-b.out"
+    local real_git pid_a pid_b status_a status_b
+    real_git=$(command -v git) || return 1
+    mkdir -p "$shim_directory" "$barrier"
+    write_fixture "$shim" "#!/usr/bin/env bash
+set -u
+real_git=$(printf '%q' "$real_git")
+barrier=$(printf '%q' "$barrier")
+\"\$real_git\" \"\$@\"
+status=\$?
+[[ \$status -ne 0 ]] && exit \$status
+is_add=false
+for argument in \"\$@\"; do
+    [[ \"\$argument\" == add ]] && is_add=true
+done
+if [[ \"\$is_add\" == true ]]; then
+    touch \"\$barrier/\$\$.\$RANDOM.ready\"
+    deadline=\$((\$(date +%s) + 15))
+    while [[ \$(find \"\$barrier\" -type f -name '*.ready' | wc -l) -lt 2 ]]; do
+        [[ \$(date +%s) -ge \$deadline ]] && exit 98
+        sleep 0.05
+    done
+fi
+exit \$status
+"
+    chmod +x "$shim" || return 1
+
+    (
+        cd "$repository" || exit 1
+        PATH="$shim_directory:$PATH" bash "$tool_path" add --skip-copy -- --detach "$target_a" HEAD >"$output_a" 2>&1
+    ) &
+    pid_a=$!
+    (
+        cd "$repository" || exit 1
+        PATH="$shim_directory:$PATH" bash "$tool_path" add --skip-copy -- --detach "$target_b" HEAD >"$output_b" 2>&1
+    ) &
+    pid_b=$!
+    wait "$pid_a"
+    status_a=$?
+    wait "$pid_b"
+    status_b=$?
+    if [[ $status_a -ne 0 || $status_b -ne 0 ]]; then
+        printf 'Concurrent add A (exit %s):\n%s\n' "$status_a" "$(<"$output_a")" >&2
+        printf 'Concurrent add B (exit %s):\n%s\n' "$status_b" "$(<"$output_b")" >&2
+        return 1
+    fi
+    [[ -f "$target_a/.git" && -f "$target_b/.git" ]] || return 1
+}
+
 case_target_base_manifest() {
     new_repository target-base-manifest || return 1
     local repository=$fixture_repository target="$test_root/target-base-manifest-target"
@@ -691,6 +747,7 @@ case_ecosystem_evidence() {
 }
 
 run_case 'create without manifest' case_no_manifest
+run_case 'identify concurrent adds by their requested paths' case_concurrent_adds
 run_case 'resolve target-base manifest before creation' case_target_base_manifest
 run_case 'copy from target-base manifest when source lacks it' case_copy_target_manifest
 run_case 'report differing source and target manifests as a union' case_union_manifests

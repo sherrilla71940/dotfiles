@@ -201,19 +201,40 @@ function Get-WorktreePaths {
     return $paths.ToArray()
 }
 
-function Get-NewWorktreePath {
+function Get-RequestedWorktreePath {
+    param([string[]] $Arguments)
+
+    $skipValue = $false
+    foreach ($argument in $Arguments) {
+        if ($skipValue) {
+            $skipValue = $false
+            continue
+        }
+        if ($argument -in @("-b", "-B", "--reason")) {
+            $skipValue = $true
+            continue
+        }
+        if ($argument.StartsWith("-", [StringComparison]::Ordinal)) { continue }
+        return $argument
+    }
+    throw "Native 'git worktree add' arguments must include a target path."
+}
+
+function Get-WorktreePathForRequest {
     param(
-        [string[]] $Before,
-        [string[]] $After
+        [string] $RepositoryRoot,
+        [string] $RequestedPath
     )
 
-    $known = New-Object System.Collections.Generic.HashSet[string] ([StringComparer]::OrdinalIgnoreCase)
-    foreach ($path in $Before) { [void]$known.Add([IO.Path]::GetFullPath($path)) }
-    $added = @($After | Where-Object { -not $known.Contains([IO.Path]::GetFullPath($_)) })
-    if ($added.Count -ne 1) {
-        throw "Git created the worktree, but the new path could not be identified safely (found $($added.Count) new entries)."
+    $requestedRoot = if ([IO.Path]::IsPathRooted($RequestedPath)) {
+        [IO.Path]::GetFullPath($RequestedPath)
+    } else {
+        [IO.Path]::GetFullPath((Join-Path (Get-Location).Path $RequestedPath))
     }
-    return $added[0]
+    foreach ($path in (Get-WorktreePaths $RepositoryRoot)) {
+        if (Test-SamePath $path $requestedRoot) { return $path }
+    }
+    throw "Git created the worktree, but the requested path was not present in the updated worktree list."
 }
 
 function Get-ReparsePoint {
@@ -1879,14 +1900,13 @@ function Invoke-AddCommand {
         return 0
     }
 
-    $before = Get-WorktreePaths $sourceRoot
+    $requestedPath = Get-RequestedWorktreePath $gitArguments
     $gitResult = Invoke-GitCapture $sourceRoot (@("worktree", "add") + $gitArguments)
     if ($gitResult.Stdout) { [Console]::Out.Write($gitResult.Stdout) }
     if ($gitResult.Stderr) { [Console]::Error.Write($gitResult.Stderr) }
     if ($gitResult.ExitCode -ne 0) { return $gitResult.ExitCode }
 
-    $after = Get-WorktreePaths $sourceRoot
-    $targetRoot = Get-NewWorktreePath $before $after
+    $targetRoot = Get-WorktreePathForRequest $sourceRoot $requestedPath
     Write-Host "Worktree: $(Format-DisplayText $targetRoot)"
 
     if ($skipCopy) {

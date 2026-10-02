@@ -248,6 +248,25 @@ array_contains() {
     return 1
 }
 
+requested_worktree_path() {
+    local argument skip_value=false
+    for argument in "$@"; do
+        if [[ "$skip_value" == true ]]; then
+            skip_value=false
+            continue
+        fi
+        case "$argument" in
+            -b|-B|--reason) skip_value=true ;;
+            --*) ;;
+            *)
+                printf '%s\n' "$argument"
+                return 0
+                ;;
+        esac
+    done
+    return 1
+}
+
 find_symlink() {
     local root=${1%/}
     local path=$2
@@ -1805,8 +1824,8 @@ readiness_command() {
 
 add_command() {
     local dry_run=false skip_copy=false allow_unprovisioned=false open_code=false separator_found=false
-    local argument source_root target_root result base_ref base_commit positional_count=0 skip_value=false
-    local before_paths=() after_paths=() wrapper_args=() git_args=() added_paths=()
+    local argument source_root target_root requested_path requested_root result base_ref base_commit positional_count=0 skip_value=false
+    local wrapper_args=() git_args=()
 
     for argument in "$@"; do
         [[ "$argument" == --help || "$argument" == -h ]] && {
@@ -1829,6 +1848,10 @@ add_command() {
         die "Native 'git worktree add' arguments are required after --."
         return 2
     fi
+    requested_path=$(requested_worktree_path "${git_args[@]}") || {
+        die "Native 'git worktree add' arguments must include a target path."
+        return 2
+    }
     for argument in "${wrapper_args[@]}"; do
         case "$argument" in
             --dry-run) dry_run=true ;;
@@ -1885,11 +1908,6 @@ add_command() {
         return 0
     fi
 
-    load_worktree_paths "$source_root" || {
-        die "Could not list Git worktrees."
-        return 2
-    }
-    before_paths=("${worktree_paths[@]}")
     git -C "$source_root" worktree add "${git_args[@]}"
     result=$?
     [[ $result -ne 0 ]] && return "$result"
@@ -1898,15 +1916,27 @@ add_command() {
         die "Git created the worktree, but the updated worktree list could not be read."
         return 2
     }
-    after_paths=("${worktree_paths[@]}")
-    for target_root in "${after_paths[@]}"; do
-        array_contains "$target_root" "${before_paths[@]}" || added_paths+=("$target_root")
+    if [[ "$requested_path" == /* || "$requested_path" =~ ^[A-Za-z]:[\\/] ]]; then
+        requested_root=$(canonical_directory "$requested_path") || {
+            die "Git created the worktree, but the requested path could not be resolved."
+            return 2
+        }
+    else
+        requested_root=$(canonical_directory "$PWD/$requested_path") || {
+            die "Git created the worktree, but the requested path could not be resolved."
+            return 2
+        }
+    fi
+    target_root=""
+    for target_root in "${worktree_paths[@]}"; do
+        if same_path "$target_root" "$requested_root"; then
+            break
+        fi
     done
-    if [[ ${#added_paths[@]} -ne 1 ]]; then
-        die "Git created the worktree, but the new path could not be identified safely (found ${#added_paths[@]} new entries)."
+    if [[ -z "$target_root" ]] || ! same_path "$target_root" "$requested_root"; then
+        die "Git created the worktree, but the requested path was not present in the updated worktree list."
         return 2
     fi
-    target_root=${added_paths[0]}
     printf 'Worktree: %s\n' "$(display_text "$target_root")"
 
     if [[ "$skip_copy" == true ]]; then

@@ -1,0 +1,10 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Merge the explicitly owned VS Code keys over the existing JSONC settings. Repository
+       values win collisions; keys absent from the durable source remain app-owned. Parsing and
+       serialization normalize JSONC comments and formatting in the live file. */ -}}
+{{- $live := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJsonc .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "vscode/settings-durable.json" . | fromJsonc -}}
+{{ merge $durable $live | toPrettyJson }}

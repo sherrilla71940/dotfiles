@@ -1,0 +1,9 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Copilot CLI edits this JSONC file through /settings. Repository values win collisions;
+       app-added settings survive. */ -}}
+{{- $live := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJsonc .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "copilot/settings-durable.json" . | fromJsonc -}}
+{{ merge $durable $live | toPrettyJson }}

@@ -62,7 +62,7 @@ repository-policy registry.
 
 ## Related files and verification
 
-- [`home/dot_gitconfig.tmpl`](../../home/dot_gitconfig.tmpl)
+- [`home/.chezmoitemplates/git/global-config.ini`](../../home/.chezmoitemplates/git/global-config.ini)
 - [`home/.chezmoitemplates/git-hooks/company-flow-pre-push.sh`](../../home/.chezmoitemplates/git-hooks/company-flow-pre-push.sh)
 - [`home/dot_config/git/hooks/executable_pre-push.tmpl`](../../home/dot_config/git/hooks/executable_pre-push.tmpl)
 - [`home/.chezmoitemplates/skills/run-task-end-to-end/invocation.md`](../../home/.chezmoitemplates/skills/run-task-end-to-end/invocation.md)

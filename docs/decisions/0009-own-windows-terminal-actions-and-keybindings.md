@@ -1,6 +1,6 @@
 # ADR-0009: Own the Windows Terminal actions and keybindings arrays
 
-- Status: Accepted
+- Status: Superseded by ADR-0050
 - Date: 2026-08-27
 
 ## Context

@@ -1,3 +1,7 @@
+{{- /* Explicitly repository-owned VS Code settings. This JSONC file is parsed and merged over
+       each live profile's settings.json by its modify_settings.json source. Keys absent here are
+       app-owned and survive. Each array named here is owned as a complete value. Removing a key
+       releases it; it does not delete the existing live value. */ -}}
 {{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {
   // NOTE: All settings/extensions referencing Catppuccin schema or custom UI colors have been removed to avoid untrusted schema errors.

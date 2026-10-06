@@ -228,6 +228,7 @@ check_profile() {
   local invocation="$destination/.agents/skills/run-task-end-to-end/references/invocation.md"
   local publishing="$destination/.agents/skills/run-task-end-to-end/references/publish.md"
   local gitconfig="$destination/.gitconfig"
+  local gitconfig_fragment="$destination/.config/git/dotfiles"
   local company_flow_hook="$destination/.config/git/hooks/pre-push"
   local legacy_workflow="$destination/.agents/skills/worktree-task-workflow/SKILL.md"
   local legacy_claude_workflow="$destination/.claude/skills/worktree-task-workflow/SKILL.md"
@@ -246,13 +247,15 @@ check_profile() {
   assert_file "$invocation"
   assert_file "$publishing"
   assert_file "$gitconfig"
+  assert_file "$gitconfig_fragment"
   assert_file "$company_flow_hook"
   assert_contains "$company_flow_hook" 'company-flow policy'
-  assert_contains "$gitconfig" 'hooksPath = '
+  assert_contains "$gitconfig" 'path = ~/.config/git/dotfiles'
+  assert_contains "$gitconfig_fragment" 'hooksPath = '
   if [[ "$context" == company ]]; then
-    assert_contains "$gitconfig" 'policy = company-flow'
+    assert_contains "$gitconfig_fragment" 'policy = company-flow'
   else
-    assert_contains "$gitconfig" 'policy = personal'
+    assert_contains "$gitconfig_fragment" 'policy = personal'
   fi
   [[ "$(head -n 1 "$codex")" != '---' ]] ||
     fail "Codex adapter unexpectedly rendered frontmatter ($context/$continuity)"

@@ -1,0 +1,5 @@
+{{- /* Repository-owned Copilot CLI settings. Only settings named here are managed; other
+       values written through /settings remain app-owned. */ -}}
+{
+  "enabledPlugins": {}
+}

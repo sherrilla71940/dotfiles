@@ -68,7 +68,7 @@ can identify required tracked overrides without inspecting their values.
 
 - `home/dot_local/share/git-worktree-provision.ps1`
 - `home/dot_local/share/git-worktree-provision.sh`
-- `home/dot_gitconfig.tmpl`
+- `home/.chezmoitemplates/git/global-config.ini`
 - `docs/worktree-provisioning.md`
 - `home/.chezmoitemplates/skills/task-workflow/lifecycle.md`
 - `home/dot_agents/skills/task-workflow/SKILL.md`

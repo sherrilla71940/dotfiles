@@ -76,7 +76,7 @@ are preferred over a broad `*.local.*` rule to keep that risk visible and narrow
 ## Related files and verification
 
 - [`home/dot_config/git/ignore`](../../home/dot_config/git/ignore)
-- [`home/dot_gitconfig.tmpl`](../../home/dot_gitconfig.tmpl)
+- [`home/.chezmoitemplates/git/global-config.ini`](../../home/.chezmoitemplates/git/global-config.ini)
 - [`docs/worktree-provisioning.md`](../worktree-provisioning.md)
 - [`docs/customization-support.md`](../customization-support.md)
 - Apply with `chezmoi diff` and `chezmoi apply`, then verify with `git check-ignore -v`.

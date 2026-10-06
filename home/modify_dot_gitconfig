@@ -1,0 +1,62 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Preserve Git-written global settings. The rendered shared fragment is the single source
+       of truth for repository-owned keys; only those keys are removed from this live file, then
+       a managed include block is kept at the end so repository values take precedence. */ -}}
+{{- $managedKeys := dict -}}
+{{- $managedSection := "" -}}
+{{- range $line := splitList "\n" (includeTemplate "git/global-config.ini" .) -}}
+{{-   if regexMatch `^\[[^]]+\]$` (trim $line) -}}
+{{-     $sectionText := trimSuffix "]" (trimPrefix "[" (trim $line)) -}}
+{{-     $sectionName := regexFind `^[A-Za-z][A-Za-z0-9.-]*` $sectionText -}}
+{{-     if and (ne $sectionName "") (eq (lower (trim $sectionText)) (lower $sectionName)) -}}
+{{-       $managedSection = lower $sectionName -}}
+{{-     else -}}
+{{-       $managedSection = "" -}}
+{{-     end -}}
+{{-   else if and (ne $managedSection "") (regexMatch `(?i)^\s*[A-Za-z][A-Za-z0-9-]*\s*=` $line) -}}
+{{-     $keyWithEquals := regexFind `(?i)^[ \t]*[A-Za-z][A-Za-z0-9-]*[ \t]*=` $line -}}
+{{-     $key := lower (trim (trimSuffix "=" $keyWithEquals)) -}}
+{{-     $_ := set $managedKeys (printf "%s.%s" $managedSection $key) true -}}
+{{-   end -}}
+{{- end -}}
+{{- $beginMarker := "# BEGIN chezmoi-managed Git config include" -}}
+{{- $endMarker := "# END chezmoi-managed Git config include" -}}
+{{- $insideManagedInclude := false -}}
+{{- $section := "" -}}
+{{- $keptLines := list -}}
+{{- range $line := splitList "\n" .chezmoi.stdin -}}
+{{-   if eq (trim $line) $beginMarker -}}
+{{-     $insideManagedInclude = true -}}
+{{-   else if eq (trim $line) $endMarker -}}
+{{-     $insideManagedInclude = false -}}
+{{-     $section = "" -}}
+{{-   else if not $insideManagedInclude -}}
+{{-     $header := regexFind `^\s*\[[^]]+\]` $line -}}
+{{-     if ne $header "" -}}
+{{-       $sectionText := trimSuffix "]" (trimPrefix "[" (trim $header)) -}}
+{{-       $sectionName := regexFind `^[A-Za-z][A-Za-z0-9.-]*` $sectionText -}}
+{{-       if and (ne $sectionName "") (eq (lower (trim $sectionText)) (lower $sectionName)) -}}
+{{-         $section = lower $sectionName -}}
+{{-       else -}}
+{{-         $section = "" -}}
+{{-       end -}}
+{{-     else if and (ne $section "") (regexMatch `(?i)^\s*[A-Za-z][A-Za-z0-9-]*\s*=` $line) -}}
+{{-       $keyWithEquals := regexFind `(?i)^[ \t]*[A-Za-z][A-Za-z0-9-]*[ \t]*=` $line -}}
+{{-       $key := lower (trim (trimSuffix "=" $keyWithEquals)) -}}
+{{-       if not (hasKey $managedKeys (printf "%s.%s" $section $key)) -}}
+{{-         $keptLines = append $keptLines $line -}}
+{{-       end -}}
+{{-     else -}}
+{{-       $keptLines = append $keptLines $line -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- $content := join "\n" $keptLines -}}
+{{- $includeBlock := printf "%s\n[include]\n\tpath = ~/.config/git/dotfiles\n%s" $beginMarker $endMarker -}}
+{{- if hasSuffix "\n" $content -}}
+{{ printf "%s%s\n" $content $includeBlock }}
+{{- else if eq $content "" -}}
+{{ printf "%s\n" $includeBlock }}
+{{- else -}}
+{{ printf "%s\n%s\n" $content $includeBlock }}
+{{- end -}}

@@ -78,7 +78,7 @@ declaration for required local configuration that can replace explicit `--requir
 
 - `home/dot_local/share/git-worktree-provision.ps1`
 - `home/dot_local/share/git-worktree-provision.sh`
-- `home/dot_gitconfig.tmpl`
+- `home/.chezmoitemplates/git/global-config.ini`
 - `home/.chezmoitemplates/skills/task-workflow/lifecycle.md`
 - `home/dot_agents/skills/task-workflow/SKILL.md`
 - `home/dot_claude/skills/task-workflow/SKILL.md`

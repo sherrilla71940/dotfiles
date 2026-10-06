@@ -32,7 +32,7 @@ agent session.
 | [0006](./0006-keep-the-working-tree-at-dotfiles.md) | Accepted | Keep the Git working tree at ~/dotfiles and link the default source directory |
 | [0007](./0007-host-gate-codex-targeted-skills.md) | Accepted | Isolate a Codex-targeted skill by host gates rather than by directory |
 | [0008](./0008-manage-windows-terminal-settings-by-key.md) | Accepted | Manage durable Windows Terminal settings while preserving generated profiles |
-| [0009](./0009-own-windows-terminal-actions-and-keybindings.md) | Accepted | Own the Windows Terminal actions and keybindings arrays for a Shift+Enter newline |
+| [0009](./0009-own-windows-terminal-actions-and-keybindings.md) | Superseded by 0050 | Add the Shift+Enter newline action and keybinding |
 | [0010](./0010-normalize-the-working-tree-to-lf.md) | Accepted | Normalize the whole working tree to LF so chezmoi diff shows only real changes |
 | [0011](./0011-fix-the-continuity-state-path.md) | Accepted | Fix the continuity state path at `.task-continuity/` and keep both privacy layers |
 | [0012](./0012-support-codex-worktree-entry-points.md) | Accepted | Support native Codex Handoff and safe CLI/IDE worktree provisioning |
@@ -71,6 +71,10 @@ agent session.
 | [0045](./0045-coordinated-naming-cleanup.md) | Accepted | Complete the task-continuity and material-directory naming migration while retaining only useful workflow aliases |
 | [0046](./0046-retire-tracked-workflow-archives.md) | Accepted | Retire tracked workflow archives and use Git history for source recovery |
 | [0047](./0047-enforce-company-flow-with-explicit-bypass.md) | Accepted | Enforce the company-flow branch policy by default with an explicit, auditable workflow bypass |
+| [0048](./0048-merge-explicit-vscode-settings-by-key.md) | Accepted | Merge explicitly managed VS Code settings over app-owned user settings |
+| [0049](./0049-preserve-app-written-settings-across-clients.md) | Accepted | Preserve app-written VS Code and Copilot CLI settings outside explicit repository ownership |
+| [0050](./0050-preserve-app-written-windows-terminal-actions-and-keybindings.md) | Accepted | Preserve unlisted Windows Terminal actions and keybindings |
+| [0051](./0051-preserve-app-written-git-global-settings.md) | Accepted | Preserve Git global settings outside explicit repository ownership |
 
 ## Template
 

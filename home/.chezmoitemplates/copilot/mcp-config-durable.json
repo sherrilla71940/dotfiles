@@ -1,3 +1,4 @@
+{{- /* Repository-owned Copilot CLI MCP server names. Unlisted app-added servers survive. */ -}}
 {
   "mcpServers": {
     "chrome-devtools": {

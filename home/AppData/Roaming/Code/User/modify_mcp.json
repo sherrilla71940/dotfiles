@@ -1,0 +1,30 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Merge repository-defined server names over the live VS Code MCP config. Preserve
+       app-added servers and inputs; when an input id is defined here, the repository owns it. */ -}}
+{{- $live := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJsonc .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "vscode/mcp.json" . | fromJsonc -}}
+{{- $result := merge $durable $live -}}
+{{- if hasKey $durable "inputs" -}}
+{{-   $ownedInputIDs := dict -}}
+{{-   range $input := index $durable "inputs" -}}
+{{-     if hasKey $input "id" -}}
+{{-       $_ := set $ownedInputIDs (toString (index $input "id")) true -}}
+{{-     end -}}
+{{-   end -}}
+{{-   $inputs := list -}}
+{{-   range $input := index $durable "inputs" -}}
+{{-     $inputs = append $inputs $input -}}
+{{-   end -}}
+{{-   if hasKey $live "inputs" -}}
+{{-     range $input := index $live "inputs" -}}
+{{-       if or (not (hasKey $input "id")) (not (hasKey $ownedInputIDs (toString (index $input "id")))) -}}
+{{-         $inputs = append $inputs $input -}}
+{{-       end -}}
+{{-     end -}}
+{{-   end -}}
+{{-   $_ := set $result "inputs" $inputs -}}
+{{- end -}}
+{{ $result | toPrettyJson }}

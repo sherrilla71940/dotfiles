@@ -6,11 +6,10 @@
        Terminal and survives untouched - profiles, their generated GUIDs, schemes
        and themes among them.
 
-       Naming an array claims all of it. merge replaces arrays wholesale rather
-       than merging them, so actions and keybindings below must list every entry
-       that should exist, and a binding added through the settings UI is reverted
-       on the next apply. profiles.list stays unnamed for that reason: it holds
-       generated per-machine GUIDs this repository cannot supply. See ADR-0009. */ -}}
+       actions entries are owned by id and keybindings by keys; entries not named
+       here survive from the live file. A repository-owned id or key chord wins a
+       collision. profiles.list stays unnamed because it holds generated
+       per-machine GUIDs this repository cannot supply. See ADR-0050. */ -}}
 
 {
   "profiles": {
@@ -47,8 +46,8 @@
     }
   ],
 
-  {{/* Claiming this array means repeating the three bindings previously set
-       through the settings UI, which would otherwise be replaced. */}}
+  {{/* These durable shortcuts belong to the repository. Other key chords added
+       through the settings UI are retained by the modify template. */}}
   "keybindings": [
     { "id": "User.SendNewline", "keys": "shift+enter" },
     { "id": "Terminal.CopyToClipboard", "keys": "ctrl+c" },

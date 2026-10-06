@@ -1,0 +1,23 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Keep the explicitly managed keybindings once, then retain app-authored rules after
+       them. VS Code evaluates keybinding rules from bottom to top, so the app can override a
+       repository binding by editing that rule in the UI. */ -}}
+{{- $live := list -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJsonc .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "vscode/keybindings.json" . | fromJsonc -}}
+{{- $owned := dict -}}
+{{- range $binding := $durable -}}
+{{-   $_ := set $owned (toJson $binding) true -}}
+{{- end -}}
+{{- $result := list -}}
+{{- range $binding := $durable -}}
+{{-   $result = append $result $binding -}}
+{{- end -}}
+{{- range $binding := $live -}}
+{{-   if not (hasKey $owned (toJson $binding)) -}}
+{{-     $result = append $result $binding -}}
+{{-   end -}}
+{{- end -}}
+{{ $result | toPrettyJson }}

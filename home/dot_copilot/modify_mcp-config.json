@@ -1,0 +1,9 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Copilot CLI writes MCP server definitions here. Repository server names win collisions;
+       app-added servers and other live settings survive. */ -}}
+{{- $live := dict -}}
+{{- if ne (.chezmoi.stdin | trim) "" -}}
+{{-   $live = fromJsonc .chezmoi.stdin -}}
+{{- end -}}
+{{- $durable := includeTemplate "copilot/mcp-config-durable.json" . | fromJsonc -}}
+{{ merge $durable $live | toPrettyJson }}

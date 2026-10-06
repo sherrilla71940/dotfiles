@@ -170,17 +170,44 @@ according to the file's ownership policy:
 
 | Live file | Ownership policy | Preserve a UI or CLI change |
 | --- | --- | --- |
-| VS Code `settings.json` | Managed template | Edit `home/.chezmoitemplates/vscode/settings.json` |
+| Git `~/.gitconfig` | Partially managed modify template | Use `git config --global` for app-owned keys; repository-owned keys live in `home/.chezmoitemplates/git/global-config.ini` and other entries survive apply |
+| VS Code `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/vscode/settings-durable.json` for repository-owned keys; absent keys remain app-owned |
+| VS Code `keybindings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/vscode/keybindings.json`; app-authored rules follow repository rules and can override them |
+| VS Code user `mcp.json` | Partially managed modify template | Edit `home/.chezmoitemplates/vscode/mcp.json`; unlisted server names and input IDs remain app-owned |
 | Claude `~/.claude/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/claude/settings-durable.json` for durable keys; use `/config`, `/model` or `/effort` for app-owned choices |
-| Copilot `~/.copilot/settings.json` | Plain managed file | Run `chezmoi re-add ~/.copilot/settings.json`, then review the source diff |
+| Copilot `~/.copilot/settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/copilot/settings-durable.json`; settings added through `/settings` remain app-owned unless named there |
+| Copilot `~/.copilot/mcp-config.json` | Partially managed modify template | Edit `home/.chezmoitemplates/copilot/mcp-config-durable.json`; unlisted servers added through `/mcp add` remain app-owned |
 | Codex `~/.codex/config.toml` | Create-once mixed state | Merge only missing durable declarations; never replace the complete live file |
-| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys and for any keybinding; use its settings UI for everything else |
+| Windows Terminal `settings.json` | Partially managed modify template | Edit `home/.chezmoitemplates/windows-terminal/settings-durable.json` for durable keys, actions, and key chords; unlisted actions and key chords survive apply |
 
-Windows Terminal is the one entry where the repository owns arrays rather than single
-keys. It supplies `actions` and `keybindings` in full, so a keybinding added through the
-Actions page of the settings UI is reverted on the next apply; add it to the durable file
-instead. `profiles.list` stays with the application, because its GUIDs are generated per
-machine. See [ADR-0009](./decisions/0009-own-windows-terminal-actions-and-keybindings.md).
+Git reads the managed `~/.config/git/dotfiles` fragment through a marked include block at the end
+of `~/.gitconfig`. The shared fragment is the single source for repository-owned keys; the
+modify template preserves other settings written by `git config --global`. Git processes the
+include at its location, so repository values win when a key is also present earlier in the
+global file. The modify template removes any main-file entry for a key currently named in the
+shared fragment before keeping the include block.
+
+Windows Terminal action entries merge by `id`, and keybinding entries merge by their `keys`
+value. The repository wins when an action ID or key chord is listed in the durable source;
+entries with other IDs or key chords remain app-owned. Remove a durable entry from the source to
+release its ownership without deleting the current live value. `profiles.list` stays with the
+application, because its GUIDs are generated per machine. See
+[ADR-0050](./decisions/0050-preserve-app-written-windows-terminal-actions-and-keybindings.md).
+
+VS Code settings and MCP configuration deep-merge repository values over live objects. The
+repository wins when an object key is named in both places. VS Code MCP inputs merge by `id`;
+unlisted server names and input IDs remain app-owned. The merge parses JSONC and serializes
+JSON, so comments and formatting in live files are normalized on apply.
+
+VS Code keybindings use a different rule because order determines which shortcut runs. The
+modify template keeps repository rules once at the beginning and app-authored rules after them.
+VS Code evaluates rules from bottom to top, so an app-authored rule can override a repository
+rule. See [ADR-0048](./decisions/0048-merge-explicit-vscode-settings-by-key.md) and
+[ADR-0049](./decisions/0049-preserve-app-written-settings-across-clients.md).
+
+Copilot CLI settings and MCP configuration use the same explicit-key principle. Repository
+settings and server names win collisions; unlisted values written by the app survive. Copilot's
+JSONC comments and formatting are normalized on apply. See [ADR-0049](./decisions/0049-preserve-app-written-settings-across-clients.md).
 
 ### Normalize persistent target drift
 
@@ -192,9 +219,10 @@ Use it when `chezmoi status` repeatedly reports a target that differs from the r
    comparing them so formatting and object-key order do not create noise. Preserve array order in
    the comparison because array order can affect behavior.
 3. If the difference is only formatting or object-key order, apply the reviewed target.
-4. If an array differs, apply it only when the source explicitly owns that complete array. For
-   example, this repository owns the complete Windows Terminal `actions` and `keybindings`
-   arrays, so a reviewed apply can restore their canonical order.
+4. If an array differs, follow the target's ownership policy. Windows Terminal actions merge by
+   ID and keybindings by `keys`; arrays named in VS Code `settings-durable.json` remain complete
+   values. VS Code user keybindings preserve app-authored rules after repository rules; MCP
+   `inputs` merge by ID.
 5. If an application-owned key differs, stop and preserve the application value. Update the
    source only when the user explicitly wants to promote that value into repository ownership.
 

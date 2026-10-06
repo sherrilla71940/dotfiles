@@ -39,8 +39,9 @@ The columns group surfaces only when they read the same personal configuration:
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
 | Marketplace plugins | installed by `scripts/bootstrap/bootstrap-*`; enablement stays local | defaults in create-once `config.toml` | declarative `enabledPlugins` with automatic installation | discovers enabled Copilot plugins when `chat.plugins.enabled` is true |
-| User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | `~/.copilot/mcp-config.json` | `mcp.json` in the VS Code user profile |
-| General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | managed `~/.copilot/settings.json` | managed VS Code user `settings.json` |
+| User MCP servers | manifest plus hand-run installer protects app-owned `~/.claude.json` | defaults in create-once `config.toml` | partially managed `~/.copilot/mcp-config.json` | partially managed user-profile `mcp.json` |
+| General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | partially managed `~/.copilot/settings.json` | partially managed user `settings.json`; only keys in `settings-durable.json` are repository-owned |
+| User keybindings | terminal shortcuts live in Windows Terminal settings | not managed | not managed | partially managed user `keybindings.json`; app-authored rules can override repository rules |
 
 Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
 directories exist only where a client requires the directory before a session starts.
@@ -51,9 +52,10 @@ portable across all supported clients.
 VS Code lists every shared skill twice. Claude Code reads personal skills only from
 `~/.claude/skills`, so this repository links each shared skill there, and VS Code scans both
 that directory and `~/.agents/skills`. Both entries resolve to the same file, so the effect is
-cosmetic. It cannot be configured away: `home/.chezmoitemplates/vscode/settings.json` suppresses
-the same duplication for rules with `chat.instructionsFilesLocations`, and VS Code exposes
-`chat.promptFilesLocations` for prompt files, but there is no equivalent setting for skills.
+cosmetic. It cannot be configured away: `home/.chezmoitemplates/vscode/settings-durable.json`
+suppresses the same duplication for rules with `chat.instructionsFilesLocations`. VS Code
+exposes `chat.promptFilesLocations` for prompt files, but there is no equivalent setting for
+skills.
 
 ## AI profile dimensions
 
@@ -483,9 +485,14 @@ pull request, and keep this server for work that genuinely needs tool calls.
 
 ### GitHub Copilot
 
-Add CLI-compatible servers to `home/dot_copilot/mcp-config.json`. Add VS Code servers to
+Add CLI-compatible servers to
+`home/.chezmoitemplates/copilot/mcp-config-durable.json`. Add VS Code servers to
 `home/.chezmoitemplates/vscode/mcp.json` when the IDE also needs them. The schemas and input
 mechanisms differ, so share a server definition only when both clients support its fields.
+Copilot CLI's `/mcp add` writes to `~/.copilot/mcp-config.json`; app-added server names absent
+from the durable source survive. VS Code's user MCP editor writes to its profile `mcp.json`;
+unlisted server names and input IDs survive. See the [Copilot CLI MCP guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)
+and [VS Code MCP guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers).
 
 ## Add a marketplace plugin
 
@@ -503,21 +510,23 @@ scripts rather than declared, so enabling and disabling them stays a local decis
   `home/dot_codex/create_config.toml.tmpl`; merge only missing declarations into an existing
   app-owned config.
 - Copilot: add the plugin specification to `enabledPlugins` in
-  `home/dot_copilot/settings.json`. Copilot CLI declaratively installs enabled plugins, and
-  VS Code discovers the resulting installation.
+  `home/.chezmoitemplates/copilot/settings-durable.json`. Copilot CLI declaratively installs
+  enabled plugins, and VS Code discovers the resulting installation.
 
-Prefer editing the source declaration before installing. If Copilot CLI has already added a
-plugin to the live `~/.copilot/settings.json`, preserve it before the next apply:
+Copilot CLI saves `/settings` changes to `~/.copilot/settings.json` and `/mcp add` changes to
+`~/.copilot/mcp-config.json`. The modify templates preserve settings and server names absent from
+the durable sources. To share an app-added value across machines, add it to the corresponding
+durable source; repository values win when both sources name the same setting or server.
 
-```bash
-chezmoi diff
-chezmoi re-add ~/.copilot/settings.json
-```
+VS Code's keyboard shortcut editor writes user rules to `keybindings.json`; app-authored rules
+remain after repository rules so users can override them. VS Code's MCP editor can add user
+servers to `mcp.json`; unlisted server names and input IDs survive. These files use separate
+durable sources under `home/.chezmoitemplates/vscode/`.
 
-Review the source diff before committing. This works because Copilot's settings file is a
-plain managed file. Claude has no declaration to preserve, because its plugins are installed
-by the bootstrap scripts instead. For Codex's create-once config, follow the client-specific
-steps above instead.
+Claude has no plugin declaration to preserve because bootstrap scripts install its plugins.
+Codex's create-once config already leaves existing app-owned data intact. Codex's `/hooks` view
+reviews, trusts, or disables hook definitions; it stores trust separately from the source hook
+file.
 
 Never copy plugin caches, installed-plugin directories, authentication tokens, or client
 runtime state into `home/`.

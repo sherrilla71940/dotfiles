@@ -172,9 +172,15 @@ chezmoi re-add ~/.bashrc
 chezmoi git -- diff
 ```
 
-To preserve selected VS Code settings, compare the live `settings.json` with
-`home/.chezmoitemplates/vscode/settings.json` and copy only the settings that should follow
-every machine. Do not copy credentials, caches, machine paths, or application-owned state.
+To manage selected VS Code settings, put only portable settings that should follow every machine
+in `home/.chezmoitemplates/vscode/settings-durable.json`. The platform-specific
+`modify_settings.json` merges those keys over the live `settings.json`; keys absent from the
+source remain app-owned. Arrays are managed as complete values. Do not copy credentials, caches,
+machine paths, or other application-owned state.
+
+The same ownership rule applies to VS Code keybindings and MCP configuration and to Copilot CLI
+settings and MCP configuration. Their durable source paths and merge rules are listed in
+[the app-written configuration guide](./chezmoi-workflow.md#applications-that-write-their-own-configuration).
 
 `chezmoi merge <target>` can perform a three-way merge when a merge tool is configured.
 Manual source editing is safer for this repository's templates because one rendered target

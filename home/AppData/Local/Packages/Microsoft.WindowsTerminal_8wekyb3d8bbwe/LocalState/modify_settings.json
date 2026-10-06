@@ -11,7 +11,8 @@
        merge gives the first argument precedence, so the repository wins on any
        key it names and the live file fills in everything else. It recurses into
        nested objects, which is why the durable file can name profiles.defaults
-       without touching profiles.list beside it.
+       without touching profiles.list beside it. The actions array merges by
+       action id and keybindings merge by keys, so unlisted app entries survive.
 
        fromJson fails on malformed input rather than replacing it, which keeps a
        hand-broken settings.json recoverable instead of silently overwritten. */ -}}
@@ -20,4 +21,47 @@
 {{-   $live = fromJson .chezmoi.stdin -}}
 {{- end -}}
 {{- $durable := includeTemplate "windows-terminal/settings-durable.json" . | fromJson -}}
-{{ merge $durable $live | toPrettyJson }}
+{{- $result := merge $durable $live -}}
+{{- range $arrayName := list "actions" "keybindings" -}}
+{{-   if hasKey $durable $arrayName -}}
+{{-     $durableEntries := index $durable $arrayName -}}
+{{-     $liveEntries := list -}}
+{{-     if hasKey $live $arrayName -}}
+{{-       $liveEntries = index $live $arrayName -}}
+{{-     end -}}
+{{-     $owned := dict -}}
+{{-     $entries := list -}}
+{{-     range $entry := $durableEntries -}}
+{{-       $identity := toJson $entry -}}
+{{-       if eq $arrayName "actions" -}}
+{{-         if hasKey $entry "id" -}}
+{{-           $identity = printf "id:%s" (toString (index $entry "id")) -}}
+{{-         end -}}
+{{-       else -}}
+{{-         if hasKey $entry "keys" -}}
+{{-           $identity = printf "keys:%s" (toJson (index $entry "keys")) -}}
+{{-         end -}}
+{{-       end -}}
+{{-       $_ := set $owned $identity true -}}
+{{-       $entries = append $entries $entry -}}
+{{-     end -}}
+{{-     range $entry := $liveEntries -}}
+{{-       $identity := toJson $entry -}}
+{{-       if eq $arrayName "actions" -}}
+{{-         if hasKey $entry "id" -}}
+{{-           $identity = printf "id:%s" (toString (index $entry "id")) -}}
+{{-         end -}}
+{{-       else -}}
+{{-         if hasKey $entry "keys" -}}
+{{-           $identity = printf "keys:%s" (toJson (index $entry "keys")) -}}
+{{-         end -}}
+{{-       end -}}
+{{-       if not (hasKey $owned $identity) -}}
+{{-         $_ := set $owned $identity true -}}
+{{-         $entries = append $entries $entry -}}
+{{-       end -}}
+{{-     end -}}
+{{-     $_ := set $result $arrayName $entries -}}
+{{-   end -}}
+{{- end -}}
+{{ $result | toPrettyJson }}

@@ -99,43 +99,54 @@ report_continuity_directory_collision() {
 # Read one `- Field: `value`` line out of the Verification block. Match the FIRST code
 # span, not a greedy run to the last one: a Branch line often carries a parenthetical of
 # its own, and reading its last span reported a branch the file never recorded, which
-# made the hook cry drift on every response.
+# made the hook cry drift on every response. Use Bash builtins here; spawning grep and sed
+# for every field in every parked file made the per-response Stop hook exceed its timeout.
 recorded_field() {
-  local state_file="$1" field="$2" line
-  line="$(grep -m1 -E "^- $field:" "$state_file" 2>/dev/null || true)"
-  printf '%s' "$line" | sed -n 's/^[^`]*`\([^`]*\)`.*/\1/p'
+  local state_file="$1" field="$2" line code_span='`([^`]*)`'
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == "- $field:"* ]] || continue
+    if [[ "$line" =~ $code_span ]]; then
+      printf '%s' "${BASH_REMATCH[1]}"
+    fi
+    return 0
+  done < "$state_file"
+
+  return 0
 }
 
 # Apply the same structural finished-state test to active and parked state. The skill still
 # reconciles the result against Git and decides whether anything belongs elsewhere.
 count_open_items() {
   local state_file="$1"
+  local line section tracking=0 count=0 lower_line
+  local list_item='^[[:space:]]*([-*]|[0-9]+\.)[[:space:]]+[^[:space:]]'
 
-  awk '
-    BEGIN {
-      tracked["In progress"] = 1
-      tracked["Next actions"] = 1
-      tracked["Blockers"] = 1
-      tracked["TODO / deferred"] = 1
-    }
-    /^## / {
-      section = substr($0, 4)
-      sub(/[[:space:]]+$/, "", section)
-      tracking = (section in tracked)
-      next
-    }
-    tracking && /^[[:space:]]*([-*]|[0-9]+[.])[[:space:]]+[^[:space:]]/ {
-      lower = tolower($0)
-      # Cleanup is a completion-gate decision, not unfinished task work. Ignore the common
-      # placeholder wording here so a parked file cannot suppress its own closure notice.
-      if (index(lower, "offer cleanup") || index(lower, "confirm deletion") ||
-          index(lower, "delete it only after") || index(lower, "ask before deleting state")) {
-        next
-      }
-      count++
-    }
-    END { print count + 0 }
-  ' "$state_file" 2>/dev/null || printf '1'
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == '## '* ]]; then
+      section="${line:3}"
+      while [[ "$section" == *[[:space:]] ]]; do
+        section="${section%?}"
+      done
+      case "$section" in
+        'In progress'|'Next actions'|'Blockers'|'TODO / deferred') tracking=1 ;;
+        *) tracking=0 ;;
+      esac
+      continue
+    fi
+
+    [[ "$tracking" == 1 && "$line" =~ $list_item ]] || continue
+    lower_line="${line,,}"
+    # Cleanup is a completion-gate decision, not unfinished task work. Ignore the common
+    # placeholder wording here so a parked file cannot suppress its own closure notice.
+    if [[ "$lower_line" == *'offer cleanup'* || "$lower_line" == *'confirm deletion'* ||
+          "$lower_line" == *'delete it only after'* || "$lower_line" == *'ask before deleting state'* ]]; then
+      continue
+    fi
+    count=$((count + 1))
+  done < "$state_file" || return 1
+
+  printf '%s\n' "$count"
 }
 
 # The Verification block records a branch and a HEAD, and git can answer both. Leaving that to
@@ -321,29 +332,31 @@ report_cleanup_placeholders() {
   local candidate placeholder_files="" message
 
   cleanup_placeholder_present() {
-    awk '
-      BEGIN {
-        tracked["In progress"] = 1
-        tracked["Next actions"] = 1
-        tracked["Blockers"] = 1
-        tracked["TODO / deferred"] = 1
-      }
-      /^## / {
-        section = substr($0, 4)
-        sub(/[[:space:]]+$/, "", section)
-        tracking = (section in tracked)
-        next
-      }
-      tracking && /^[[:space:]]*([-*]|[0-9]+[.])[[:space:]]+[^[:space:]]/ {
-        lower = tolower($0)
-        if (index(lower, "offer cleanup") || index(lower, "confirm deletion") ||
-            index(lower, "delete it only after") || index(lower, "ask before deleting state")) {
-          found = 1
-          exit
-        }
-      }
-      END { exit(found ? 0 : 1) }
-    ' "$1" >/dev/null 2>&1
+    local state_file="$1" line section tracking=0 lower_line
+    local list_item='^[[:space:]]*([-*]|[0-9]+\.)[[:space:]]+[^[:space:]]'
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "$line" == '## '* ]]; then
+        section="${line:3}"
+        while [[ "$section" == *[[:space:]] ]]; do
+          section="${section%?}"
+        done
+        case "$section" in
+          'In progress'|'Next actions'|'Blockers'|'TODO / deferred') tracking=1 ;;
+          *) tracking=0 ;;
+        esac
+        continue
+      fi
+
+      [[ "$tracking" == 1 && "$line" =~ $list_item ]] || continue
+      lower_line="${line,,}"
+      if [[ "$lower_line" == *'offer cleanup'* || "$lower_line" == *'confirm deletion'* ||
+            "$lower_line" == *'delete it only after'* || "$lower_line" == *'ask before deleting state'* ]]; then
+        return 0
+      fi
+    done < "$state_file"
+
+    return 1
   }
 
   for candidate in "$active_file" "$parked_directory"/*.md; do

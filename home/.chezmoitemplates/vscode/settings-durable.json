@@ -4,53 +4,47 @@
        releases it; it does not delete the existing live value. */ -}}
 {{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {
-  // NOTE: All settings/extensions referencing Catppuccin schema or custom UI colors have been removed to avoid untrusted schema errors.
-  // TypeScript SDK
-  // "js/ts.tsdk.path": "node_modules\\typescript\\lib",
-  // "js/ts.updateImportsOnFileMove.enabled": "always",
-  // Import helpers
-  // "npm-intellisense.importES6": true,
-  // "npm-intellisense.importQuotes": "'",
-  // "npm-intellisense.importLinebreak": ";\r\n",
-  // "npm-intellisense.importDeclarationType": "const",
-  // Emmet
-  "emmet.triggerExpansionOnTab": true,
-  "emmet.includeLanguages": {
-    "cshtml": "html",
-  },
   // Editor behavior
   "editor.suggestSelection": "first",
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.fontSize": 12.5,
-  // "editor.fontSize": 13,
   "editor.fontFamily": "JetBrains Mono, Cascadia Mono, Fantasque Sans Mono, Consolas, monospace",
   "editor.mouseWheelZoom": true,
   "editor.renderWhitespace": "all",
   "editor.renderControlCharacters": true,
   "editor.linkedEditing": true,
   "editor.snippetSuggestions": "top",
-  // "editor.formatOnSave": true,
   "editor.stickyScroll.enabled": true,
   "editor.foldingImportsByDefault": true,
-  // Formatting defaults
+  "editor.bracketPairColorization.enabled": true,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.cursorBlinking": "smooth",
+  "editor.smoothScrolling": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  // Use workspace settings for project-specific formatter differences.
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.semi": true,
   "prettier.tabWidth": 2,
   "prettier.useTabs": false,
-  // For Stantec JS (React) projects only
-  // "[javascript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" }, // this is for react projects CMS and KhAirport, where I want eslint to handle formatting instead of prettier. Otherwise, eslint and prettier conflict on semicolon insertion and spacing after commas.
-  // Linting
+  // Language tooling
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "emmet.triggerExpansionOnTab": true,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact",
+    "javascriptreact": "html",
+    "typescriptreact": "html",
+    "cshtml": "html",
+  },
   "eslint.validate": [
     "javascript",
     "javascriptreact",
     "typescript",
     "typescriptreact",
   ],
-  // temporarily disable for CMS project
-  // "editor.codeActionsOnSave": {
-  //   "source.fixAll.eslint": "explicit",
-  // },
   // Language overrides
   "[cshtml]": {
     "editor.linkedEditing": false,
@@ -61,10 +55,17 @@
       "source.fixAll.markdownlint": "explicit",
     },
   },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
   // Source control
   "scm.inputFontFamily": "JetBrains Mono, Cascadia Code, Consolas, monospace",
   "scm.inputMinLineCount": 3,
   "scm.inputMaxLineCount": 10,
+  "scm.repositories.selectionMode": "single",
   "[scminput]": {
     "editor.rulers": [
       50,
@@ -88,11 +89,13 @@
   // Workbench UI
   "breadcrumbs.enabled": true,
   "workbench.iconTheme": "vscode-icons",
+  "workbench.colorTheme": "Dracula Theme",
   "workbench.editorAssociations": {
     "git-rebase-todo": "default",
   },
-  "editor.cursorSmoothCaretAnimation": "on",
-  "editor.bracketPairColorization.enabled": true,
+  "workbench.browser.enableChatTools": true,
+  "workbench.list.smoothScrolling": true,
+  "debug.breakpointsView.presentation": "tree",
   // Previews and notebooks
   "svg.preview.background": "editor",
   "notebook.formatOnSave.enabled": true,
@@ -100,19 +103,17 @@
   "task.slowProviderWarning": [
     "typescript"
   ],
+  "task.notifyWindowOnTaskCompletion": 0,
   // Terminal
-  // MesloLGS NF carries the Nerd Font glyphs terminal output draws; plain JetBrains
-  // Mono does not, so it sits behind it as a fallback rather than replacing it.
-  // The commented line is the one-font-everywhere option, and needs JetBrainsMono
-  // Nerd Font installed first - the plain family is not a substitute for it.
+  // Put a Nerd Font first for terminal icons; JetBrains Mono and Consolas are fallbacks.
   "terminal.integrated.fontFamily": "MesloLGS NF, JetBrains Mono, Consolas, monospace",
-  // "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font, MesloLGS NF, monospace",
   "terminal.integrated.defaultProfile.windows": "Git Bash",
   "terminal.integrated.cursorStyle": "line",
   "terminal.integrated.cursorWidth": 4,
-  "terminal.integrated.cursorBlinking": false,
-  "task.notifyWindowOnTaskCompletion": 0,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.smoothScrolling": true,
   "terminal.integrated.fontSize": 12.5,
+  "terminal.integrated.initialHint": false,
   // Git
   "git.confirmSync": false,
   "git.autofetch": true,
@@ -121,6 +122,7 @@
   "git.confirmForcePush": true,
   "git.suggestSmartCommit": false,
   "git.detectWorktrees": true,
+  "gitlens.views.commitDetails.files.layout": "tree",
   "git.worktreeIncludeFiles": [
     "**/CLAUDE.local.md",
     "**/AGENTS.override.md",
@@ -137,7 +139,6 @@
   // Copilot
   "github.copilot.selectedCompletionModel": "",
   "github.copilot.nextEditSuggestions.enabled": true,
-  // "github.copilot.advanced": {},
 {{- if eq $profile.ai_context "company" }}
   // Traditional Chinese version of commit message guidelines
   "github.copilot.chat.commitMessageGeneration.instructions": [
@@ -171,10 +172,11 @@
     },
   ],
 {{- end }}
+  // Copilot language assistance
   "github.copilot.chat.languageContext.fix.typescript.enabled": true,
   "github.copilot.chat.languageContext.inline.typescript.enabled": true,
   "github.copilot.chat.languageContext.typescript.enabled": true,
-  // Live Server and Sass (using at work only)
+  // Live Server and Sass settings (shared across profiles; used for work projects).
   "liveServer.settings.donotShowInfoMsg": true,
   "liveServer.settings.donotVerifyTags": true,
   "liveSassCompile.settings.excludeList": [
@@ -193,19 +195,13 @@
     "> 1%",
     "last 2 versions"
   ],
-  // Enable GitHub Copilot Agent Plugins so VS Code loads installed or locally configured plugins.
+  // Chat extensions and instruction discovery
+  // Enable Copilot Agent Plugins so VS Code loads installed or locally configured plugins.
   "chat.plugins.enabled": true,
-  // Always load this repository's AGENTS.md so Copilot follows the same developer-environment workflow as other agents.
+  // Load repository AGENTS.md instructions in VS Code Copilot sessions.
   "chat.useAgentsMdFile": true,
   "chat.includeReferencedInstructions": true,
-  // Copilot reads several harness-agnostic user folders by default, and this developer environment repo
-  // renders the same rules into more than one of them. Without these two settings each
-  // shared rule is listed twice, and Copilot also ingests ~/.claude/CLAUDE.md, whose lower
-  // half is Claude Code-only (Agent calls, claude-code-guide, the Bash/PowerShell tools).
-  // Copilot gets its own copies from ~/.copilot/instructions instead.
-  // This affects VS Code only. Claude Code still reads ~/.claude/rules itself, and Copilot CLI
-  // is unaffected either way: it reads ~/.copilot/instructions plus the repository's own
-  // AGENTS.md and CLAUDE.md, never ~/.claude/rules, so it has no duplicate to suppress.
+  // Use VS Code's own instruction paths to avoid duplicate shared rules and Claude-specific guidance.
   "chat.instructionsFilesLocations": {
     ".github/instructions": true,
     ".claude/rules": true,
@@ -213,8 +209,16 @@
     "~/.claude/rules": false
   },
   "chat.useClaudeMdFile": false,
-  "workbench.browser.enableChatTools": true,
-  "debug.breakpointsView.presentation": "tree",
+  // Agent and chat behavior
+  "inlineChat.affordance": "gutter",
+  "inlineChat.askInChat": false,
+  "chat.mcp.autostart": "always",
+  "chat.mcp.gallery.enabled": true,
+  "chat.useCustomizationsInParentRepositories": true,
+  "chat.subagents.allowInvocationsFromSubagents": true,
+  "github.copilot.chat.agentDebugLog.enabled": true,
+  "github.copilot.chat.agentDebugLog.fileLogging.enabled": true,
+  // Allow chat to request URLs and receive responses from these sites.
   "chat.tools.urls.autoApprove": {
     "https://code.visualstudio.com": true,
     "https://github.com/microsoft/vscode/wiki/*": true,
@@ -267,11 +271,13 @@
     "https://ecare.bli.gov.tw": true,
     "https://*.bli.gov.tw": true,
   },
+  // Chat session history and synchronization
   "chat.checkpoints.showFileChanges": true,
+  "chat.sessionSync.enabled": true,
   "github.copilot.chat.copilotMemory.enabled": true,
+  // VS Code settings synchronization
   "settingsSync.ignoredSettings": [],
-  "gitlens.views.commitDetails.files.layout": "tree",
-  // advanced-new-file
+  // Advanced New File extension
   "advancedNewFile.exclude": {
     "node_modules": true,
     "node_modules_electron": true,
@@ -284,17 +290,7 @@
     "current",
     "root"
   ],
-  "workbench.colorTheme": "Dracula Theme",
-  "inlineChat.affordance": "gutter",
-  "inlineChat.askInChat": false,
-  // "chat.mcp.autostart": "prompt",
-  "chat.mcp.autostart": "always",
-  "github.copilot.chat.agentDebugLog.enabled": true,
-  "chat.useCustomizationsInParentRepositories": true,
-  "chat.subagents.allowInvocationsFromSubagents": true,
-  "github.copilot.chat.agentDebugLog.fileLogging.enabled": true,
-  "terminal.integrated.initialHint": false,
-  "chat.mcp.gallery.enabled": true,
+  // Agent terminal approvals. A false rule requires confirmation; it does not block a command.
   "chat.tools.terminal.autoApprove": {
     "cd": true,
     "echo": true,
@@ -419,41 +415,10 @@
     "Invoke-Expression": false,
     "iex": false,
   },
-  // YOLO mode, use with caution
+  // When enabled, auto-approves every tool in every workspace without individual prompts.
   "chat.tools.global.autoApprove": true,
-  "js/ts.updateImportsOnFileMove.enabled": "always",
-  "emmet.triggerExpansionOnTab": true,
-  "emmet.includeLanguages": {
-    "javascript": "javascriptreact",
-    "typescript": "typescriptreact",
-    "javascriptreact": "html",
-    "typescriptreact": "html",
-    "cshtml": "html",
-  },
-  "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features",
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "vscode.json-language-features",
-  },
-  "chat.sessionSync.enabled": true,
+  // Claude Code extension
   "claudeCode.preferredLocation": "sidebar",
   "claudeCode.useTerminal": true,
   "claudeCode.enableNewConversationShortcut": true,
-  // scrolling
-  // "editor.smoothScrolling": true,
-  // "workbench.list.smoothScrolling": true,
-  // "terminal.integrated.smoothScrolling": true,
-  // "editor.cursorSmoothCaretAnimation": "on",
-  // "editor.cursorBlinking": "smooth"
-  "editor.smoothScrolling": true,
-  "editor.cursorBlinking": "smooth",
-  "editor.cursorSmoothCaretAnimation": "on",
-  "workbench.list.smoothScrolling": true,
-  "terminal.integrated.smoothScrolling": true,
-  "terminal.integrated.cursorBlinking": true,
-  "editor.formatOnPaste": true,
-  "editor.formatOnSave": true,
-  "editor.formatOnType": true,
-  "scm.repositories.selectionMode": "single",
 }

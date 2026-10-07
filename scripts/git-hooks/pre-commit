@@ -184,13 +184,38 @@ for src in "$staged"/home/.chezmoitemplates/rules/*.md; do
     fail "shared rule '$name' renders different bodies for Claude and Copilot."
 done
 
-# 5. Codex must receive a literal AGENTS.md without YAML frontmatter.
+# 5. Profile scope is independent of client reach. Render both AI contexts from the staged source
+#    whenever shared AI guidance or a reusable skill changes, and reject a context-only rule that
+#    appears in the wrong profile.
+profile_scope_changed=false
+while IFS= read -r changed; do
+  case "$changed" in
+    home/.chezmoitemplates/*|home/dot_agents/skills/*)
+      profile_scope_changed=true
+      ;;
+    home/dot_claude/CLAUDE.md.tmpl|home/dot_claude/rules/*|home/dot_claude/skills/*)
+      profile_scope_changed=true
+      ;;
+    home/dot_codex/AGENTS.md.tmpl|home/dot_copilot/instructions/*|home/dot_copilot/skills/*)
+      profile_scope_changed=true
+      ;;
+  esac
+done < <(git diff --cached --name-only)
+
+if [[ "$profile_scope_changed" == true ]]; then
+  scope_check="$staged/scripts/tests/test-ai-profile-scope.sh"
+  [[ -f "$scope_check" ]] || fail "profile-scope check is missing from the staged source."
+  bash "$scope_check" "$chezmoi_bin" "$staged" ||
+    fail "AI profile applicability does not match the rendered context."
+fi
+
+# 6. Codex must receive a literal AGENTS.md without YAML frontmatter.
 if head -1 "$render/.codex/AGENTS.md" | grep -q '^---$'; then
   fail "~/.codex/AGENTS.md starts with YAML frontmatter. Codex renders it as visible text
     and it counts against project_doc_max_bytes. Keep .chezmoitemplates/core.md frontmatter-free."
 fi
 
-# 6. The two status line copies must render identical text. They are separate
+# 7. The two status line copies must render identical text. They are separate
 #    implementations of one output, and nothing else would catch a change made to one
 #    and not the other. Only run when they change: PowerShell start-up costs a few
 #    seconds and would otherwise be charged to every commit.
@@ -248,7 +273,7 @@ if [[ "$statusline_changed" == true ]]; then
   fi
 fi
 
-# 7. Every relative markdown link must resolve: the file it names must exist, and a #fragment
+# 8. Every relative markdown link must resolve: the file it names must exist, and a #fragment
 #    must match a real heading, in another file or in the same one. Both failures are silent --
 #    the link still renders and only fails when a reader clicks it. The guides and the decision
 #    records cross-reference each other both ways, so one renamed heading or one moved file can

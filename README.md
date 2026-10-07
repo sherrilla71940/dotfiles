@@ -107,7 +107,7 @@ native mode keeps continuity explicit regardless of the stored `on` or `off` val
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     baseline["Shared baseline"]:::base
-    context["ai_context<br/>personal | company<br/>artifact-language context"]:::choice
+    context["ai_context<br/>personal | company<br/>guidance + language defaults"]:::choice
     profile["Apply context to shared baseline"]:::process
     harness{"ai_harness<br/>managed | native"}:::decision
     continuity{"ai_continuity<br/>on | off<br/>managed mode"}:::decision
@@ -146,7 +146,7 @@ flowchart TB
 
 | Selector | Role | Default and boundary |
 | --- | --- | --- |
-| `ai_context` | Selects personal or company context and its language defaults. | Missing means `personal`; other values fail rendering. |
+| `ai_context` | Selects personal or company guidance and language defaults. | Missing means `personal`; other values fail rendering. |
 | `ai_continuity` | Sets the managed-mode continuity preference. | Missing means `on`; `off` removes automatic continuity guidance and reporting. Task-level `continuity=on|off` can override it. |
 | `ai_harness` | Selects the managed or native AI harness. | Missing means `managed`; `ai_workflow` remains a legacy alias only when `ai_harness` is absent. |
 
@@ -154,6 +154,10 @@ An **AI harness** is the instruction, skill, lifecycle, and delivery layer aroun
 mode adds repository-owned lifecycle guidance and reporting. Native mode keeps shared content and
 client-native delivery while leaving lifecycle actions explicit. Profile changes affect newly rendered
 configuration and newly started sessions.
+
+Profile applicability (`baseline`, `personal`, or `company`) is independent of client reach (`portable`
+or client-specific): the profile controls where guidance applies, while client reach controls which
+clients can discover it. See the [profile applicability and client reach guide](./docs/customization-support.md#separate-profile-applicability-from-client-reach).
 
 Read the [AI profile section of the chezmoi workflow](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
 and the [customization support guide](./docs/customization-support.md#ai-profile-dimensions) for the
@@ -353,7 +357,7 @@ Run the focused suites when the protected behavior changes:
 | --- | --- |
 | Worktree provisioning | `test-git-worktree-provision.ps1` or `test-git-worktree-provision.sh` |
 | Continuity and task workflow | `test-task-continuity.sh`, `test-run-task-end-to-end.sh`, `test-run-task-invocation.sh` |
-| Profiles and workflow deletion | `test-ai-configuration-profiles.sh`, `test-workflow-delete.sh` |
+| AI profile scope and workflow deletion | `test-ai-profile-scope.sh`, `test-ai-configuration-profiles.sh`, `test-workflow-delete.sh` |
 | Runtime isolation | `test-worktree-runtime.py -v` |
 
 On Windows PowerShell, run Bash-based suites through

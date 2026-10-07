@@ -7,7 +7,7 @@ for markup and styling conventions.
 
 ## Declarations and naming
 
-- In application and project repositories, use PascalCase for VanillaJS/VanillaTS function names and globals (company standard), and for React component names only. In user-level configuration and customization sources — including dotfiles, editor settings, personal skills, instructions, and AI configuration — do not apply the company convention; follow the surrounding format and use normal JavaScript naming defaults. Use `camelCase` for all other identifiers.
+- Use `camelCase` for VanillaJS/VanillaTS function names, globals, and other identifiers by default. Use `PascalCase` for React component names. Follow any more-specific naming convention in the active profile.
 - Use `UPPER_SNAKE_CASE` only for true constants whose value is fixed, shared, and configuration-like — e.g., module-level limits, event names, storage keys, breakpoints, environment-derived constants.
 
 ## General JavaScript
@@ -30,28 +30,23 @@ for markup and styling conventions.
 - Prefer `addEventListener` over inline `on*` handlers (for vanilla JavaScript), and use listener options (`once`, `passive`, `signal`) intentionally.
 - In legacy non-module scripts, wrap private runtime code in an IIFE. When external callers need access, attach a small, explicit API to one existing project global or `window`; avoid leaking unrelated globals.
 - Keep `DOMContentLoaded` handlers thin: call initialization functions from them, but keep business logic, rendering, data parsing, and event handlers in named functions outside the callback.
-- Target elements with `data-*` attributes rather than classes or IDs — see `html-css.md` for the full convention. Avoid encoding element types in attribute values (`data-action="submit"`, not `data-type="button"`).
 - Avoid interleaving layout-affecting DOM writes with geometry reads such as `getBoundingClientRect()`, `offsetWidth`, or `getComputedStyle()`, especially inside loops. Batch geometry reads before writes to avoid repeated synchronous layout.
-- For viewport-edge calculations that must exclude a classic scrollbar, use `document.documentElement.clientWidth`. Use `window.innerWidth` only when the scrollbar-inclusive layout viewport is intentional.
 
 ## Asynchronous code
 
-- Prefer `async`/`await`.
 - Remember that `await` pauses only the current async function — synchronous array methods (`forEach`, `filter`, `some`, `every`, `reduce`) do not wait for async callbacks.
 - Use `for...of` with `await` for sequential async workflows where ordering, dependencies, rate limits, or step-by-step error handling matter.
 - Use `Promise.all` or `Promise.allSettled` with promises from `map` for parallel work when ordering doesn't matter and concurrency is safe.
 - For async filtering or validation, resolve all promises first, then apply synchronous `filter`/`some`/`every` logic to the resolved results.
-- For user-triggered async flows (submit, filter, search, tab changes), cancel prior in-flight work when a newer action supersedes it — don't rely only on ignoring stale responses.
+- For user-triggered async flows (submit, filter, search, tab changes), cancel superseded work when possible and prevent stale completions from updating current state. Cancellation alone may race with completion, and some work cannot be canceled.
 - If parallel async work comes from a large or user-controlled list, batch it or use a concurrency limit instead of one unbounded `Promise.all(items.map(...))`.
 - Use `AbortController` when async work or event listeners can outlive their initiating UI state, component, request, or page section; cancel on teardown or when newer work supersedes it.
 
 ## Performance and lifecycle
 
-- Code-split by route by default; lazy-load heavy or below-the-fold components (rich editors, charts, modals, admin panels, large third-party widgets).
-- Pair lazy-loaded components with a fallback sized close to final content dimensions to avoid layout shift on resolution.
+- Code-split large applications at meaningful route or feature boundaries when it materially reduces initial JavaScript. Lazy-load heavy or infrequently used components when the benefit justifies an added loading state.
 - Lazy-load offscreen images and iframes (`loading="lazy"`); never lazy-load the largest above-the-fold image — load it eagerly, with `fetchpriority="high"` if it's the LCP candidate.
 - Use `srcset`/`sizes` so the browser fetches an appropriately sized image per viewport.
-- Reserve layout space up front for anything async (images, embeds, ads) via explicit `width`/`height` or `aspect-ratio`, to avoid CLS.
 - Use `requestAnimationFrame` for visual updates in scroll/resize handlers and complex animations.
 - Use debounce for high-frequency events where only the final value matters, such as search input, filtering, or resize recalculation.
 - Use throttle for continuous feedback that should update at a steady rate, such as scroll position, drag movement, or progress indicators.
@@ -60,13 +55,9 @@ for markup and styling conventions.
 
 ## Validation and error handling
 
-- Use explicit type conversion at boundaries: prefer `Number(value)` for numeric conversion and `parseInt(value, 10)` for parsing integers from strings.
-- Use `Number.isFinite` for numeric validation, not global `isFinite` — the global coerces, so `isFinite('123')` is `true`, and it lets `NaN`/`Infinity` and non-number inputs pass checks.
+- Validate external numeric text against the accepted format before conversion. Use `Number(value)` when the whole value must be numeric; use `parseInt(value, 10)` only when accepting an integer prefix is intentional.
+- Use `Number.isFinite` when a value must be a finite number. Global `isFinite` coerces non-number inputs, so `isFinite('123')` is `true`.
 - For user-facing API requests or async operations, provide loading, empty, success, and failure states that match the existing UI patterns.
 - Catch errors at external boundaries only; do not blanket-wrap all functions.
 - Handle edge cases and potential failure points explicitly; never swallow errors silently.
 - Console logging is diagnostic only. When an operation affects the visible page, provide an appropriate user-facing error or fallback state.
-
-## Large legacy files
-
-- In long legacy JavaScript files that can't be safely split yet, use `//#region`/`//#endregion` sparingly to group related code (types, constants, DOM references, UI event wiring, business logic, initialization). Don't use regions as a substitute for extracting cohesive modules when refactoring is safe.

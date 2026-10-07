@@ -4,6 +4,7 @@
 param(
     [Parameter(Position = 0)]
     [string[]] $TestScript = @(
+        "scripts/tests/test-ai-profile-scope.sh",
         "scripts/tests/test-ai-configuration-profiles.sh",
         "scripts/tests/test-git-worktree-provision.sh",
         "scripts/tests/test-task-continuity.sh",

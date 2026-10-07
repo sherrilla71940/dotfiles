@@ -233,11 +233,15 @@ check_profile() {
   local legacy_workflow="$destination/.agents/skills/worktree-task-workflow/SKILL.md"
   local legacy_claude_workflow="$destination/.claude/skills/worktree-task-workflow/SKILL.md"
   local codex_hooks="$destination/.codex/hooks.json"
-  local settings
+  local claude_javascript="$destination/.claude/rules/javascript.md"
+  local copilot_javascript="$destination/.copilot/instructions/javascript.instructions.md"
+  local settings instructions
 
   assert_file "$claude"
   assert_file "$codex"
   assert_file "$copilot"
+  assert_file "$claude_javascript"
+  assert_file "$copilot_javascript"
   assert_file "$commit_skill"
   assert_file "$project_continuity"
   assert_file "$workflow"
@@ -269,18 +273,35 @@ check_profile() {
 
   assert_contains "$claude" "Edit source-of-truth files"
   assert_contains "$claude" "The active context is \`$context\`."
-  assert_contains "$claude" 'classify its ownership and scope'
-  assert_contains "$codex" 'classify its ownership and scope'
-  assert_contains "$copilot" 'classify its ownership and scope'
+  assert_contains "$claude" 'classify its ownership and placement'
+  assert_contains "$codex" 'classify its ownership and placement'
+  assert_contains "$copilot" 'classify its ownership and placement'
+  assert_contains "$claude" 'classify profile applicability (`baseline`, `personal`, or `company`) separately from client reach'
+  assert_contains "$codex" 'classify profile applicability (`baseline`, `personal`, or `company`) separately from client reach'
+  assert_contains "$copilot" 'classify profile applicability (`baseline`, `personal`, or `company`) separately from client reach'
+  assert_contains "$claude_javascript" 'Use `camelCase` for VanillaJS/VanillaTS function names, globals, and other identifiers by default.'
+  assert_contains "$copilot_javascript" 'Use `camelCase` for VanillaJS/VanillaTS function names, globals, and other identifiers by default.'
   assert_contains "$claude" 'do not silently work around it'
   assert_contains "$codex" 'do not silently work around it'
   assert_contains "$copilot" 'do not silently work around it'
+  for instructions in "$claude" "$codex" "$copilot"; do
+    assert_contains "$instructions" 'Before calling work complete, classify any difference from an approved artifact'
+  done
   local codex_bytes
   codex_bytes="$(wc -c < "$codex" | tr -d ' ')"
   (( codex_bytes <= 32768 )) ||
     fail "Codex AGENTS.md exceeds 32 KiB: $codex_bytes bytes ($context/$continuity/$harness)"
   if [[ "$context" == company ]]; then
     assert_not_contains "$claude" 'The active context is `personal`.'
+    for instructions in "$claude" "$codex" "$copilot"; do
+      assert_contains "$instructions" 'Before creating a task branch in effective company context'
+      assert_contains "$instructions" 'never infer the number from prose, materials, or an existing branch'
+    done
+    assert_contains "$claude" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_contains "$codex" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_contains "$copilot" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_not_contains "$claude_javascript" 'In company application and project repositories'
+    assert_not_contains "$copilot_javascript" 'In company application and project repositories'
     assert_contains "$claude" "Traditional Chinese comments by default"
     assert_not_contains "$claude" "use English comments by default"
     assert_contains "$commit_skill" '| **Language** | `en` · `zhtw`      | `zhtw`'
@@ -290,6 +311,14 @@ check_profile() {
     assert_not_contains "$settings" 'Use English for summary and for scope when present.'
   else
     assert_not_contains "$claude" 'The active context is `company`.'
+    for instructions in "$claude" "$codex" "$copilot"; do
+      assert_not_contains "$instructions" 'Before creating a task branch in effective company context'
+    done
+    assert_not_contains "$claude" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_not_contains "$codex" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_not_contains "$copilot" 'use PascalCase for VanillaJS/VanillaTS function names and globals, overriding the shared JavaScript default'
+    assert_not_contains "$claude_javascript" 'In company application and project repositories'
+    assert_not_contains "$copilot_javascript" 'In company application and project repositories'
     assert_contains "$claude" "use English comments by default"
     assert_not_contains "$claude" "Traditional Chinese comments by default"
     assert_contains "$commit_skill" '| **Language** | `en` · `zhtw`      | `en`'
@@ -399,6 +428,10 @@ check_profile() {
     assert_contains "$claude" '## Task continuity'
     assert_contains "$codex" '## Task continuity'
     assert_contains "$copilot" '## Task continuity'
+    for instructions in "$claude" "$codex" "$copilot"; do
+      assert_contains "$instructions" 'Continuity: enabled'
+      assert_contains "$instructions" 'completion gate before every final response'
+    done
   else
     assert_not_contains "$claude" '## Task continuity'
     assert_not_contains "$codex" '## Task continuity'

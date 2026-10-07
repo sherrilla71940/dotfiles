@@ -106,6 +106,40 @@ repository instructions, and agent plugins—is unchanged and deferred. See [ADR
 for the design boundaries. See [ADR-0022](./decisions/0022-define-native-and-managed-ai-harness-modes.md)
 for the native-versus-managed harness decision.
 
+### Separate profile applicability from client reach
+
+Profile applicability answers which context should receive guidance. Client reach answers which
+assistant can discover it. Use these profile scopes:
+
+| Profile scope | Meaning | Canonical source |
+| --- | --- | --- |
+| `baseline` | Guidance applies in both personal and company contexts. | Shared core, shared rule bodies, and shared skill packages |
+| `personal` | Guidance applies only when the personal context is selected. | `home/.chezmoitemplates/profiles/personal.md` |
+| `company` | Guidance applies only when the company context is selected. | `home/.chezmoitemplates/profiles/company.md` |
+
+Project-specific guidance belongs in that project's instructions. It is not a fourth `ai_context`
+value. In this guide, `portable` means discoverable by multiple clients; it does not mean that the
+content belongs in the baseline. Record the exact receiving clients, including combinations such as
+Claude and Copilot for path-scoped rules.
+
+For each new or materially changed reusable AI artifact, record both decisions in the task or change
+plan:
+
+```text
+Profile scope: baseline | personal | company
+Client reach: Claude, Codex, Copilot (list every receiving client)
+```
+
+Choose `baseline` only when the guidance remains correct in both contexts. Place personal-only and
+company-only global guidance in the matching profile source. Do not put context-only requirements
+in shared rule bodies. If a workflow remains available in both contexts but needs different
+execution defaults, keep one skill package and resolve those defaults from the effective context
+when the workflow runs. The profile selector changes rendered guidance; it does not filter native
+skill discovery by context.
+
+The repository can verify declared scope and rendered output, but it cannot infer intended scope
+from prose. If the task or existing source does not establish applicability, ask before editing.
+
 ### Surfaces outside this table
 
 This repository does not manage complete product or account state:
@@ -294,9 +328,10 @@ native symlink, while Codex and Copilot can discover it from `~/.agents/skills/`
 
 ## Add a skill
 
-Choose the source path according to who should discover the skill:
+Choose profile applicability using the section above, then choose the source path according to which
+clients should discover the skill:
 
-| Scope | Source |
+| Client reach | Source |
 | --- | --- |
 | Portable across all three clients | `home/dot_agents/skills/<name>/SKILL.md` plus `home/dot_claude/skills/symlink_<name>.tmpl` |
 | Codex-targeted; not linked into Claude and blocked from automatic Copilot invocation | `home/dot_agents/skills/<name>/` with a `.codex-only` marker and no Claude symlink |
@@ -304,7 +339,7 @@ Choose the source path according to who should discover the skill:
 | Copilot-only | `home/dot_copilot/skills/<name>/SKILL.md` |
 
 The Claude symlink template points to
-`{{ .chezmoi.homeDir }}/.agents/skills/<name>`. Individual links allow shared and Claude-only
+`{{ .chezmoi.homeDir }}/.agents/skills/<name>`. Individual links allow portable and Claude-only
 skills to coexist in `~/.claude/skills/`.
 
 Check a portable skill for client-specific tool names before sharing it. Because these are

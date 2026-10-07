@@ -193,16 +193,20 @@ Then:
    configuration.
 2. Keep reusable content in shared templates and use thin client wrappers. Do not copy the same
    profile body into Claude, Codex, Copilot, or VS Code outputs.
-3. Update the resolver, profile layers, wrappers, and user-facing documentation together when
+3. Keep profile applicability separate from client reach. When adding or changing reusable guidance,
+   classify it as baseline, personal, or company. When changing this repository, use
+   `docs/customization-support.md`, “Separate profile applicability from client reach,” for the
+   canonical sources. Do not infer profile scope from the current client.
+4. Update the resolver, profile layers, wrappers, and user-facing documentation together when
    their contracts change. Keep Codex's `AGENTS.md` literal and frontmatter-free.
-4. Add or update an ADR when the change affects the selector schema, source ownership, rendering
+5. Add or update an ADR when the change affects the selector schema, source ownership, rendering
    boundary, or every machine using the repository.
-5. Run the profile test suite covering every supported combination, defaults, invalid values, and
+6. Run the profile test suite covering every supported combination, defaults, invalid values, and
    continuity-off behavior. In this repository that is
    `bash scripts/tests/test-ai-configuration-profiles.sh`. Run the repository pre-commit hook for
    cross-client rendering and link checks.
-6. Preview the rendered targets with `chezmoi diff`, show the impact, and ask before applying.
-7. If selector names, common values, or the invocation surface changed, update this skill's
+7. Preview the rendered targets with `chezmoi diff`, show the impact, and ask before applying.
+8. If selector names, common values, or the invocation surface changed, update this skill's
    current-schema summary and metadata together with the resolver and documentation.
 
 An extension is incomplete if it changes only one client wrapper, one operating system, or one

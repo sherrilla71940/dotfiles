@@ -105,7 +105,7 @@ decision tree 特別標出它們的依賴關係：`ai_continuity` 只會改變 m
 %%{init: {"theme": "base", "themeVariables": {"primaryTextColor": "#111827", "nodeTextColor": "#111827", "textColor": "#111827", "lineColor": "#6b7280"}, "flowchart": {"useMaxWidth": true}}}%%
 flowchart TB
     baseline["共用基線"]:::base
-    context["ai_context<br/>personal | company<br/>artifact 語言 context"]:::choice
+    context["ai_context<br/>personal | company<br/>指引與語言預設值"]:::choice
     profile["將 context 套用到共用基線"]:::process
     harness{"ai_harness<br/>managed | native"}:::decision
     continuity{"ai_continuity<br/>on | off<br/>managed 模式"}:::decision
@@ -144,13 +144,17 @@ flowchart TB
 
 | Selector | 作用 | 預設值與界線 |
 | --- | --- | --- |
-| `ai_context` | 選擇 personal 或 company context，以及對應的語言預設值。 | 未設定時是 `personal`；其他值會讓 render 失敗。 |
+| `ai_context` | 選擇 personal 或 company 的指引與語言預設值。 | 未設定時是 `personal`；其他值會讓 render 失敗。 |
 | `ai_continuity` | 設定 managed 模式下的 continuity 偏好。 | 未設定時是 `on`；`off` 會移除自動 continuity 指引與回報。任務層級的 `continuity=on|off` 可以覆寫它。 |
 | `ai_harness` | 選擇 managed 或 native AI harness。 | 未設定時是 `managed`；只有在沒有 `ai_harness` 時，`ai_workflow` 才會作為 legacy alias 接受。 |
 
 **AI harness** 是包覆在 AI client 外的指示、skill、生命週期與交付層。Managed 模式加入儲存庫提供的
 生命週期指引與回報；native 模式保留共用內容與 client-native 交付，同時讓生命週期動作維持明確啟動。
 Profile 變更會影響之後重新 render 的設定與新啟動的 session。
+
+Profile 適用範圍（`baseline`、`personal` 或 `company`）與 client reach（`portable` 或 client 專屬）是兩個
+獨立決定：profile 決定指引適用在哪種情境，client reach 則決定哪些 client 找得到這些指引。細節請看
+[profile 適用範圍與 client reach 指南](./docs/customization-support.md#separate-profile-applicability-from-client-reach)。
 
 完整組合規則請看 [chezmoi 工作流程的 AI profile 章節](./docs/chezmoi-workflow.md#machine-local-ai-profile-selectors)
 與 [AI customization support 指南](./docs/customization-support.md#ai-profile-dimensions)。
@@ -328,7 +332,7 @@ filename 安全性、skill parity、client adapter、共用 rule body、status-l
 | --- | --- |
 | Worktree provisioning | `test-git-worktree-provision.ps1` 或 `test-git-worktree-provision.sh` |
 | Continuity 與 task workflow | `test-task-continuity.sh`、`test-run-task-end-to-end.sh`、`test-run-task-invocation.sh` |
-| Profile 與 workflow deletion | `test-ai-configuration-profiles.sh`、`test-workflow-delete.sh` |
+| AI profile scope 與 workflow deletion | `test-ai-profile-scope.sh`、`test-ai-configuration-profiles.sh`、`test-workflow-delete.sh` |
 | Runtime isolation | `test-worktree-runtime.py -v` |
 
 在 Windows PowerShell 中，請透過 `.\scripts\tests\run-git-bash-tests.ps1` 執行 Bash 測試；

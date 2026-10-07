@@ -75,6 +75,7 @@ agent session.
 | [0049](./0049-preserve-app-written-settings-across-clients.md) | Accepted | Preserve app-written VS Code and Copilot CLI settings outside explicit repository ownership |
 | [0050](./0050-preserve-app-written-windows-terminal-actions-and-keybindings.md) | Accepted | Preserve unlisted Windows Terminal actions and keybindings |
 | [0051](./0051-preserve-app-written-git-global-settings.md) | Accepted | Preserve Git global settings outside explicit repository ownership |
+| [0052](./0052-define-ai-profile-applicability-scope.md) | Accepted | Separate AI profile applicability from client reach and validate both rendered contexts |
 
 ## Template
 

@@ -87,6 +87,19 @@ Copilot need no matching Claude hook because they consume the same working-tree-
 Reconsider the visible decision only if clients gain a reliable built-in lifecycle event for
 starting and maintaining cross-client task state.
 
+### Company flow before branch creation
+
+The company profile keeps a short branch-policy trigger because `run-task-end-to-end` is explicit:
+direct branch creation does not load that skill. The global pre-push hook checks branch names only
+when publishing, after local work may already be on the wrong branch. Exact workflow arguments,
+validation, and bypass steps stay in the workflow skill.
+
+### Approved artifact differences
+
+Classifying a difference from an approved artifact is a completion decision even when continuity
+is disabled. The shared core keeps that trigger; the continuity skill owns the detailed handoff
+record and state pointer when continuity is active.
+
 ### External project material
 
 The project-material rule triggers after an external file materially informs the work, rather
@@ -115,10 +128,11 @@ because the snapshot problem is the one genuine cost of writing the file at all.
 
 ### PascalCase functions and globals
 
-PascalCase for VanillaJS/VanillaTS functions and globals is a company standard, not a general
-JavaScript convention. It applies to application and project repositories and is explicitly
-excluded from user-level configuration, where normal JavaScript naming and surrounding style
-apply.
+PascalCase for VanillaJS/VanillaTS functions and globals is a company convention, not a baseline
+JavaScript convention. The shared JavaScript rule sets `camelCase` as the default; the company
+profile in `home/.chezmoitemplates/profiles/company.md` overrides it for company application and
+project repositories. The convention does not apply to user-level configuration or customization
+sources.
 
-Reconsider when the company convention changes. Do not broaden it to personal configuration
-for the sake of uniform wording.
+Reconsider when the company convention changes. Do not broaden it to personal configuration for the
+sake of uniform wording.

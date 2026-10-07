@@ -72,20 +72,21 @@ absence of `.task-continuity/state.md` otherwise leaves no observable event for 
 to react to. A task can grow through investigation until it is expensive to reconstruct while
 the agent remains focused on its immediate implementation steps.
 
-Claude's hooks add only what Git can prove. A `Stop` hook reports a recorded branch or HEAD that
-no longer matches the checkout, offers cleanup when the active tracking sections are empty, and
-reports parked files with no unfinished sections as closure candidates; it never deletes them. A
-`SessionStart` hook keeps the state file excluded from Git. Compaction gets no dedicated
-backstop, because neither `PreCompact` nor `PostCompact` can put anything back into the model's
+Claude and Codex use lifecycle hooks as deterministic backstops. A `Stop` hook reports a recorded
+branch or HEAD that no longer matches the checkout, offers cleanup when the active tracking
+sections are empty, and reports parked files with no unfinished sections as closure candidates;
+it never deletes them. A `SessionStart` hook keeps the state file excluded from Git. Neither
+`PreCompact` nor `PostCompact` provides a dedicated backstop: neither can put anything back into the model's
 context - a hook there could write unverified state but never ask for it to be reconciled, so
 what it produced had to be cleaned up by the next turn anyway. The ordinary `SessionStart`
 notice that continuity is active covers the post-compaction case instead. This remains a
 backstop rather than the primary workflow: it cannot protect every crash or hard cutoff, and
-only skill-driven checkpoints can preserve important reasoning before those failures. Codex and
-Copilot need no matching Claude hook because they consume the same working-tree-local state.
+only skill-driven checkpoints can preserve important reasoning before those failures. Both clients
+run the shared continuity script with client-specific Stop output. Copilot consumes the same
+working-tree-local state without a matching lifecycle hook.
 
-Reconsider the visible decision only if clients gain a reliable built-in lifecycle event for
-starting and maintaining cross-client task state.
+Reconsider this backstop if clients can maintain cross-client task state reliably without a
+custom lifecycle hook.
 
 ### Company flow before branch creation
 

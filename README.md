@@ -200,8 +200,8 @@ flowchart TD
 ```
 
 Continuity records the current objective, phase, decisions, blockers, verification status, next action,
-and pointers to durable materials. Git remains authoritative for code, branches, commits, and test
-results. Stable reference inputs belong in `task-materials`, reusable test inputs in `test-materials`,
+and pointers to durable materials. Git remains authoritative for code, branches, and commits.
+Stable reference inputs belong in `task-materials`, reusable test inputs in `test-materials`,
 and durable updateable coordination records in `handoffs`; `.task-continuity` keeps only the transient
 task state and pointers to those records.
 

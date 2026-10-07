@@ -156,7 +156,7 @@ This repository does not manage complete product or account state:
   available to the cloud task. It does not receive personal files from this machine's
   `~/.codex/` directory through chezmoi.
 - Copilot cloud features can read supported files committed inside a repository. This
-  this setup does not copy personal `~/.copilot/` runtime state into GitHub.
+  setup does not copy personal `~/.copilot/` runtime state into GitHub.
 
 ## Choose where a customization goes
 

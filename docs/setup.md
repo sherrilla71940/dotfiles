@@ -373,19 +373,20 @@ The pre-commit hook, in order (the script's own numbering starts at the render s
 - materializes and renders the staged Git snapshot,
 - checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
 - compares rendered Claude and Copilot rule bodies with cross-platform tools,
+- when AI guidance or a reusable skill is staged, renders both contexts to check profile applicability,
 - rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
 - when a status line script is staged, renders both copies and compares their output, which
   needs `jq` and PowerShell on `PATH`, and
-- when any markdown is staged, resolves every link carrying a `#fragment` — into another file
-  or within the same one — against the headings that actually exist.
+- when any Markdown is staged, checks supported relative Markdown links for existing file
+  targets and verifies that any `#fragment` names a heading in its target file.
 
 The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
 described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
 
-Before those checks it also warns, without rejecting the commit, when more than one
-interactive Claude Code session is running inside this working tree. Such sessions share one
-index, and `git commit` takes the whole index rather than the paths a session meant to stage,
-so the warning lists every staged file and how to unstage one. The launch-time equivalent is
+Before those checks it lists every staged path. It also warns, without rejecting the commit,
+when more than one interactive Claude Code session is running inside this working tree. Such
+sessions share one index, and `git commit` takes the whole index rather than the paths a session
+meant to stage, so the warning recommends `git commit --only`. The launch-time equivalent is
 the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`. Decline that
 offer in this repository and stage explicit paths instead: `chezmoi source-path` resolves to
 the main checkout wherever the session runs, so a worktree edit is not the source chezmoi

@@ -2,20 +2,22 @@
 
 - Status: Superseded by ADR-0038
 - Date: 2026-09-23
-- Scope: W6 route contract; the short-command rename is recorded by ADR-0039
+- Scope: W6 route contract; later naming changes are recorded by ADR-0039, ADR-0041, and ADR-0045
 
 This document records the earlier W6 route proposal and implementation. The current contract is
-defined by [ADR-0038](./decisions/0038-generalize-task-workspace-and-verification-policy.md) and
-the [worktree provisioning guide](./worktree-provisioning.md). ADR-0039 records the later
-canonical `run-task-end-to-end` name and the retained compatibility entry point. The older `isolation`
-route names remain only as deprecated compatibility aliases.
+described in the [worktree provisioning guide](./worktree-provisioning.md). [ADR-0038](./decisions/0038-generalize-task-workspace-and-verification-policy.md)
+records the policy model. [ADR-0039](./decisions/0039-canonicalize-task-workflow-skill-name.md)
+briefly made `task-workflow` canonical;
+[ADR-0041](./decisions/0041-rename-task-workflow-and-project-continuity.md) introduces
+`run-task-end-to-end`, and [ADR-0045](./decisions/0045-coordinated-naming-cleanup.md)
+completes the naming cleanup. The older `isolation` route names remain only as deprecated
+compatibility aliases.
 
 ## Purpose
 
-The current `worktree-task-workflow` contract is worktree-first because that is the safest choice for
-parallel or isolation-sensitive work, but it is verbose for a small change that can safely remain in
-the current checkout. W6 adds a route-selection model that handles both cases without weakening the
-existing worktree safeguards.
+The original `worktree-task-workflow` contract was worktree-first to protect parallel or
+isolation-sensitive work, but it was verbose for a small change in a safe checkout. W6 added a
+route-selection model that handles both cases without weakening the existing worktree safeguards.
 
 The existing command remains the compatibility entry point. Its worktree behavior remains the
 default when `base` is supplied; `isolation=in-place` and `isolation=auto` opt into the new route
@@ -131,6 +133,6 @@ Keep the implemented route contract maintainable through separate, reviewable fo
 
 ## Approval boundary
 
-The route contract is implemented and documented. The short-command migration is implemented by
-ADR-0039: new invocations use `run-task-end-to-end`, while the existing command name remains available as
-a compatibility entry point.
+The route contract is implemented and documented. The later naming changes are recorded by
+ADR-0041 and ADR-0045: new invocations use `run-task-end-to-end`, while the existing command
+name remains available as a compatibility entry point.

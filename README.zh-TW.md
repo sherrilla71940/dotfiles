@@ -195,7 +195,7 @@ flowchart TD
 ```
 
 Continuity 會記錄目前的目標、階段、決策、阻塞事項、驗證狀態、下一步，以及指向 durable material 的連結。
-Git 仍是程式碼、分支、commit 與測試結果的權威來源。穩定的參考輸入放在 `task-materials`，可重複使用的測試
+程式碼、分支與 commit 的狀態仍以 Git 為準。穩定的參考輸入放在 `task-materials`，可重複使用的測試
 輸入放在 `test-materials`，可持續更新的協作紀錄放在 `handoffs`；`.task-continuity` 只保留暫時性的任務狀態與指向這些紀錄的連結。
 
 同一個工作目錄要開始另一個任務前，原本未完成的任務必須先完成、park 或放棄。流程不會默默覆寫 active state。

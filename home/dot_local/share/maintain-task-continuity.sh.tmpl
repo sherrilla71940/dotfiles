@@ -5,9 +5,9 @@
 # and completed parked-state candidates. Broader semantic reconciliation belongs to the
 # task-continuity skill.
 #
-# Deliberately client-neutral. Claude Code and Codex send the same fields and accept the same
-# output, so both run this one script; anything naming a specific client belongs in that
-# client's own hook instead.
+# The continuity checks are shared by Claude Code and Codex. Their Stop output contracts differ,
+# so Codex passes `codex` as the first argument; no argument keeps Claude Code's model-visible
+# additionalContext behavior.
 set -euo pipefail
 {{ $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
 {{ if ne $profile.continuity_automation "on" }}
@@ -20,7 +20,9 @@ set -euo pipefail
 cat >/dev/null 2>&1 || true
 exit 0
 {{ end }}
+
 input="$(cat)"
+output_client="${1:-claude}"
 
 # `source` is read last on purpose. Tab is an IFS whitespace character, so a run of tabs collapses
 # into one delimiter and shifts later fields left; that corrupts the split only when an empty
@@ -531,15 +533,25 @@ combine_notices() {
     '{systemMessage:($first + " " + $second)}'
 }
 
-# Stop hook output has two consumers. `systemMessage` reaches the person using Claude Code,
-# while `hookSpecificOutput.additionalContext` is the part Claude itself receives as hook
-# feedback. Keep both in sync so a stale-state warning is actionable in the Agents view, the
-# VS Code extension, and Codex without requiring the user to paste the warning back.
+# Stop warnings are user-visible through systemMessage. Claude also receives the same text as
+# model-visible hookSpecificOutput.additionalContext; Codex uses only the documented common
+# field because its Stop event does not document hook-specific output.
 emit_notice() {
   local notice="$1"
 
-  [[ -n "$notice" ]] || return 0
+  if [[ -z "$notice" ]]; then
+    # Codex Stop hooks require a JSON response even when there is no continuity notice.
+    if [[ "$event_name" == "Stop" && "$output_client" == "codex" ]]; then
+      printf '{}\n'
+    fi
+    return 0
+  fi
   if [[ "$event_name" == "Stop" ]]; then
+    if [[ "$output_client" == "codex" ]]; then
+      # Codex Stop accepts common fields such as systemMessage, but not hookSpecificOutput.
+      printf '%s\n' "$notice"
+      return 0
+    fi
     printf '%s\n' "$notice" | jq '
       if (.systemMessage // "") == "" then .
       else .hookSpecificOutput = {

@@ -1,8 +1,8 @@
 {{- /* Codex lifecycle hooks. Codex and Claude Code share the command-hook payload and output
        contract used here, so the continuity hook is the same script for both clients. Their
        matcher values remain client-specific: Codex SessionStart sources are startup, resume,
-       clear and compact; Claude also supports fork. The script names no client machinery and
-       reads only hook_event_name, cwd and source.
+       clear and compact; Claude also supports fork. The script reads hook_event_name, cwd and
+       source; the `codex` argument selects Codex's Stop output contract.
 
        This file is user-authored configuration. Codex records hook *trust* separately, in
        config.toml under [hooks.state] keyed by this path plus a sha256, so managing this file
@@ -20,11 +20,13 @@
 {{- $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
 {{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
 
-{{- $continuityCommand := "bash \"$HOME/.local/share/maintain-task-continuity.sh\"" -}}
+{{- $continuityCommand := "bash \"$HOME/.local/share/maintain-task-continuity.sh\" codex" -}}
 {{- $notifyCommand := "" -}}
 {{- if $isWindows -}}
-{{-   $continuityCommand = printf "\"%s\" \"$HOME/.local/share/maintain-task-continuity.sh\"" $gitBash -}}
-{{-   $notifyCommand = printf "%s \"$HOME/.local/share/show-agent-notification.ps1\"" $pwsh -}}
+{{- /* Codex's Windows hook launcher can misparse quoted arguments before the script starts.
+         These paths are space-free on the managed Windows hosts, so keep the command quote-free. */ -}}
+{{-   $continuityCommand = printf "%s %s/.local/share/maintain-task-continuity.sh codex" $gitBash .chezmoi.homeDir -}}
+{{-   $notifyCommand = printf "%s %s/.local/share/show-agent-notification.ps1" $pwsh .chezmoi.homeDir -}}
 {{- else -}}
 {{-   $notifyCommand = "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
 {{- end -}}
@@ -33,7 +35,7 @@
     "SessionEnd": [
       {
         "hooks": [
-          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 20 }
+          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 3 }
         ]
       }
     ]{{ if $continuityEnabled }},
@@ -48,7 +50,7 @@
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 5 }
+          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 10 }
         ]
       }
     ]

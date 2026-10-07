@@ -102,6 +102,10 @@ case "$(printf '%s' "$collision_stop_output" | jq -r '.systemMessage // ""')" in
   *) printf 'expected the Stop collision notice, got: %s\n' "$collision_stop_output" >&2; exit 1 ;;
 esac
 printf '%s' "$collision_stop_output" | jq -e '.hookSpecificOutput.hookEventName == "Stop" and .hookSpecificOutput.additionalContext == .systemMessage' >/dev/null
+codex_collision_stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
+  | bash "$lifecycle_hook" codex)"
+printf '%s' "$codex_collision_stop_output" | jq -e 'keys == ["systemMessage"]' >/dev/null
 rmdir "$fixture/.project-continuity"
 
 # With no Objective section there is nothing to name, so the plain notice is used.
@@ -141,6 +145,10 @@ if printf '%s' "$stop_output" | jq -e 'has("decision")' >/dev/null 2>&1; then
   printf 'Stop must never block\n' >&2
   exit 1
 fi
+codex_stop_output="$(jq -cn --arg sid "$session_id" --arg cwd "$fixture" \
+  '{session_id:$sid,cwd:$cwd,hook_event_name:"Stop",stop_hook_active:false}' \
+  | bash "$lifecycle_hook" codex)"
+printf '%s' "$codex_stop_output" | jq -e '. == {}' >/dev/null
 
 printf 'task continuity hook lifecycle OK\n'
 

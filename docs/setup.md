@@ -425,9 +425,12 @@ continuity requests. Codex records trust by hook path and content hash, so switc
 can require a new `/hooks` approval.
 
 It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
-run it**. They share the hook event names used here, common stdin fields (`cwd`, `hook_event_name`,
-`session_id`, `source`) and output contract (`systemMessage`, `hookSpecificOutput.additionalContext`),
-so one script serves both while each client keeps its own matcher values. Claude also matches
+run it**. They share the hook event names and input fields used here (`cwd`, `hook_event_name`,
+`session_id`, `source`), so one script serves both while each client keeps its own matcher values.
+The Stop output differs: Claude receives `systemMessage` and matching
+`hookSpecificOutput.additionalContext`, while Codex Stop accepts `systemMessage` but does not
+document that hook-specific field. Codex's hook command passes `codex` to select its output shape.
+Claude also matches
 `fork`; Codex `SessionStart` currently accepts only `startup`, `resume`, `clear`, and `compact`.
 See the current [Codex hooks documentation](https://learn.chatgpt.com/docs/hooks) before changing
 that boundary. Claude calls the script through

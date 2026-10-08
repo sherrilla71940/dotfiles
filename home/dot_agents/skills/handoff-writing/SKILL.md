@@ -8,8 +8,7 @@ user-invocable: true
 
 Write a concise, actionable document for a human stakeholder who must route or resolve gaps that
 affect the writer's own delivery. This skill is for handoffs, gap lists, and "blocked on someone
-else" notes. It is not a general code-review skill and does not replace `technical-writing` for
-ordinary PR descriptions or READMEs.
+else" notes.
 
 ## Choose the output
 

@@ -29,3 +29,5 @@
 .claude/skills/prompt-optimizer
 .agents/skills/browser-collab-testing
 .claude/skills/browser-collab-testing
+.agents/skills/technical-writing
+.claude/skills/technical-writing

@@ -82,7 +82,7 @@ def validate_canonical_path(path: str) -> None:
     if parts[0] in GENERATED_ROOTS:
         raise DeleteError(f"generated target is not canonical source: {path}")
     if any(part in {".task-continuity", ".project-continuity"} for part in parts):
-        raise DeleteError(f"continuity state is excluded from deletion: {path}")
+        raise DeleteError(f"legacy task state is excluded from deletion: {path}")
     if any(part in PRIVATE_NAMES for part in parts):
         raise DeleteError(f"private local configuration is excluded from deletion: {path}")
     if parts[0] not in {"home", "scripts", "docs"} and path not in ROOT_FILES:
@@ -277,7 +277,7 @@ def delete_workflow(repo: Path, definition: str, apply: bool, delete_definition:
     else:
         print("generated targets: none declared; no live target cleanup will be scheduled")
     print("no archive or restore copy is created by this operation")
-    print("continuity state (kept): .task-continuity/ (unmigrated .project-continuity/ also excluded)")
+    print("legacy ignored task state (kept): .task-continuity/ and .project-continuity/")
     if not apply:
         print(f"dry-run: {len(delete_files)} source file(s) would be deleted")
         return 0

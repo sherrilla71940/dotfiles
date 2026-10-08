@@ -5,11 +5,10 @@
 
 ## Context
 
-`worktree-task-workflow` pinned each task to the exact `origin/<base>` commit used to create its
-worktree, but it did not require the task branch to integrate later changes to that base before
-push or pull/merge request creation. A long-running task could therefore be published against an
-older base without an explicit decision. Updating the branch can also produce conflicts, especially
-when the task branch has already been published or when another client resumes the work.
+Long-running task branches can become stale as the base branch advances. Publishing without an
+explicit integration decision leaves surprises to the forge or reviewers. Updating the branch can
+also produce conflicts, especially when the task branch has already been published or another
+client resumes the work.
 
 ## Decision
 
@@ -21,7 +20,7 @@ The publish stage adds a base-freshness and integration gate:
 3. Stop when the base advanced and ask the user to choose merge or rebase. Do not use `git pull` as
    an implicit strategy, and do not stash, reset, discard, or resolve conflicts automatically.
 4. Preserve a conflict state for user- or agent-assisted resolution. Record conflict paths and the
-   next operation in continuity, then rerun applicable verification and the manual-test gate.
+   next operation in the durable issue or handoff, then rerun applicable verification.
 5. Recheck the remote and base immediately before pushing. Never silently change the request target.
 
 Merging is the safe default for a task branch that has already been published. Rebasing a published
@@ -42,11 +41,10 @@ strategy.
 
 ## Consequences
 
-The workflow can pause after the manual-test gate when the base moves, and a successful integration
-can require a second automated and manual verification pass. Conflicts remain visible and resumable
-in the same physical worktree, including when another supported client takes over. The workflow
-does not guarantee that the remote base cannot advance after the final check; another advance simply
-requires another integration cycle.
+Publishing can pause when the base moves, and a successful integration can require another
+verification pass. Conflicts remain visible in Git and in the durable issue or handoff, including
+when another supported client takes over. No workflow can guarantee that the remote base will not
+advance after the final check; another advance requires another integration cycle.
 
 ## Reconsider when
 
@@ -56,9 +54,5 @@ adopts a different branch publication policy.
 
 ## Related files and verification
 
-- [`home/.chezmoitemplates/skills/task-workflow/publish.md`](../../home/.chezmoitemplates/skills/task-workflow/publish.md)
-- [`home/.chezmoitemplates/skills/task-workflow/lifecycle.md`](../../home/.chezmoitemplates/skills/task-workflow/lifecycle.md)
-- [`home/dot_claude/skills/task-workflow/SKILL.md`](../../home/dot_claude/skills/task-workflow/SKILL.md)
-- [`home/dot_agents/skills/task-workflow/SKILL.md`](../../home/dot_agents/skills/task-workflow/SKILL.md)
-- [`docs/worktree-provisioning.md`](../worktree-provisioning.md)
-- [`scripts/tests/test-ai-configuration-profiles.sh`](../../scripts/tests/test-ai-configuration-profiles.sh)
+- [`home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md`](../../home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md)
+- [`home/.chezmoitemplates/skills/task-handoff/SKILL.md`](../../home/.chezmoitemplates/skills/task-handoff/SKILL.md)

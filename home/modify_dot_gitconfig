@@ -21,6 +21,7 @@
 {{- end -}}
 {{- $beginMarker := "# BEGIN chezmoi-managed Git config include" -}}
 {{- $endMarker := "# END chezmoi-managed Git config include" -}}
+{{- $retiredWorktreeAliases := dict "wt-add" true "wt-copy" true "wt-check" true "wt-readiness" true "wt-provision" true -}}
 {{- $insideManagedInclude := false -}}
 {{- $section := "" -}}
 {{- $keptLines := list -}}
@@ -33,6 +34,7 @@
 {{-   else if not $insideManagedInclude -}}
 {{-     $header := regexFind `^\s*\[[^]]+\]` $line -}}
 {{-     if ne $header "" -}}
+{{-       $keptLines = append $keptLines $line -}}
 {{-       $sectionText := trimSuffix "]" (trimPrefix "[" (trim $header)) -}}
 {{-       $sectionName := regexFind `^[A-Za-z][A-Za-z0-9.-]*` $sectionText -}}
 {{-       if and (ne $sectionName "") (eq (lower (trim $sectionText)) (lower $sectionName)) -}}
@@ -43,7 +45,8 @@
 {{-     else if and (ne $section "") (regexMatch `(?i)^\s*[A-Za-z][A-Za-z0-9-]*\s*=` $line) -}}
 {{-       $keyWithEquals := regexFind `(?i)^[ \t]*[A-Za-z][A-Za-z0-9-]*[ \t]*=` $line -}}
 {{-       $key := lower (trim (trimSuffix "=" $keyWithEquals)) -}}
-{{-       if not (hasKey $managedKeys (printf "%s.%s" $section $key)) -}}
+{{-       $isRetiredWorktreeAlias := and (eq $section "alias") (hasKey $retiredWorktreeAliases $key) (regexMatch `(?i)git-worktree-provision\.(ps1|sh)` $line) -}}
+{{-       if and (not (hasKey $managedKeys (printf "%s.%s" $section $key))) (not $isRetiredWorktreeAlias) -}}
 {{-         $keptLines = append $keptLines $line -}}
 {{-       end -}}
 {{-     else -}}

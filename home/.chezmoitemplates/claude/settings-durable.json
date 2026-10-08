@@ -1,33 +1,14 @@
-{{- /* Durable, repository-owned Claude Code settings.
-
-       This file is mostly data with small profile gates. It is deep-merged over the live
-       ~/.claude/settings.json by home/dot_claude/modify_settings.json, and the
-       repository wins on any key named here. Every key absent from this file
-       belongs to Claude Code or to you, and survives untouched.
-
-       Add a setting by adding a JSON key. Use {{ }} only where a value genuinely
-       differs per machine, and pipe computed strings through toJson so quoting
-       and backslash escaping stay correct. */ -}}
-
+{{- /* Repository-owned Claude settings. The modify template merges these keys over
+       the live settings file so application-owned preferences and hooks survive. */ -}}
 {{- $isWindows := eq .chezmoi.os "windows" -}}
-{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
-{{- $isManaged := eq $profile.ai_harness "managed" -}}
-{{- $continuityEnabled := and $isManaged (eq $profile.ai_continuity "on") -}}
 {{- $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
-
 {{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
-
 {{- $notificationCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
-{{- $sessionStartCommand := "bash \"$HOME/.claude/hooks/check-worktree-launch.sh\"" -}}
-{{- $continuityLifecycleCommand := "bash \"$HOME/.local/share/maintain-task-continuity.sh\"" -}}
 {{- $statusLineCommand := "bash \"$HOME/.claude/claude-session-statusline.sh\"" -}}
 {{- if $isWindows -}}
 {{-   $notificationCommand = printf "%s \"$HOME/.local/share/show-agent-notification.ps1\"" $pwsh -}}
-{{-   $sessionStartCommand = printf "%s \"$HOME/.claude/hooks/check-worktree-launch.ps1\"" $pwsh -}}
-{{-   $continuityLifecycleCommand = printf "\"%s\" \"$HOME/.local/share/maintain-task-continuity.sh\"" $gitBash -}}
 {{-   $statusLineCommand = printf "%s \"$HOME/.claude/claude-session-statusline.ps1\"" $pwsh -}}
 {{- end -}}
-
 {
   "env": {
     "API_TIMEOUT_MS": "1200000",
@@ -38,27 +19,6 @@
     "CLAUDE_CODE_GIT_BASH_PATH": {{ $gitBash | toJson }}
     {{- end }}
   },
-
-  {{/* Posting a toast costs under a second; the rest of the notification hook's
-       runtime is PowerShell start-up, which has been measured above ten seconds
-       on a loaded machine.
-
-       At launch, SessionStart shares that start-up cost on Windows and additionally
-       runs `claude agents --json` to spot another session in this working directory,
-       measured at about a second. After clear or compaction it skips that listing and
-       only refreshes the continuity reminder when continuity is enabled and the harness
-       mode is managed; native mode does not register those lifecycle hooks. Native mode
-       still registers the lightweight Notification hook because it is useful feedback
-       without imposing continuity or worktree orchestration. Its timeout matches
-       SessionStart because the work is cheap but the interpreter is not. A timeout here
-       loses the warning silently, so it is set well clear of the measured worst case.
-
-       The continuity hook uses Bash even on Windows. Claude Code already requires Git Bash
-       there, and avoiding PowerShell startup matters because Stop runs after every response;
-       that path exits on a single file test when the working tree holds no continuity state.
-       It also runs on SessionStart, which is the first event after compaction that can put
-       context back in front of the model - PreCompact and PostCompact cannot, so neither is
-       wired here. */}}
   "hooks": {
     "Notification": [
       {
@@ -68,55 +28,18 @@
         ]
       }
     ],
-    {{/* `agent_completed` is emitted by the Notification event only while Claude's Agent view
-         is open. SubagentStop is the host-neutral lifecycle event, so it keeps completion toasts
-         working in the VS Code extension as well as the terminal client. */}}
     "SubagentStop": [
       {
         "hooks": [
           { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
         ]
       }
-    ]{{ if $isManaged }},
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact|fork",
-        "hooks": [
-          { "type": "command", "command": {{ $sessionStartCommand | toJson }}, "timeout": 20 }{{ if $continuityEnabled }},
-          { "type": "command", "command": {{ $continuityLifecycleCommand | toJson }}, "timeout": 10 }{{ end }}
-        ]
-      }
-    ]{{ if $continuityEnabled }},
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": {{ $continuityLifecycleCommand | toJson }}, "timeout": 5 }
-        ]
-      }
-    ]{{ end }}
-    {{ end }}
+    ]
   },
-
-  {{/* This key has to stay here. The repository manages both statusline scripts, so
-       releasing the setting would leave a fresh machine rendering two scripts that nothing
-       references. Where the repository ships the script it must ship the reference, which
-       is why /statusline cannot be used to change this - see AGENTS.md.
-
-       refreshInterval refreshes what the script works out for itself while no
-       event fires here: the branch and the counts of staged, modified, and
-       untracked files, which a background agent or another window changes under
-       an idle session.
-
-       It cannot refresh the rate limits. Those arrive with an API response, so a
-       timed re-run re-renders the same figures, and they only move when this
-       session next talks to the API. Coming back to a window left alone, the
-       limits show what was true when it last did something until you send
-       something. */}}
   "statusLine": {
     "type": "command",
     "command": {{ $statusLineCommand | toJson }},
     "refreshInterval": 5
   },
-
-"autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest"
 }

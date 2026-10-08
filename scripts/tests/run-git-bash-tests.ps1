@@ -6,10 +6,9 @@ param(
     [string[]] $TestScript = @(
         "scripts/tests/test-ai-profile-scope.sh",
         "scripts/tests/test-ai-configuration-profiles.sh",
-        "scripts/tests/test-git-worktree-provision.sh",
-        "scripts/tests/test-task-continuity.sh",
+        "scripts/tests/test-git-config-migration.sh",
         "scripts/tests/test-workflow-delete.sh",
-        "scripts/tests/test-run-task-end-to-end.sh"
+        "scripts/tests/test-company-flow-policy.sh"
     )
 )
 

@@ -19,9 +19,10 @@ while retaining a separate directory for Claude-only skills.
 - Store each shared instruction body once under `home/.chezmoitemplates/` and render it
   through thin tool-specific wrappers when metadata differs.
 - Store portable skills once under `home/dot_agents/skills/`.
-- Expose each portable skill to Claude with an individual chezmoi-managed symlink template
-  under `home/dot_claude/skills/`. Individual links allow real Claude-only skill directories
-  to coexist in the same target directory.
+- Expose each portable skill to Claude with an individual chezmoi-managed symlink template when
+  Claude can link directly to the shared package. Use a thin Claude wrapper when its discovery
+  metadata differs. The pre-commit hook checks that a wrapper's rendered instruction body matches
+  the shared package.
 - Keep genuinely tool-specific instructions, rules, skills, and commands in that tool's
   source tree. Do not create neutral paraphrases of tool-specific content.
 - Codex personal skills normally live in `~/.agents/skills`, which Copilot also scans. Treat
@@ -43,9 +44,9 @@ while retaining a separate directory for Claude-only skills.
 
 ## Consequences
 
-Shared content has one body while each client receives the path and metadata it expects.
-Adding a shared skill requires adding its Claude symlink template, and symlink behavior must
-remain part of cross-platform verification. Tool-specific capabilities remain explicit.
+Shared content has one body while each client receives the path and metadata it expects. Adding a
+shared skill requires a Claude symlink or wrapper, and both rendering paths remain part of
+cross-platform verification. Tool-specific capabilities remain explicit.
 
 ## Reconsider when
 

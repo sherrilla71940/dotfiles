@@ -51,55 +51,31 @@ keeps personal files consistent with their surrounding ecosystem.
 Reconsider if the preferred language changes for either repository category; do not collapse
 the distinction accidentally while editing the global rule.
 
-### Task continuity alongside native memory
+### Explicit cross-client handoffs
 
-The bootstrap rule that invokes `task-continuity` survives even though Claude Code and Codex
-both ship memory of their own, because neither crosses the boundary the skill exists for.
-Claude Code's auto memory is per-repository but stored under `~/.claude/`, machine-local and
-readable only by Claude. Codex Memories is Codex-only, globally scoped rather than
-per-repository, and off unless `[features] memories = true` is set. Nothing native gives the
-two clients one repository-local, Git-reconciled record of where work stopped.
+Client-native conversation resume and worktree features cover same-client continuation and code
+isolation. When work moves between different clients, a short handoff prompt carries only the facts
+needed to restart; the receiving agent checks the objective, checkout, Git diff, decisions,
+verification, blockers, materials, and next action against current sources. A transcript export can
+provide context, but it is not proof of repository state.
 
-The rule is short and its subject sounds like something the clients already do, which makes it
-an easy deletion for anyone who notices auto memory and stops there.
-
-Reconsider if Codex Memories becomes per-repository, if either client gains a shared or
-in-repository store the other can read, or if handoffs between Claude Code and Codex within one
-repository stop happening in practice.
-
-The activation decision is visible for work with concrete complexity signals because the
-absence of `.task-continuity/state.md` otherwise leaves no observable event for the client
-to react to. A task can grow through investigation until it is expensive to reconstruct while
-the agent remains focused on its immediate implementation steps.
-
-Claude and Codex use lifecycle hooks as deterministic backstops. A `Stop` hook reports a recorded
-branch or HEAD that no longer matches the checkout, offers cleanup when the active tracking
-sections are empty, and reports parked files with no unfinished sections as closure candidates;
-it never deletes them. A `SessionStart` hook keeps the state file excluded from Git. Neither
-`PreCompact` nor `PostCompact` provides a dedicated backstop: neither can put anything back into the model's
-context - a hook there could write unverified state but never ask for it to be reconciled, so
-what it produced had to be cleaned up by the next turn anyway. The ordinary `SessionStart`
-notice that continuity is active covers the post-compaction case instead. This remains a
-backstop rather than the primary workflow: it cannot protect every crash or hard cutoff, and
-only skill-driven checkpoints can preserve important reasoning before those failures. Both clients
-run the shared continuity script with client-specific Stop output. Copilot consumes the same
-working-tree-local state without a matching lifecycle hook.
-
-Reconsider this backstop if clients can maintain cross-client task state reliably without a
-custom lifecycle hook.
+This keeps handoff overhead proportional to the work and avoids a second, custom state machine
+that must track every client lifecycle. Reconsider if observed cross-client handoffs repeatedly
+lose decisions that cannot be recovered from Git, project instructions, durable issues, or a concise
+handoff.
 
 ### Company flow before branch creation
 
-The company profile keeps a short branch-policy trigger because `run-task-end-to-end` is explicit:
-direct branch creation does not load that skill. The global pre-push hook checks branch names only
-when publishing, after local work may already be on the wrong branch. Exact workflow arguments,
-validation, and bypass steps stay in the workflow skill.
+The company profile keeps a short branch-policy trigger because the task skill is explicit: direct
+branch creation does not load it. The global pre-push hook rejects non-flow branches under
+`company-flow`. A repository that needs an ongoing exception records
+`branch.policy=project-exception` in its local Git config.
 
 ### Approved artifact differences
 
-Classifying a difference from an approved artifact is a completion decision even when continuity
-is disabled. The shared core keeps that trigger; the continuity skill owns the detailed handoff
-record and state pointer when continuity is active.
+Classifying a difference from an approved artifact is a completion decision. Record an unresolved
+decision or deferred dependency in its durable issue or handoff record, with an owner, rather than
+relying on conversation history.
 
 ### External project material
 

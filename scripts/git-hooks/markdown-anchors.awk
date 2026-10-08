@@ -4,8 +4,8 @@
 # Both failures are silent. The link still renders, and only fails when a reader clicks it. The
 # guides and the decision records cross-reference each other both ways, so one renamed heading or
 # one moved file can break several files at once. A miscounted `../` is the easy one to miss,
-# because the path looks plausible and no tool complains; that is how a dead link to the
-# task-continuity skill survived in scripts/tests/continuity-fixtures/README.md.
+# because the path looks plausible and no tool complains; the repository check scans every
+# tracked Markdown file so broken cross-references are caught before delivery.
 #
 # A link to <name>.md is satisfied by a <name>.md.tmpl source, because chezmoi renders the
 # template to that name in the target. Headings inside a .tmpl are not verified: the staged

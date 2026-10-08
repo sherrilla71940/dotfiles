@@ -19,11 +19,11 @@ is a skill. But `~/.agents/skills` is a shared discovery path: Codex, Copilot CL
 read it natively, so a skill placed there for Codex alone is visible to Copilot too, which already
 has the path-scoped version. Directory placement cannot isolate it.
 
-A second case is a workflow whose contract is shared but whose execution adapter is inherently
-host-specific. Claude Code and Codex can each support `worktree-task-workflow`, but Claude uses
-`EnterWorktree` and `ExitWorktree` while Codex uses an already-associated worktree and app-owned
-Handoff and retention. One supposedly portable skill would either contain misleading tool names
-or make every host load instructions for the other. Copilot does not support this workflow here.
+A second case is a skill whose behavior depends on one host's lifecycle or API. A shared body that
+names another client's commands or app-owned behavior can mislead its readers, so keep that
+guidance client-specific when the behavior itself cannot be expressed portably. The current task
+implementation and handoff skills use shared, client-neutral instructions; they rely on native
+client and ordinary Git behavior instead of provisioning a host-specific lifecycle.
 
 Since ADR-0002 the isolation options were checked. No supported per-tool skill root exists, and
 no plugin is required.
@@ -69,23 +69,10 @@ Isolation depends on five separate conditions rather than a directory, so it is 
 partly right. That is why the hook checks it and why the procedure is written out in
 [docs/customization-support.md](../customization-support.md#add-a-codex-targeted-skill).
 
-`worktree-task-workflow` is the first skill gated this way; it was named
-`frontend-task-workflow` until 2026-09-02, when it was renamed because nothing in it is
-frontend-specific and the worktree precondition is what both adapters actually share.
-Its Codex adapter lives under `home/dot_agents/skills/`, while its Claude adapter remains
-under `home/dot_claude/skills/`.
-Their invocation, implementation, manual-test and publishing rules come from shared template
-bodies; their worktree entry and cleanup mechanics remain host-specific.
-
-`worktree-task-workflow` is state-changing, so its Codex policy is explicit-only. The portable
-`project-continuity` and `worktree-manifest` skills use the same explicit-only policy because they
-can create or change working-tree state. Managed lifecycle hooks remain independent: they can
-report continuity automatically without implicitly starting any of these workflows.
-
-`project-continuity` was the earlier near miss, carrying a Copilot guard while being symlinked to
-Claude. That guard was removed once Copilot CLI was verified to load
-`~/.copilot/instructions/**/*.instructions.md` and to read and write the continuity state, so the
-skill supports all three clients and is gated for none.
+The task implementation and handoff skills now use shared bodies with thin Claude and
+Codex-discoverable wrappers. They do not need the Codex-only gate because their instructions are
+client-neutral. Apply this decision only when a future skill has a concrete Codex-specific purpose;
+do not create a client-only skill merely to encode native worktree defaults.
 
 A gated skill is still visible in Copilot's skill list. Gates 3 and 5 stop it being used, not
 being seen.

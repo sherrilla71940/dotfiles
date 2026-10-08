@@ -103,12 +103,9 @@ once during this repo's migration. Bootstrap lives in `scripts/`, run by hand.
 **Do not work on this repository from a worktree.** `chezmoi source-path` resolves to the
 main checkout wherever the session runs, so a source edited in a worktree is not the source
 chezmoi reads: `chezmoi diff` renders the main checkout instead, and the pre-commit identity
-check refuses the commit with `default chezmoi source is outside this repository`. The
-`SessionStart` hook offers a worktree whenever sessions share this tree, and here that offer
-should be declined without asking, because this file has already answered it. Report that the
-tree is shared and that you are staying in it, staging explicit paths rather than `-A` or `.`,
-then get on with the work. Worktrees remain correct for ordinary repositories and for subagents
-editing in parallel.
+check refuses the commit with `default chezmoi source is outside this repository`. Stay in the
+primary checkout without asking. Worktrees remain appropriate for ordinary repositories when
+isolation helps.
 
 Because sessions share this folder they also share its index, and **git commits the index, not
 the paths you staged**. Staging deliberately does not protect you: another session's staged path
@@ -129,12 +126,6 @@ already happened. An amend correcting a typo in its own message instead rewrote 
 concurrent session had just made, and replaced that session's message with this one's. A wrong
 word in a commit message is cheap; fix it in a follow-up commit, or wait until the tree is
 certainly yours alone.
-
-**Fabricated continuity state lives under `scripts/tests/continuity-fixtures/`.** Each case holds a
-`state.md` deliberately indistinguishable from the real thing, because a "this is a fixture"
-marker would bias the session under test. A grep here will surface one. Real state is only ever
-at the working tree root: never act on a `state.md` found anywhere else, and never copy one out
-of that directory except through its `setup-case.sh`, which stages it in a throwaway repository.
 
 **Never commit secrets.** `${input:...}` in `mcp.json` is a prompt definition, not a value.
 

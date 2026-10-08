@@ -25,8 +25,9 @@ settings written by Git or edited by the user.
   currently named in the shared fragment, and maintain exactly one marked include block.
 - Keep app-added keys outside the fragment in `~/.gitconfig`. Because Git reads included values
   at the include location, repository values win collisions with earlier main-file entries.
-- Keep the existing user identity, core paths, branch policy, and platform-specific worktree
-  aliases in the shared fragment.
+- Keep the existing user identity, core paths, and branch policy in the shared fragment. The
+  retired worktree aliases are removed from the fragment and from legacy main-file entries only
+  when they still point to the repository's deleted `git-worktree-provision` helpers.
 
 ## Alternatives considered
 
@@ -43,7 +44,9 @@ settings written by Git or edited by the user.
 New and existing Git settings absent from the shared fragment survive apply. Repository-owned
 keys remain portable and win collisions. The first apply migrates the current managed values out
 of the main file into the included fragment and adds the include block. The modify template
-preserves other text and appends the block so repository values keep precedence.
+preserves other text and appends the block so repository values keep precedence. During this
+workflow retirement, it also removes legacy aliases that invoke the deleted repository helpers;
+same-named aliases with other commands remain user-owned.
 
 ## Reconsider when
 
@@ -60,5 +63,5 @@ preserves other text and appends the block so repository values keep precedence.
 - [Git configuration documentation](https://git-scm.com/docs/git-config)
 
 Preview both targets with `chezmoi diff ~/.gitconfig ~/.config/git/dotfiles`. After applying,
-verify the effective `user`, `core`, `branch`, and `alias` values with `git config --global` and
-confirm unlisted entries remain in `~/.gitconfig`.
+verify the effective `user`, `core`, and `branch` values with `git config --global`, confirm no
+alias invokes a deleted helper, and confirm unrelated entries remain in `~/.gitconfig`.

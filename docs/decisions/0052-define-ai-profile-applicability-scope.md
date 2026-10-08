@@ -36,8 +36,9 @@ company-only applicability, so this record moves it to the company context layer
   editing. Do not infer it from the current machine, client, or a filename.
 - Render both contexts for staged changes to shared AI guidance, rules, or skills. The focused
   profile-scope check must confirm that baseline guidance appears in both contexts and that the
-  company JavaScript naming convention appears only in the company context. Keep the full profile
-  matrix suite for defaults, invalid values, language behavior, and harness combinations.
+  company JavaScript naming convention appears only in the company context. The profile tests also
+  cover the personal default, invalid context values, and language behavior. Harness combinations
+  are no longer part of the profile because harness modes have been removed.
 
 ## Alternatives considered
 
@@ -79,6 +80,6 @@ contract governs guidance applicability, not whether a skill package is discover
 - [`scripts/git-hooks/pre-commit`](../../scripts/git-hooks/pre-commit)
 
 Run `bash scripts/tests/test-ai-profile-scope.sh <chezmoi-bin> <source-root>` for the focused
-two-context check and `bash scripts/tests/test-ai-configuration-profiles.sh` for the full profile
-matrix. The repository pre-commit hook runs the focused check against staged source when AI content
-changes.
+two-context check and `bash scripts/tests/test-ai-configuration-profiles.sh` for profile rendering,
+default-context, and invalid-context checks. The repository pre-commit hook runs the focused check
+against staged source when AI content changes.

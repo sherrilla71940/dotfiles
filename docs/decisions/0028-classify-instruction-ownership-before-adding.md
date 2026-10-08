@@ -11,9 +11,9 @@ Adding a rule to the file that happens to be open can therefore create either un
 behavior or three divergent copies of one rule.
 
 The repository already separated always-on constraints, operational procedures, and durable rationale
-in ADR-0001. `AGENTS.md` also prohibits duplicating shared instructions, and the continuity skill
-distinguishes transient state from durable project rules and private client instructions. Those rules
-did not provide one short decision gate for classifying new behavior before adding it.
+in ADR-0001. `AGENTS.md` also prohibits duplicating shared instructions and requires source ownership
+and profile scope to be classified. Those rules did not provide one short decision gate for
+classifying new behavior before adding it.
 
 ## Decision
 
@@ -47,12 +47,10 @@ they work in this repository without loading them for unrelated repositories.
 ## Profile impact
 
 The classification rule and generic source-of-truth guidance remain part of the shared core, so they
-render for Claude, Codex, and Copilot in all current `ai_context`, `ai_continuity`, and `ai_harness`
-combinations. Exact chezmoi mechanics are now project-local and arrive through this repository's
-root instructions instead of every user's shared profile. This does not change the profile schema,
-language defaults, continuity behavior, lifecycle hooks, or native-versus-managed harness
-boundaries. The shared rules remain useful in native mode because they govern source ownership, not
-continuity automation, and their documentation-impact guidance does not require a hook.
+render for Claude, Codex, and Copilot under both supported `ai_context` values. Exact chezmoi
+mechanics are project-local and arrive through this repository's root instructions instead of every
+user's shared profile. The shared rules apply independently of client worktree behavior, and their
+documentation-impact guidance does not require a lifecycle hook.
 
 ## Alternatives considered
 
@@ -83,5 +81,5 @@ reliable scope boundary.
 - [`AGENTS.md`](../../AGENTS.md) — repository-specific ownership and source rules
 - [`docs/customization-support.md`](../customization-support.md) — project-specific customization surfaces
 - [`docs/decisions/0001-separate-operational-guides-from-decision-records.md`](./0001-separate-operational-guides-from-decision-records.md) — documentation layers
-- [`home/dot_agents/skills/task-continuity/SKILL.md`](../../home/dot_agents/skills/task-continuity/SKILL.md) — continuity promotion boundary
+- [`home/.chezmoitemplates/skills/task-handoff/SKILL.md`](../../home/.chezmoitemplates/skills/task-handoff/SKILL.md) — explicit handoff boundary
 - [`scripts/tests/test-ai-configuration-profiles.sh`](../../scripts/tests/test-ai-configuration-profiles.sh) — cross-profile rendering coverage

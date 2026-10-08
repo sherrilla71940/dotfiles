@@ -12,11 +12,8 @@
        fromJson fails on malformed input rather than replacing it, which keeps a
        hand-broken settings.json recoverable instead of silently overwritten.
 
-       Repository-owned hook commands are removed from the live hook lists and re-added from
-       the durable profile template. Other hook groups remain application-owned: when the
-       durable template owns an event, those groups are appended to its repository-owned
-       groups; when it does not, the live event is left untouched. This lets native mode keep
-       lightweight notifications without duplicating or discarding a user's custom hooks. */ -}}
+       Previously managed lifecycle hooks are removed during the merge. Other hook groups
+       remain application-owned and survive unchanged. */ -}}
 {{- $live := dict -}}
 {{- if ne (.chezmoi.stdin | trim) "" -}}
 {{-   $live = fromJson .chezmoi.stdin -}}

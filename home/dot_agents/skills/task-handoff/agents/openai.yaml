@@ -1,0 +1,6 @@
+interface:
+  display_name: "Task handoff"
+  short_description: "Prepare a short, verifiable task handoff"
+  default_prompt: "Use $task-handoff to prepare a verifiable handoff for another session."
+policy:
+  allow_implicit_invocation: false

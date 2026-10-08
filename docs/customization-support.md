@@ -33,7 +33,7 @@ The columns group surfaces only when they read the same personal configuration:
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
-| `run-task-end-to-end` invocation | Claude adapter presents guided questions through its native structured question surface when available, then falls back to text | Codex adapter uses `request_user_input` when exposed by the current surface, then falls back to text | unsupported; use the documented compatibility boundaries | unsupported; use the documented compatibility boundaries |
+| Task implementation and handoff skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Workflow deletion skill | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
@@ -57,55 +57,13 @@ suppresses the same duplication for rules with `chat.instructionsFilesLocations`
 exposes `chat.promptFilesLocations` for prompt files, but there is no equivalent setting for
 skills.
 
-## AI profile dimensions
+## AI context
 
-The repository exposes two independent machine-local inputs plus one managed-mode option:
-`ai_context` (`personal` or `company`), `ai_harness` (`managed` or `native`), and
-`ai_continuity` (`on` or `off`). Claude Code and Codex use all three inputs for their instruction
-and hook outputs. The managed VS Code Copilot commit-message instruction uses the context-derived
-artifact language. Missing values default to `personal`, `managed`, and `on`; unsupported values
-fail during rendering. `ai_workflow` remains a legacy alias for `ai_harness` when the new key is
-absent. The rendered configuration is the shared baseline plus one context layer. Continuity
-guidance and automatic lifecycle reporting are effective only when `ai_continuity=on` and
-`ai_harness=managed`.
+The profile has one machine-local selector: ai_context, with personal and company values. It defaults to personal and composes the shared baseline with the selected context. Personal defaults artifact language to English; company defaults it to Traditional Chinese for Taiwan. Repository instructions take precedence within their repository.
 
-Managed mode is the complete opinionated harness: it registers continuity reporting, notifications,
-and Claude's automatic worktree-launch check when applicable. Native mode is the low-opinionated
-layer: it keeps shared instructions, reusable skills, the statusline, lightweight notifications,
-delivery wrappers, and private-file protections, but does not load continuity guidance or register
-continuity/worktree lifecycle hooks. Workflow skills remain discoverable and explicitly invokable
-in native mode. General shell, Git, VS Code, and Windows Terminal settings are not controlled by
-`ai_harness`.
+Older machine-local values such as ai_harness, ai_continuity, and ai_workflow are ignored by the current resolver. Users can remove them with chezmoi edit-config.
 
-This repository is an explicit exception: its root `AGENTS.md` is a repository
-instruction that overrides the machine default and requires the effective context to be
-`personal` while work is performed here.
-
-Personal context defaults applicable artifact language to English (`en`). Company context defaults
-it to Traditional Chinese (`zh-TW`, `zhtw` in existing command interfaces), and recommends or
-loads `natural-zhtw` where that language is produced. Explicit language arguments and repository
-instructions take precedence. User-level configuration and customization source remains English
-in both contexts; application/project comment language follows the active context unless the
-repository or project says otherwise. Continuity state remains English.
-
-Turning continuity off removes the always-loaded continuity instructions and unregisters the
-continuity lifecycle hook, but managed notifications and the Claude worktree-launch check remain.
-Native mode unregisters the continuity and worktree lifecycle hooks but retains lightweight
-notifications. The `task-continuity` skill stays installed, so an explicit continuity request
-can still invoke it; returning to managed mode with continuity on restores the automatic behavior.
-Because Codex records trust for each hook entry by path and content hash, switching harness modes
-may require a new `/hooks` approval. Native mode is lower-opinionated, not notification-free.
-State-changing workflow skills—including task continuity, worktree provisioning, workflow deletion,
-and the task workflow—are explicit-only in every client and harness mode. Git history is the
-recovery mechanism for tracked workflow source; the repository no longer provides archive or restore
-skills. Managed hooks may report lifecycle
-events, but they never start a worktree or change source state.
-Worktree workflow and worktree manifest remain independently available as explicit skills in all
-selector combinations and do not toggle continuity. Broad Copilot integration—skill discovery,
-repository instructions, and agent plugins—is unchanged and deferred. See [ADR-0014](./decisions/0014-machine-local-ai-configuration-profiles.md)
-for the design boundaries. See [ADR-0022](./decisions/0022-define-native-and-managed-ai-harness-modes.md)
-for the native-versus-managed harness decision.
-
+This repository uses personal context for its own documentation and source comments, even when the machine selects company context.
 ### Separate profile applicability from client reach
 
 Profile applicability answers which context should receive guidance. Client reach answers which
@@ -228,7 +186,7 @@ Workflow deletion is repository tooling, not another client customization direct
 shows the exact source/dependency/target boundary before mutation. The shared engine under
 `scripts/workflows/` deletes only confirmed canonical source files and queues generated-target
 cleanup through `home/.chezmoiremove`; it never deletes live targets directly or changes
-continuity state.
+untracked files or application-owned state.
 
 Git is the recovery mechanism for tracked source. Use `git log` to locate the relevant commit and
 `git restore --source <commit> -- <paths>` after reviewing the diff. Read the
@@ -317,14 +275,12 @@ The repository uses two shared-source layers because they solve different proble
 
 | Layer | Purpose | Example |
 | --- | --- | --- |
-| `home/.chezmoitemplates/` | Stores reusable text bodies that client wrappers include while rendering. | `rules/accessibility.md`, `core.md`, and continuity guidance |
-| `home/dot_agents/skills/` | Stores complete native skill packages that render to `~/.agents/skills/` and retain discovery metadata, references, and host gates. | `run-task-end-to-end/` and `task-continuity/` |
+| `home/.chezmoitemplates/` | Stores reusable text bodies that client wrappers include while rendering. | `rules/accessibility.md`, `core.md`, and the task-handoff skill body |
+| `home/dot_agents/skills/` | Stores native skill packages that render to `~/.agents/skills/` with Codex discovery metadata. | `run-task-end-to-end/` and `task-handoff/` |
 
-Do not move every shared skill into `.chezmoitemplates/`. A portable skill still needs a native
-`SKILL.md` directory and client-discovery metadata after rendering. Keep the reusable prose in one
-source body when client wrappers need different frontmatter, but keep a portable skill's native
-package together under `home/dot_agents/skills/`. Claude can then reach that package through its
-native symlink, while Codex and Copilot can discover it from `~/.agents/skills/`.
+Keep skill instructions in one shared body when multiple clients need them, then render thin native
+wrappers where each client discovers skills. Codex metadata belongs beside the package under
+`home/dot_agents/skills/`; Claude discovers skills under `home/dot_claude/skills/`.
 
 ## Add a skill
 
@@ -333,14 +289,14 @@ clients should discover the skill:
 
 | Client reach | Source |
 | --- | --- |
-| Portable across all three clients | `home/dot_agents/skills/<name>/SKILL.md` plus `home/dot_claude/skills/symlink_<name>.tmpl` |
+| Portable across clients | Shared body in `home/.chezmoitemplates/skills/<name>/SKILL.md` plus thin native wrappers and metadata for each supported client |
 | Codex-targeted; not linked into Claude and blocked from automatic Copilot invocation | `home/dot_agents/skills/<name>/` with a `.codex-only` marker and no Claude symlink |
 | Claude-only | `home/dot_claude/skills/<name>/SKILL.md` |
 | Copilot-only | `home/dot_copilot/skills/<name>/SKILL.md` |
 
-The Claude symlink template points to
-`{{ .chezmoi.homeDir }}/.agents/skills/<name>`. Individual links allow portable and Claude-only
-skills to coexist in `~/.claude/skills/`.
+Use a Claude symlink template when it can point directly to a portable `~/.agents/skills/<name>`
+package. Use a thin Claude wrapper only when its frontmatter or discovery metadata differs. The
+pre-commit hook checks that a wrapper's rendered instruction body matches the shared skill.
 
 Check a portable skill for client-specific tool names before sharing it. Because these are
 source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmoi add`.
@@ -348,8 +304,8 @@ source-state changes, run `chezmoi diff` and `chezmoi apply`; do not run `chezmo
 ### Give the skill a way to be reached
 
 A skill that nothing points at is unlikely to be used. An earlier local-session audit found that
-every skill that had been invoked was named explicitly in always-on context — a rule body,
-`core.md`, or the continuity bootstrap — and no skill without such a reference had run. Description
+every skill that had been invoked was named explicitly in always-on context — a rule body or
+`core.md` — and no skill without such a reference had run. Description
 quality was not what separated them; routing was. Treat that observation as a historical finding,
 not a current usage measurement.
 
@@ -401,10 +357,10 @@ frontmatter schema, so it rejects client-specific fields used in this repository
 or install PyYAML only to make that validator pass. The repository hook renders the staged source
 and checks the `.codex-only` host gates.
 
-For a portable skill that changes repository state, add the same explicit-only boundary to its
-`SKILL.md` with `disable-model-invocation: true` and to its Codex metadata with
-`allow_implicit_invocation: false`. Keep this policy separate from `ai_harness`: managed mode may
-register lifecycle hooks, but it does not make source-changing workflows implicit.
+For a portable skill that should be explicitly invoked in Claude Code and Codex, set
+`disable-model-invocation: true` in its shared skill frontmatter and
+`allow_implicit_invocation: false` in its Codex metadata. Invocation policy is independent of the
+selected personal or company context.
 
 When another host adapter shares workflow guidance, keep detailed references as thin templates
 that include one existing shared body. Do not copy that body into each skill.

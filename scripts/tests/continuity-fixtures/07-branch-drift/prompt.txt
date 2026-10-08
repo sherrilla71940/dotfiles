@@ -1,2 +1,0 @@
-Add the missing index on notifications.recipient_id - the query planner is doing
-a full scan on the digest job.

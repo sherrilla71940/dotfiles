@@ -72,5 +72,5 @@ application-owned configuration changes are implied by the reorganization.
 ## Related
 
 - [`docs/chezmoi-workflow.md`](../chezmoi-workflow.md)
-- [`README.md`](../../README.md#system-at-a-glance)
+- [`README.md`](../../README.md#workflows-worth-exploring)
 - [`AGENTS.md`](../../AGENTS.md)

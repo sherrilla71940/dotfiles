@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify the profile-rendered company-flow hook and its explicit local exceptions.
+# Verify the company-flow hook and its explicit local exceptions.
 set -euo pipefail
 
 repository_root="$(git rev-parse --show-toplevel)"
@@ -13,17 +13,13 @@ fail() {
 }
 
 assert_success() {
-  local label="$1" policy="$2" branch="$3" state="${4:-}"
+  local label="$1" policy="$2" branch="$3"
   local repo="$work_directory/$label"
   mkdir -p "$repo"
   git -C "$repo" init -q
   git -C "$repo" config user.email test@example.invalid
   git -C "$repo" config user.name test
   git -C "$repo" config branch.policy "$policy"
-  if [[ -n "$state" ]]; then
-    mkdir -p "$repo/.task-continuity"
-    printf '%s\n' "$state" > "$repo/.task-continuity/state.md"
-  fi
   printf 'refs/heads/%s %s refs/heads/%s %s\n' "$branch" \
     1111111111111111111111111111111111111111 "$branch" \
     0000000000000000000000000000000000000000 |
@@ -53,6 +49,5 @@ assert_success valid_flow company-flow flow/123-example-task
 assert_success personal_exception personal feat/legacy-task
 assert_success project_exception project-exception feat/legacy-task
 assert_failure invalid_policy unsupported feat/legacy-task
-assert_success recorded_bypass company-flow feat/legacy-task $'Branch: feat/legacy-task\nBranch policy: company-flow-bypassed\nPolicy bypass: --force'
 
-printf 'company-flow policy tests: default, exceptions, and explicit bypass OK\n'
+printf 'company-flow policy tests: default and repository-local exceptions OK\n'

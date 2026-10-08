@@ -133,16 +133,19 @@ if [[ "$src_skills" -ne "$out_skills" ]]; then
     empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Source filename rules'."
 fi
 
-# 3. Every portable skill must render as an individual Claude symlink. A source-only
-#    .codex-only marker instead requires host gates that keep Claude and Copilot from
-#    automatically loading a Codex-targeted skill. Codex's invocation policy is explicit in the
-#    metadata: side-effectful skills use false, while a deliberately safe on-demand skill may use
-#    true.
+# 3. Every portable skill must render in Claude as an individual symlink or thin skill wrapper.
+#    Wrappers preserve Claude-specific discovery metadata while
+#    keeping the rendered instruction body in sync with the portable package. A source-only
+#    .codex-only marker instead requires host gates that keep Claude and Copilot from automatically
+#    loading a Codex-targeted skill.
 for src in "$staged"/home/dot_agents/skills/*; do
   [[ -d "$src" ]] || continue
   name="$(basename "$src")"
   link_src="$staged/home/dot_claude/skills/symlink_$name.tmpl"
   link_out="$render/.claude/skills/$name"
+  wrapper_src="$staged/home/dot_claude/skills/$name/SKILL.md.tmpl"
+  wrapper_out="$link_out/SKILL.md"
+  shared_out="$render/.agents/skills/$name/SKILL.md"
 
   if [[ -f "$src/.codex-only" ]]; then
     [[ ! -e "$link_src" ]] ||
@@ -160,11 +163,29 @@ for src in "$staged"/home/dot_agents/skills/*; do
     continue
   fi
 
-  [[ -f "$link_src" ]] || fail "shared skill '$name' has no Claude symlink template."
-  [[ -L "$link_out" ]] || fail "shared skill '$name' did not render as a Claude symlink."
-  target="$(readlink "$link_out")"
-  [[ "$target" == */.agents/skills/"$name" ]] ||
-    fail "shared skill '$name' rendered with an unexpected Claude symlink target: $target"
+  if [[ -f "$link_src" ]]; then
+    [[ -L "$link_out" ]] || fail "shared skill '$name' did not render as a Claude symlink."
+    target="$(readlink "$link_out")"
+    [[ "$target" == */.agents/skills/"$name" ]] ||
+      fail "shared skill '$name' rendered with an unexpected Claude symlink target: $target"
+  else
+    [[ -f "$wrapper_src" ]] ||
+      fail "shared skill '$name' has neither a Claude symlink template nor a thin skill wrapper."
+    [[ -f "$shared_out" && -f "$wrapper_out" ]] ||
+      fail "shared skill '$name' did not render both the shared package and Claude wrapper."
+    shared_body="$(awk '
+      NR == 1 && $0 == "---" { frontmatter = 1; next }
+      frontmatter && $0 == "---" { frontmatter = 0; next }
+      !frontmatter { print }
+    ' "$shared_out")"
+    wrapper_body="$(awk '
+      NR == 1 && $0 == "---" { frontmatter = 1; next }
+      frontmatter && $0 == "---" { frontmatter = 0; next }
+      !frontmatter { print }
+    ' "$wrapper_out")"
+    [[ "$shared_body" == "$wrapper_body" ]] ||
+      fail "shared skill '$name' has different Claude and portable instruction bodies."
+  fi
 done
 
 # 4. Every shared rule must render with identical Claude and Copilot bodies. cmp is available

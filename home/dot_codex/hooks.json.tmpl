@@ -1,34 +1,9 @@
-{{- /* Codex lifecycle hooks. Codex and Claude Code share the command-hook payload and output
-       contract used here, so the continuity hook is the same script for both clients. Their
-       matcher values remain client-specific: Codex SessionStart sources are startup, resume,
-       clear and compact; Claude also supports fork. The script reads hook_event_name, cwd and
-       source; the `codex` argument selects Codex's Stop output contract.
-
-       This file is user-authored configuration. Codex records hook *trust* separately, in
-       config.toml under [hooks.state] keyed by this path plus a sha256, so managing this file
-       does not fight the app for ownership - but each entry needs one `/hooks` approval per
-       machine, and editing an entry invalidates its approval.
-
-       Native harness mode renders the lightweight notification entry but no continuity
-       lifecycle entries. Managed mode adds those lifecycle entries according to the profile.
-       Claude's equivalent wiring lives in home/.chezmoitemplates/claude/settings-durable.json. */ -}}
-
-{{- $isWindows := eq .chezmoi.os "windows" -}}
-{{- $profile := includeTemplate "ai-profile.yaml" . | fromYaml -}}
-{{- $isManaged := eq $profile.ai_harness "managed" -}}
-{{- $continuityEnabled := and $isManaged (eq $profile.ai_continuity "on") -}}
-{{- $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
-{{- $gitBash := printf "%s/AppData/Local/Programs/Git/bin/bash.exe" .chezmoi.homeDir | replace "/" "\\" -}}
-
-{{- $continuityCommand := "bash \"$HOME/.local/share/maintain-task-continuity.sh\" codex" -}}
-{{- $notifyCommand := "" -}}
-{{- if $isWindows -}}
-{{- /* Codex's Windows hook launcher can misparse quoted arguments before the script starts.
-         These paths are space-free on the managed Windows hosts, so keep the command quote-free. */ -}}
-{{-   $continuityCommand = printf "%s %s/.local/share/maintain-task-continuity.sh codex" $gitBash .chezmoi.homeDir -}}
+{{- /* Keep the user-level session-end notification. Workspace and task lifecycle
+       behavior follows the active client's native defaults. */ -}}
+{{- $notifyCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
 {{-   $notifyCommand = printf "%s %s/.local/share/show-agent-notification.ps1" $pwsh .chezmoi.homeDir -}}
-{{- else -}}
-{{-   $notifyCommand = "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
 {{- end -}}
 {
   "hooks": {
@@ -38,22 +13,6 @@
           { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 3 }
         ]
       }
-    ]{{ if $continuityEnabled }},
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
-          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 10 }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": {{ $continuityCommand | toJson }}, "timeout": 10 }
-        ]
-      }
     ]
-    {{- end }}
   }
 }

@@ -8,7 +8,7 @@ The deletion workflow remains useful because Git does not know which files make 
 which files are shared, or which generated home-directory targets must be removed by chezmoi. It
 therefore provides a bounded, confirmation-gated source deletion plan and queues only confirmed
 target paths in `home/.chezmoiremove`. It never commits, pushes, deletes live targets, or changes
-continuity state.
+legacy ignored task state.
 
 ## User-facing workflow
 
@@ -59,8 +59,8 @@ python scripts/workflows/workflow-delete.py \
 ```
 
 Use `--delete-definition` only when the tracked catalog definition is also explicitly confirmed
-for deletion. The engine refuses untracked definitions, generated paths, private files,
-continuity state, archives, symlinks, path traversal, and source files that are not tracked.
+for deletion. The engine refuses untracked definitions, generated paths, private files, legacy
+ignored task state, archives, symlinks, path traversal, and source files that are not tracked.
 
 ## Recovery and generated targets
 
@@ -76,7 +76,7 @@ after reviewing the generated target removals. Keep `.chezmoiremove` entries unt
 machine has applied the deletion, then remove them in a later reviewed change.
 
 Git history restores source contents; it does not restore application-owned settings, generated
-targets, authentication, runtime state, or `.task-continuity/`. Those remain outside this
+targets, authentication, runtime state, or old `.task-continuity/` data. Those remain outside this
 workflow's ownership boundary.
 
 The focused regression suite is:

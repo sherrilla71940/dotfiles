@@ -12,9 +12,12 @@ agent session.
 ## Working with ADRs
 
 - Use the next four-digit number and a short kebab-case title.
+- Keep record numbers stable. When a retired record is removed, leave its gap and keep this index
+  in numeric order.
 - Set the status to `Proposed`, `Accepted`, `Superseded`, or `Rejected`.
-- Once accepted, preserve the record. If the decision changes, add a new ADR and mark the
-  old one `Superseded by ADR-NNNN`.
+- Keep accepted records that still explain active structure or policy. A later accepted ADR may
+  explicitly retire a cohesive legacy subsystem and list its records for removal after migration;
+  Git history remains the recovery path for those records.
 - Keep the current procedure in the workflow guide; link to it from the ADR rather than
   duplicating it.
 - Include concrete reconsideration triggers so a later session can distinguish an
@@ -34,48 +37,24 @@ agent session.
 | [0008](./0008-manage-windows-terminal-settings-by-key.md) | Accepted | Manage durable Windows Terminal settings while preserving generated profiles |
 | [0009](./0009-own-windows-terminal-actions-and-keybindings.md) | Superseded by 0050 | Add the Shift+Enter newline action and keybinding |
 | [0010](./0010-normalize-the-working-tree-to-lf.md) | Accepted | Normalize the whole working tree to LF so chezmoi diff shows only real changes |
-| [0011](./0011-fix-the-continuity-state-path.md) | Accepted | Fix the continuity state path at `.task-continuity/` and keep both privacy layers |
-| [0012](./0012-support-codex-worktree-entry-points.md) | Accepted | Support native Codex Handoff and safe CLI/IDE worktree provisioning |
 | [0013](./0013-ignore-personal-ai-instructions-globally.md) | Accepted | Ignore personal Claude and Codex instruction files globally |
-| [0014](./0014-machine-local-ai-configuration-profiles.md) | Accepted | Compose machine-local context and continuity profiles without duplicating skills; extended by 0022 |
 | [0015](./0015-organize-repository-tooling-by-purpose.md) | Superseded by 0016 | Organize repository tooling by purpose and expose one diagnostic entry point |
 | [0016](./0016-rename-the-project-facing-tooling-command.md) | Accepted | Rename the project-facing diagnostic command to `dev-env` while retaining chezmoi and local-path compatibility |
-| [0017](./0017-review-completed-parked-continuity-state.md) | Accepted | Review parked continuity state for completion and require confirmation before closure |
 | [0018](./0018-track-explicit-workflow-archives.md) | Superseded by 0020 and 0046 | Track explicit workflow archives outside active source and discovery paths |
 | [0019](./0019-discover-and-retire-workflows-safely.md) | Superseded by 0020 and 0046 | Discover workflow boundaries by outcome and retire sources with explicit target cleanup |
 | [0020](./0020-archive-or-delete-workflow-lifecycle.md) | Superseded by 0046 | Make archive a recoverable copy plus source deletion, with an explicit no-archive delete path |
-| [0021](./0021-add-native-workflow-profile-mode.md) | Superseded by 0022 | First, narrower native mode; retained as historical context |
-| [0022](./0022-define-native-and-managed-ai-harness-modes.md) | Accepted | Define `ai_harness` native and managed boundaries, including retained notifications and conditional lifecycle hooks |
-| [0023](./0023-optional-per-worktree-runtime-isolation.md) | Accepted | Add explicit, descriptor-driven per-worktree HTTP port isolation without coupling it to AI profiles |
-| [0024](./0024-refine-continuity-and-material-filing-policy.md) | Accepted | Clarify instruction provenance, continuity reassessment, verification scope, and material filing timestamps |
-| [0025](./0025-pin-worktree-task-origin-and-base.md) | Accepted | Pin each task to a verified origin identity and immutable base commit |
+| [0024](./0024-instruction-provenance-and-material-filing.md) | Accepted | Clarify instruction provenance, verification scope, and material filing |
 | [0026](./0026-integrate-current-base-before-publishing.md) | Accepted | Require an explicit base-freshness and conflict-safe integration gate before publishing |
 | [0027](./0027-add-repository-identity-preflight.md) | Accepted | Add a read-only repository-identity gate before substantive work |
 | [0028](./0028-classify-instruction-ownership-before-adding.md) | Accepted | Classify instruction ownership and scope before adding behavior |
-| [0029](./0029-enforce-continuity-completion-gate.md) | Accepted | Enforce continuity reconciliation and cleanup review at task boundaries |
-| [0030](./0030-read-only-worktree-provisioning-preflight.md) | Accepted | Add a read-only provisioning preflight and explicit unprovisioned decision for non-native worktree creation |
-| [0031](./0031-read-only-tracked-configuration-readiness.md) | Accepted | Report modified tracked configuration without provisioning or blocking worktree creation |
-| [0032](./0032-read-only-configuration-reference-readiness.md) | Accepted | Report explicit configuration references without copying values or guessing project setup |
-| [0033](./0033-explicit-worktree-provisioning-safety.md) | Accepted | Refuse tracked-file provisioning and classify private client files |
-| [0034](./0034-require-explicit-runtime-isolation-for-browser-tests.md) | Accepted | Require explicit per-worktree runtime isolation for isolated browser/runtime testing |
-| [0035](./0035-add-report-only-worktree-setup-contract.md) | Accepted | Add a report-only tracked contract for project-specific worktree setup |
-| [0036](./0036-deterministic-worktree-mapping-and-runtime-states.md) | Accepted | Make external worktree mappings deterministic and separate provisioning from runtime states |
-| [0037](./0037-add-in-place-task-route.md) | Superseded by 0038 | Add an explicit in-place task route while preserving worktree safeguards |
-| [0038](./0038-generalize-task-workspace-and-verification-policy.md) | Superseded by 0039 | Separate workspace, verification, continuity, and publish-authorization policy |
-| [0039](./0039-canonicalize-task-workflow-skill-name.md) | Superseded by 0041 | Make `task-workflow` canonical while retaining `worktree-task-workflow` compatibility |
 | [0040](./0040-require-company-flow-branch-identifiers.md) | Accepted | Require explicit flow identifiers for company-context task branches while preserving explicit project exceptions |
-| [0041](./0041-rename-task-workflow-and-project-continuity.md) | Superseded by 0045 | Make `run-task-end-to-end` and `task-continuity` canonical while preserving the initial migration window |
-| [0042](./0042-preserve-completed-continuity-by-parking.md) | Accepted | Preserve completed active continuity by parking it before a new continuity-enabled task starts |
-| [0043](./0043-restore-parked-continuity-by-git-identity.md) | Accepted | Restore a unique parked task by matching task and immutable Git identity while keeping legacy and ambiguous matches manual |
-| [0044](./0044-three-run-task-invocation-styles.md) | Accepted | Support guided, prompted natural-language, and explicit run-task-end-to-end invocation styles with client-native question presentation |
-| [0045](./0045-coordinated-naming-cleanup.md) | Accepted | Complete the task-continuity and material-directory naming migration while retaining only useful workflow aliases |
 | [0046](./0046-retire-tracked-workflow-archives.md) | Accepted | Retire tracked workflow archives and use Git history for source recovery |
-| [0047](./0047-enforce-company-flow-with-explicit-bypass.md) | Accepted | Enforce the company-flow branch policy by default with an explicit, auditable workflow bypass |
 | [0048](./0048-merge-explicit-vscode-settings-by-key.md) | Accepted | Merge explicitly managed VS Code settings over app-owned user settings |
 | [0049](./0049-preserve-app-written-settings-across-clients.md) | Accepted | Preserve app-written VS Code and Copilot CLI settings outside explicit repository ownership |
 | [0050](./0050-preserve-app-written-windows-terminal-actions-and-keybindings.md) | Accepted | Preserve unlisted Windows Terminal actions and keybindings |
 | [0051](./0051-preserve-app-written-git-global-settings.md) | Accepted | Preserve Git global settings outside explicit repository ownership |
 | [0052](./0052-define-ai-profile-applicability-scope.md) | Accepted | Separate AI profile applicability from client reach and validate both rendered contexts |
+| [0053](./0053-native-first-ai-workflows.md) | Accepted | Use native client/Git workflows with an explicit, verified cross-client handoff |
 
 ## Template
 

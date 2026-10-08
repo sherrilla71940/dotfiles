@@ -57,8 +57,7 @@ source_skill_count="$(find "$source_root/home/dot_agents/skills" -type f ! -name
 for context in personal company; do
   override="$work_directory/$context.yaml"
   destination="$work_directory/render-$context"
-  printf 'ai_context: %s\nai_continuity: off\nai_harness: native\n' \
-    "$context" >"$override"
+  printf 'ai_context: %s\n' "$context" >"$override"
   mkdir -p "$destination"
 
   "$chezmoi_bin" apply \

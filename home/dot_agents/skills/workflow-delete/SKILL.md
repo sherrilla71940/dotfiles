@@ -10,7 +10,7 @@ disable-model-invocation: true
 Discover and delete a reusable workflow from this repository's canonical source state. This is a
 destructive operation: it can delete source files and change `home/.chezmoiremove`, but it never
 creates a recovery copy, deletes live targets directly, commits, pushes, renders, applies, changes
-an AI profile, or changes continuity state.
+an AI profile, or changes legacy ignored task state.
 
 Deletion is explicit-only and user-invokable in each supported client. The examples are prompts,
 not shell commands, and accept a name or description rather than requiring a manifest path:
@@ -32,8 +32,8 @@ $workflow-delete the task continuity implementation
 ## Discover the deletion boundary
 
 1. Establish the repository root and read its instructions. Confirm that the request concerns
-   canonical workflow source, not `.task-continuity/state.md`, unmigrated `.project-continuity/state.md`, parked handoffs, a conversation,
-   or an application's local state.
+   canonical workflow source, not old `.task-continuity/` or `.project-continuity/` data, a handoff,
+   a conversation, or an application's local state.
 2. Perform bounded discovery from the named or described workflow. Inspect the primary skill or
    entry point, direct client adapters, directly referenced shared templates, referenced scripts,
    operational documentation, and direct references found with `rg`. Use `chezmoi target-path`
@@ -44,7 +44,7 @@ $workflow-delete the task continuity implementation
    - **generated targets:** exact home-relative targets to add to `home/.chezmoiremove`;
    - **catalog definition:** keep it, or delete it with `--delete-definition` only when it is
      tracked and the user confirms;
-   - **continuity:** keep `.task-continuity/`, unmigrated `.project-continuity/`, and all parked state.
+    - **legacy local state:** keep `.task-continuity/` and `.project-continuity/` data.
 4. Never infer a recursive dependency closure. If a source is shared or a target mapping is
    uncertain, leave it out of the deletion plan and report the uncertainty.
 5. If the user wants a recoverable source version, identify the relevant Git commit and use
@@ -62,8 +62,8 @@ python scripts/workflows/workflow-delete.py \
 ```
 
 The engine must show the owned files to delete, shared files to keep, catalog treatment, generated
-targets to queue, the fact that no recovery copy is created, and continuity state to keep. Stop and
-ask for a second, immediate confirmation before repeating with `--apply`:
+targets to queue, the fact that no recovery copy is created, and legacy local state to keep. Stop
+and ask for a second, immediate confirmation before repeating with `--apply`:
 
 ```bash
 python scripts/workflows/workflow-delete.py \
@@ -87,7 +87,7 @@ Never delete:
 
 - generated targets directly;
 - shared source files listed as `sharedFiles`;
-- `.task-continuity/`, unmigrated `.project-continuity/`, parked state, credentials, private local
+- `.task-continuity/`, `.project-continuity/`, parked state, credentials, private local
   instructions, runtime data, or any archive directory.
 
 Read [the workflow deletion guide](../../../../docs/workflow-deletion.md) for the manifest fields,

@@ -31,53 +31,18 @@ Use these rules to choose a command:
   nothing. Never run `chezmoi add` on one — see the warning below.
 - **Created a new live file:** Run `chezmoi add <target>` to start managing it.
 
-## Machine-local AI profile selectors
+## Machine-local AI context
 
-The AI profile is selected in chezmoi's machine-local config, not in this repository's source
-state. Run `chezmoi edit-config` and set these values under `[data]` when needed:
+The AI context is selected in chezmoi's machine-local config, not in repository source. Run chezmoi edit-config and set ai_context under [data] when needed:
 
-```toml
-[data]
-ai_context = "company"        # personal or company; default: personal
-ai_continuity = "on"           # on or off; default: on
-ai_harness = "managed"         # managed or native; default: managed
-```
+    [data]
+    ai_context = "company"  # personal or company; default: personal
 
-`ai_context` and `ai_harness` are independent choices; `ai_continuity` is an option within managed
-mode. The raw selector inputs have eight supported combinations, but the two native combinations
-have the same effective continuity behavior because native suppresses continuity. Missing
-`ai_context` uses `personal`, missing `ai_continuity` uses `on`, and missing `ai_harness` uses
-`managed`. For backward compatibility, `ai_workflow` is accepted as a legacy alias only when
-`ai_harness` is absent; new configuration should use `ai_harness`. Any other value fails clearly
-during rendering. Personal context resolves the applicable artifact-language default to English
-(`en`); company resolves it to Traditional Chinese (`zh-TW`, represented as `zhtw` where an
-existing interface uses that value). Explicit user or repository instructions and explicit language
-arguments take precedence.
+The selected context composes the shared baseline with personal or company guidance. Personal context defaults artifact text to English; company context defaults it to Traditional Chinese for Taiwan. Explicit user and repository instructions take precedence. This repository always uses the personal context while work happens here.
 
-The selectors compose one baseline with either the personal or company context. `ai_continuity`
-stores the managed-mode continuity preference; its guidance and automatic lifecycle reporting are
-effective only when it is `on` and `ai_harness = "managed"`. Managed mode also registers
-notifications and the Claude worktree-launch hook. Native mode keeps shared instructions, reusable
-skills, the statusline, lightweight notifications, delivery wrappers, and private-file protections,
-but does not load continuity guidance or register continuity/worktree lifecycle hooks. The stored
-continuity preference is unchanged, so returning to managed mode can re-enable it. General shell,
-Git, VS Code, and Windows Terminal settings are outside this selector. Workflow skills remain
-available as explicit opt-ins in either mode. State-changing workflow skills never start implicitly;
-managed lifecycle hooks report events without starting a worktree or changing source state. The selectors affect newly rendered configuration
-and newly started sessions; an already-running session keeps its startup context. The values are
-local to the machine and are not committed or synchronized by this repository. When working in
-this repository, root `AGENTS.md` overrides the machine context and requires the effective context
-to be `personal`.
+Earlier configs may still contain ai_continuity, ai_harness, or ai_workflow. The current templates ignore those keys. Remove them with chezmoi edit-config if you want to clean up the machine-local file.
 
-The worktree task workflow is an opt-in for substantial or isolation-sensitive work, not a mandatory
-entry point for every task. Small, self-contained edits that do not need parallel isolation may stay
-in the current valid worktree; use the workflow when isolation, cross-session handoff, controlled
-verification, or publishing matters.
-
-After editing the config, use `chezmoi diff` to preview the selected render. Review it before
-`chezmoi apply`, then restart the affected client sessions. A dedicated profile CLI is deferred;
-the worktree skills remain installed and independently invokable in every selector combination.
-
+After changing the context, run chezmoi diff to preview the selected render. Review it before chezmoi apply, then start a new client session to load the updated instructions.
 ## Delete reusable workflows
 
 Workflow deletion operates on canonical repository source, not generated targets or application

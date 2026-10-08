@@ -26,7 +26,7 @@ Use Markdown by default. It is portable, reviewable, and the canonical copy for 
 
 If no canonical destination is specified, use the repository's handoff convention: a Markdown file
 under `~/Documents/handoffs/{repo}/YYYY-MM-DD/{HH-mm}-{slug}.md` with timezone-aware `Created` and
-`Last updated` metadata and a commit or continuity-state pin when one exists. Do not use the
+`Last updated` metadata and a commit pin when one exists. Do not use the
 worktree directory name as `{repo}`.
 
 ## Scope each item to the writer's delivery
@@ -76,8 +76,9 @@ apply:
 ## Keep the document alive without duplicating it
 
 Treat the handoff as one living file while the task is in progress. Update that file as facts are
-verified. Do not copy its full contents into `.task-continuity/state.md`; continuity should hold
-the path, recipient, purpose, and format constraints so the next client can reopen the same file.
+verified. When another AI session needs it, use the task-handoff skill to point to this file and
+state whether the receiving environment can access it; do not duplicate the full document into a
+conversation prompt.
 
 Add an appendix such as **Investigated and closed — no action** for concerns that were checked and
 ruled out. This prevents the recipient or the next agent from repeating the investigation.

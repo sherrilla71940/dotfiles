@@ -208,18 +208,23 @@ reload their configuration.
 If adoption changed the source, review and commit those portable changes so they follow the
 other machines. Do not commit machine-specific values or credentials.
 
-## Select the machine-local AI profile
+## Select the machine-local AI context
 
-After initialization, choose the two independent profile inputs and the managed-mode continuity
-option with `chezmoi edit-config`.
-The values, defaults, validation behavior, language mapping, and repository-level override are
-documented in [the machine-local selector guide](./chezmoi-workflow.md#machine-local-ai-profile-selectors).
+Set `ai_context` to `personal` or `company` in the machine-local chezmoi configuration. It defaults
+to `personal`. Personal context uses English artifact defaults; company context uses Traditional
+Chinese for Taiwan. Repository instructions can override the selected context, and this repository
+always uses personal context.
 
-Preview the selected result with `chezmoi diff` before applying. These values are machine-local,
-not synchronized in the repository, and machine-wide in v1. Start new Claude Code, Codex, or VS
-Code sessions after applying; already-running sessions retain their startup context. Worktree
-workflow and manifest skills remain independently available in every combination. A profile CLI
-and broad Copilot integration are intentionally deferred.
+Older `ai_continuity`, `ai_harness`, and `ai_workflow` values are ignored. Remove them with
+`chezmoi edit-config` if they remain in the local file.
+
+Applying the native-workflow migration removes the old task-continuity skill and hooks but leaves
+ignored `.task-continuity/` records on disk. Before relying on an old record, check its next action
+against current Git state; use `task-handoff` for any work that another client must continue.
+Review old records individually before deleting them.
+
+After changing the context, preview with `chezmoi diff` before applying. Start new client sessions
+after the selected configuration has been applied.
 
 ## Application installation and login
 
@@ -315,143 +320,25 @@ client-specific source and Codex's create-once behavior.
 
 ## Enable repository validation
 
-The bootstrap helper does this. Run it by hand in a clone that has not been bootstrapped:
+Run bash scripts/dev-env doctor from the repository root to check chezmoi source identity, the selected AI context, unapplied target drift, Claude shared-skill links, and required tool versions. The command is read-only.
 
-```bash
-git config core.hooksPath scripts/git-hooks
-```
+Run the Bash-based test suites on Windows through the PowerShell wrapper so they use Windows Git Bash rather than a bash command that may resolve to WSL:
 
-The rendered user Git configuration also sets `core.hooksPath` to `~/.config/git/hooks`, where the
-profile-managed pre-push hook enforces the company-flow policy when the effective machine context is
-`company`. The dotfiles repository keeps its explicit local `branch.policy=personal` exception, so
-this repository remains governed by its own repository-standard branch policy. Company application
-repositories inherit the machine-wide `company-flow` default unless their repository instructions
-declare a reviewed exception.
+    .\scripts\tests\run-git-bash-tests.ps1
 
-The normal workflow-level exception is explicit `--force branch=<branch>`. The workflow records that
-exception in continuity and still requires verification, base freshness, commit, and publish
-authorization. Git hooks cannot reliably distinguish a user's intent from `git push --force`; a
-direct emergency hook bypass therefore uses Git's standard `--no-verify` option and should remain
-rare and separately reviewable.
+Pass one or more relative .sh paths to run selected suites. The wrapper validates the Git for Windows bash.exe and does not modify PATH or install anything.
 
-From the repository root, run `bash scripts/dev-env doctor` when diagnosing a machine. It reports
-the chezmoi source identity, resolved profile values, unapplied drift, Claude shared-skill links,
-and required tool versions without changing any target.
+Run the repository pre-commit hook manually from PowerShell with:
 
-On Windows, run the repository's Bash-based suites through the PowerShell wrapper so they use
-Windows Git Bash rather than a `bash` command that may resolve to WSL:
+    .\scripts\tests\run-pre-commit.ps1
 
-```powershell
-.\scripts\tests\run-git-bash-tests.ps1
-```
+The wrapper resolves Git for Windows Bash and prepends only that child process's usr/bin to PATH. It validates the staged snapshot; it does not stage files or apply chezmoi.
 
-Pass one or more relative `.sh` paths to run only selected suites. The wrapper does not modify
-`PATH` or install anything; it resolves and validates the Git for Windows `bash.exe` before
-running each script. In PowerShell, pass multiple paths as an array:
+The pre-commit hook checks the staged snapshot. It verifies the source identity, renders files into a temporary directory, checks skill file-count parity and Claude shared-skill links, compares shared Claude and Copilot instructions, renders both AI contexts when guidance changes, rejects YAML frontmatter in Codex's AGENTS.md, checks paired statusline scripts, and validates Markdown links.
 
-```powershell
-.\scripts\tests\run-git-bash-tests.ps1 -TestScript @(
-    "scripts/tests/test-ai-configuration-profiles.sh",
-    "scripts/tests/test-task-continuity.sh"
-)
-```
+The hook renders with the same --exclude=scripts flag described in the source-filename rules section of the chezmoi workflow guide. Before checking, it lists every staged path. In this shared checkout, use git commit --only with explicit paths so another session's staged files cannot enter the commit.
 
-To run the repository pre-commit hook manually from PowerShell, use the dedicated wrapper instead
-of invoking `bash` directly:
-
-```powershell
-.\scripts\tests\run-pre-commit.ps1
-```
-
-It resolves the same Git for Windows Bash and prepends only that child process's `usr\bin` to
-`PATH`, so utilities such as `grep` and `mktemp` are available without changing the machine or
-PowerShell session. It validates the staged snapshot; it does not stage files or apply chezmoi.
-
-The pre-commit hook, in order (the script's own numbering starts at the render step):
-
-- confirms the default chezmoi source resolves inside this repository,
-- materializes and renders the staged Git snapshot,
-- checks skill file-count parity, shared Claude skill links, and Codex-targeted host gates,
-- compares rendered Claude and Copilot rule bodies with cross-platform tools,
-- when AI guidance or a reusable skill is staged, renders both contexts to check profile applicability,
-- rejects YAML frontmatter in Codex's rendered `AGENTS.md`,
-- when a status line script is staged, renders both copies and compares their output, which
-  needs `jq` and PowerShell on `PATH`, and
-- when any Markdown is staged, checks supported relative Markdown links for existing file
-  targets and verifies that any `#fragment` names a heading in its target file.
-
-The hook renders only into a temporary directory, using the same `--exclude=scripts` flag
-described in [the workflow guide](./chezmoi-workflow.md#source-filename-rules).
-
-Before those checks it lists every staged path. It also warns, without rejecting the commit,
-when more than one interactive Claude Code session is running inside this working tree. Such
-sessions share one index, and `git commit` takes the whole index rather than the paths a session
-meant to stage, so the warning recommends `git commit --only`. The launch-time equivalent is
-the `SessionStart` hook in `home/dot_claude/hooks/check-worktree-launch.*`. Decline that
-offer in this repository and stage explicit paths instead: `chezmoi source-path` resolves to
-the main checkout wherever the session runs, so a worktree edit is not the source chezmoi
-reads. See the worktree constraint in [`AGENTS.md`](../AGENTS.md#constraints). The concurrent
-session check needs `claude` and `jq` on `PATH` and is skipped without them.
-
-That hook is Claude-only, because it shells out to `claude agents --json` and speaks in terms of
-`EnterWorktree`. Task-continuity reporting used to live in it too and no longer does; it is
-described next.
-
-When `ai_continuity` is `on` and `ai_harness` is `managed`, the script rendered from
-`home/dot_local/share/maintain-task-continuity.sh.tmpl` adds the
-deterministic reporting that the skill cannot do for itself. On `SessionStart` it reports whether
-continuity exists and, when it does, names the objective it tracks, so the decision about whether
-this is the same task is made against a shown fact rather than from recall; it also ensures
-`.task-continuity/` is excluded from Git. On `Stop` it compares the recorded branch and HEAD
-against the checkout, keeps the completion-gate message when drift is also present, requires the
-cleanup review when the active tracking sections are empty, reports parked files with no unfinished
-sections as closure candidates, and reports parked files with missing or malformed `Parked:`
-metadata as unknown-age entries. It never deletes parked state; the skill requires confirmation for
-each named file. HEAD is reported two ways. A
-recorded commit that has left the history - rebased, reset, or belonging to another line of work
-- means the recorded starting point cannot be trusted. A recorded commit that is still an
-ancestor but more than one commit behind means a checkpoint opportunity passed without the file
-being rewritten; one commit behind is work in flight and stays silent, because a notice after
-every commit is one readers learn to ignore. Stop notices remain in `systemMessage` for the user
-and are also returned as `hookSpecificOutput.additionalContext` so Claude can act on them in the
-terminal or VS Code extension. The script never reads or copies the transcript.
-
-With `ai_continuity = "off"`, the continuity guidance and continuity lifecycle hook are absent, but
-managed notifications and Claude's worktree-launch check remain. With `ai_harness = "native"`,
-continuity guidance and continuity/worktree lifecycle hooks are absent; the statusline, lightweight
-notifications, shared instructions, reusable skills, wrappers, and private-file protections remain.
-The stored continuity preference is not changed, so returning to managed mode with continuity on
-restores the automatic behavior. The `task-continuity` skill remains installed for explicit
-continuity requests. Codex records trust by hook path and content hash, so switching harness modes
-can require a new `/hooks` approval.
-
-It lives in `~/.local/share` rather than under `~/.claude` because **both Claude Code and Codex
-run it**. They share the hook event names and input fields used here (`cwd`, `hook_event_name`,
-`session_id`, `source`), so one script serves both while each client keeps its own matcher values.
-The Stop output differs: Claude receives `systemMessage` and matching
-`hookSpecificOutput.additionalContext`, while Codex Stop accepts `systemMessage` but does not
-document that hook-specific field. Codex's hook command passes `codex` to select its output shape.
-Claude also matches
-`fork`; Codex `SessionStart` currently accepts only `startup`, `resume`, `clear`, and `compact`.
-See the current [Codex hooks documentation](https://learn.chatgpt.com/docs/hooks) before changing
-that boundary. Claude calls the script through
-[`settings-durable.json`](../home/.chezmoitemplates/claude/settings-durable.json), Codex through
-[`hooks.json`](../home/dot_codex/hooks.json.tmpl). Codex records hook trust separately, in
-`config.toml` under `[hooks.state]`, so each entry needs one `/hooks` approval per machine.
-Anything naming one client's machinery stays in that client's own hook, which is why
-`check-worktree-launch.sh` keeps only its concurrent-session and worktree-container checks.
-
-Neither `PreCompact` nor `PostCompact` is wired in either client: neither can inject context into
-the model, so a backstop built on them could only write state, never ask for it to be reconciled.
-In managed mode, the ordinary `SessionStart` report covers the post-compaction case instead. On Windows the hook
-uses Git Bash to avoid paying PowerShell startup cost after every response.
-
-Claude Code, Codex and Copilot can all resume the resulting `.task-continuity/state.md` when
-started in the same physical working tree. In managed mode with continuity enabled, Claude and
-Codex additionally get the hook reporting above; native mode leaves that protocol available only
-through explicit instructions and skills. Copilot has no hook system, so its entry path is the
-global instructions and shared skill alone.
-
+The pre-commit hook also warns when multiple interactive Claude Code sessions run in this working tree. They share the Git index. Stay in this primary checkout because chezmoi reads from it; ordinary repositories can use the clients' native worktree features when isolation helps.
 ## Working tree at `~/dotfiles`
 
 This repository is developed in, not only applied: decision records, bootstrap scripts, a
@@ -530,10 +417,10 @@ before importing a live application file.
 | Chezmoi source attributes and special files | Filename transformations affect rendered names | [Source attributes](https://www.chezmoi.io/reference/source-state-attributes/) and [special files](https://www.chezmoi.io/reference/special-files/) |
 | Claude rules, skills, agents, and settings | Discovery paths and accepted fields evolve | [Claude Code documentation](https://code.claude.com/docs/en/overview) |
 | Claude structured questions | `AskUserQuestion` fields, limits, and availability can change | [Handle approvals and user input](https://code.claude.com/docs/en/agent-sdk/user-input) |
-| Claude Code worktree creation and cleanup | Sweep eligibility, ignored-file provisioning, and entry rules change by patch release, and `run-task-end-to-end` depends on all three | [Worktrees](https://code.claude.com/docs/en/worktrees) and [worktree provisioning](./worktree-provisioning.md) |
+| Claude Code conversation and worktree behavior | Resume, export, cleanup, and `.worktreeinclude` behavior evolves | [Commands](https://code.claude.com/docs/en/commands) and [worktrees](https://code.claude.com/docs/en/worktrees) |
+| Claude Code ignored project skills in worktrees | Main-checkout skill read-through requires v2.1.277 or later; check that required skills are present in the task workspace | [Worktrees](https://code.claude.com/docs/en/worktrees) |
 | Codex prompts, agents, config, and skills | Customization surfaces and deprecations evolve | [Codex customization](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
+| Cross-client chat import | Supported sources and surfaces differ; an imported chat still needs Git verification | [Import from another agent](https://learn.chatgpt.com/docs/import) and [Claude commands](https://code.claude.com/docs/en/commands) |
 | Codex structured user input | `request_user_input` is treated as a current-host capability, not a shared workflow API; the OpenAI Responses API documents application-defined input tools rather than a built-in tool with that name | [Async tool calling](https://developers.openai.com/api/docs/guides/async-tool-calling) |
-| Codex lifecycle hooks | Event names, payload fields and the trust model are newer than the rest of this setup, and `maintain-task-continuity.sh` assumes they stay aligned with Claude's | [Codex hooks](https://learn.chatgpt.com/docs/hooks) |
+| Codex conversation workspaces | Local/worktree handoff, branch movement, and ignored-file handling evolve | [Worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees) |
 | VS Code and Copilot customization | User folders and instruction discovery evolve | [VS Code agent customization](https://code.visualstudio.com/docs/agent-customization/overview) and [Copilot customization](https://docs.github.com/en/copilot/customizing-copilot) |
-| Codex app managed worktrees | `task-continuity` records that the app keeps them under `$CODEX_HOME/worktrees` on a detached HEAD, and that archiving a chat can delete one; that behavior is observed rather than documented, so re-check it in the app | [Codex config](https://learn.chatgpt.com/docs/config-file/config-basic) and direct observation |
-| Copilot instruction reach and memory scope | `task-continuity` depends on `~/.copilot/instructions/**/*.instructions.md` reaching CLI and Agent Host sessions, and on Copilot Memory being repository-scoped and shared rather than machine-local like Claude's and Codex's | [Copilot CLI config dir](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference) and [repository instructions](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions/add-repository-instructions) |

@@ -54,9 +54,11 @@ follow my machines" into the correct source-state edit and explain unfamiliar te
 
 ## Constraints
 
-**Never duplicate a shared instruction.** Bodies live once in `home/.chezmoitemplates/`.
-When a rule needs different frontmatter per tool, add a thin `.tmpl` wrapper — do not copy
-the text.
+**Never duplicate shared guidance.** Shared instruction bodies included by client wrappers live
+once in `home/.chezmoitemplates/`; portable skill packages live once in
+`home/dot_agents/skills/`. When a rule needs different frontmatter per tool, add a thin `.tmpl`
+wrapper — do not copy the text. Link a portable skill into Claude when its package can be used
+as-is.
 
 **Never reword a rule to be "tool-neutral".** A rule that names one tool's machinery
 belongs in that tool's file only. A paraphrase living alongside the original is the exact

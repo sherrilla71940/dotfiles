@@ -265,12 +265,12 @@ The repository uses two shared-source layers because they solve different proble
 
 | Layer | Purpose | Example |
 | --- | --- | --- |
-| `home/.chezmoitemplates/` | Stores reusable text bodies that client wrappers include while rendering. | `rules/accessibility.md`, `core.md`, and the task-handoff skill body |
-| `home/dot_agents/skills/` | Stores native skill packages that render to `~/.agents/skills/` with Codex discovery metadata. | `run-task-end-to-end/` and `task-handoff/` |
+| `home/.chezmoitemplates/` | Stores reusable text bodies that client wrappers include while rendering. | `rules/accessibility.md` and `core.md` |
+| `home/dot_agents/skills/` | Stores portable skill packages that render to `~/.agents/skills/`, including any needed Codex discovery metadata. | `run-task-end-to-end/` and `task-handoff/` |
 
-Keep skill instructions in one shared body when multiple clients need them, then render thin native
-wrappers where each client discovers skills. Codex metadata belongs beside the package under
-`home/dot_agents/skills/`; Claude discovers skills under `home/dot_claude/skills/`.
+Keep each portable skill's instructions and supporting files in one package under
+`home/dot_agents/skills/`. Link that package into Claude when it needs the same content;
+use a thin client wrapper only when discovery metadata or instructions must differ.
 
 ## Add a skill
 
@@ -279,7 +279,7 @@ clients should discover the skill:
 
 | Client reach | Source |
 | --- | --- |
-| Portable across clients | Shared body in `home/.chezmoitemplates/skills/<name>/SKILL.md` plus thin native wrappers and metadata for each supported client |
+| Portable across clients | `home/dot_agents/skills/<name>/`, linked into Claude through `home/dot_claude/skills/symlink_<name>.tmpl` when the package can be used as-is |
 | Codex-targeted; not linked into Claude and blocked from automatic Copilot invocation | `home/dot_agents/skills/<name>/` with a `.codex-only` marker and no Claude symlink |
 | Claude-only | `home/dot_claude/skills/<name>/SKILL.md` |
 | Copilot-only | `home/dot_copilot/skills/<name>/SKILL.md` |

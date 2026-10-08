@@ -31,7 +31,6 @@ flowchart LR
     shared --> render
     adapters --> render
     render --> ai["AI client 原生設定位置<br/>Claude Code · Codex · GitHub Copilot"]
-    ai --> local["由 client 管理的狀態<br/>session · 憑證 · runtime"]
     render --> settings["Shell · Git · editor · terminal<br/>以及其他長期保留的設定"]
 ```
 
@@ -42,10 +41,10 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 想做什麼 | 從哪裡開始 | 它會怎麼做 |
 | --- | --- | --- |
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
-| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
-| 把工作交給另一個 AI session | [`task-handoff`](./home/.chezmoitemplates/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
+| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
+| 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-例如：「用 `run-task-end-to-end` 實作附上的快捷鍵規格並驗證。」需要時可指定起始 branch 或 commit、任務 branch、worktree、驗證方式，或 PR／MR 的目標分支。沒有指定時，skill 會確認目前 checkout 是否適合，並記下實際的起始 commit。
+例如：「用 `run-task-end-to-end` 實作附上的快捷鍵規格並驗證。」skill 會確認目前 checkout 是否適合、記下起始 commit；你指定或需要獨立工作目錄時，則使用 client 原生的 worktree。起點或發布目標有特別要求，再一併說明即可。
 
 整個流程如下：
 
@@ -75,8 +74,8 @@ flowchart TB
 | 桌面通知（Windows 與 macOS） | Claude Code 等待使用者回應，或 agent、subagent 完成時會提醒；Codex session 結束時也會提醒。Windows 和 macOS 各有一支通知腳本，兩個 client 也各自設定 hook。 | [Windows 腳本](./home/dot_local/share/show-agent-notification.ps1)、[macOS 腳本](./home/dot_local/share/show-agent-notification-macos.sh)、[Claude 設定](./home/.chezmoitemplates/claude/settings-durable.json)和 [Codex hooks](./home/dot_codex/hooks.json.tmpl)。 |
 | 本機驗證 | hook 會把已暫存的 chezmoi 來源快照渲染到暫存目錄，不會套用到家目錄。檢查項目包括 chezmoi 來源目錄是否指向這個 repository、skill 和共用規則的一致性、Bash／PowerShell 狀態列輸出，以及 Markdown 連結；其他測試涵蓋 profile 行為、診斷工具、Git 設定和公司 branch policy。 | [Pre-commit hook](./scripts/git-hooks/pre-commit)、[Bash 測試入口](./scripts/tests/run-git-bash-tests.ps1) 與[設定指南](./docs/setup.md)。 |
 | 個人與工作用 AI 設定 | 機器本機的 `ai_context` 讓同一份設定來源能用於個人或工作環境，套用各自的 AI 指引與預設值。這台機器選用哪一套，不會提交到 Git。 | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) 與[profile 設定方式](./docs/chezmoi-workflow.md#machine-local-ai-context)。 |
-| 檔案與材料整理 | 規格與參考資料、可重複使用的測試資料，以及交接紀錄分別放在 `~/Documents/` 下的不同目錄。任務如果用到多份資料，就在 issue、PR／MR 或一份狀態筆記中連結；使用外部材料前先確認來源。 | [專案材料規則](./home/.chezmoitemplates/core.md#project-material)與 [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md)。 |
-| AI 協作防護與證據檢查 | 共用核心規則要求在信任邊界驗證輸入、保留輸出編碼、使用參數化 SQL，並避免把機密寫入或提交到 Git；也要求代理確認 checkout 和材料來源，且只回報實際執行過的檢查，目的是減少常見安全錯誤和未經驗證的完成宣稱。 | [共用核心規則](./home/.chezmoitemplates/core.md) 與 [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md)。 |
+| 專案材料與交接紀錄 | 規格與參考資料、可重複使用的測試資料，以及交接紀錄分別放在 `~/Documents/` 下的不同目錄。任務如果用到多份資料，就在 issue、PR／MR 或一份狀態筆記中連結；使用外部材料前先確認來源。 | [專案材料規則](./home/.chezmoitemplates/core.md#project-material)與 [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md)。 |
+| 安全與驗證防護 | 共用核心規則要求在信任邊界驗證輸入、保留輸出編碼、使用參數化 SQL，並避免把機密寫入或提交到 Git；也要求代理確認 checkout 和材料來源，且只回報實際執行過的檢查，目的是減少常見安全錯誤和未經驗證的完成宣稱。 | [共用核心規則](./home/.chezmoitemplates/core.md) 與 [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md)。 |
 
 **狀態列範例。** 圖中的模型與用量是當時的數值。
 
@@ -89,7 +88,7 @@ flowchart TB
 | [`home/`](./home/) | chezmoi 管理的目標設定來源。 |
 | [`home/.chezmoitemplates/`](./home/.chezmoitemplates/) | 可重用的設定、指引本文和範本。 |
 | [`home/dot_agents/skills/`](./home/dot_agents/skills/) | 共用 skill，以及依 client 限制的 skill 來源。 |
-| `home/dot_<client>/` | 各 client 的原生入口，以及接上共用指引的精簡 wrapper。 |
+| `home/dot_<client>/` | 各 client 專屬的設定，以及接上共用指引的精簡 wrapper。 |
 | [`scripts/`](./scripts/) | bootstrap、診斷和驗證工具。 |
 | [`docs/`](./docs/) | 設定步驟、AI 設定來源與支援對照、操作指南和架構決策紀錄。 |
 

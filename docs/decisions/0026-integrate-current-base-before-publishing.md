@@ -54,5 +54,5 @@ adopts a different branch publication policy.
 
 ## Related files and verification
 
-- [`home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md`](../../home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md)
-- [`home/.chezmoitemplates/skills/task-handoff/SKILL.md`](../../home/.chezmoitemplates/skills/task-handoff/SKILL.md)
+- [`home/dot_agents/skills/run-task-end-to-end/SKILL.md`](../../home/dot_agents/skills/run-task-end-to-end/SKILL.md)
+- [`home/dot_agents/skills/task-handoff/SKILL.md`](../../home/dot_agents/skills/task-handoff/SKILL.md)

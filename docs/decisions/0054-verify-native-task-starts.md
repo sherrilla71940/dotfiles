@@ -40,7 +40,7 @@ verification, or if a repository needs a stricter project-specific base policy.
 
 ## Related files and verification
 
-- `home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md`
+- `home/dot_agents/skills/run-task-end-to-end/SKILL.md`
 - `scripts/tests/test-ai-configuration-profiles.sh`
 - `README.md` and `README.zh-TW.md`
 

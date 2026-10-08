@@ -8,7 +8,7 @@ trap 'rm -rf "$work"' EXIT
 fail() { printf 'repository tools: %s\n' "$1" >&2; exit 1; }
 assert_contains() { grep -Fq -- "$2" "$1" || fail "missing '$2' in $1"; }
 
-# A templated shared skill must appear as managed when a Claude transcript invokes it.
+# A portable shared skill must appear as managed when a Claude transcript invokes it.
 mkdir -p "$work/claude/projects/demo"
 cat > "$work/claude/projects/demo/session.jsonl" <<'JSON'
 {"timestamp":"2026-10-08T00:00:00Z","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"run-task-end-to-end"}}]}}
@@ -16,7 +16,7 @@ JSON
 CLAUDE_CONFIG_DIR="$work/claude" bash "$repo/scripts/diagnostics/claude-config-usage.sh" > "$work/usage.log"
 assert_contains "$work/usage.log" 'Managed skills that were invoked'
 grep -Eq '^  run-task-end-to-end[[:space:]]+1[[:space:]]' "$work/usage.log" ||
-  fail 'templated run-task-end-to-end skill was not counted as managed'
+  fail 'portable run-task-end-to-end skill was not counted as managed'
 
 # Deep drift under an owned object must be visible; local hook groups remain preserved.
 mkdir -p "$work/home/.claude" "$work/bin"

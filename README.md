@@ -31,7 +31,6 @@ flowchart LR
     shared --> render
     adapters --> render
     render --> ai["Native AI configuration surfaces<br/>Claude Code · Codex · GitHub Copilot"]
-    ai --> local["Client-owned state<br/>sessions · credentials · runtime"]
     render --> settings["Shell · Git · editor · terminal<br/>and other durable settings"]
 ```
 
@@ -42,10 +41,10 @@ chezmoi renders the versioned source with the machine-local profile. Each client
 | Goal | Start with | What it does |
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
-| Take a request to a reviewable change | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
-| Move work to another AI session | [`task-handoff`](./home/.chezmoitemplates/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
+| Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
+| Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-For example: “Use `run-task-end-to-end` to implement the attached keyboard shortcut spec and verify it.” Specify a starting point, task branch, worktree, verification policy, or PR/MR target when needed. Otherwise, the skill checks the current suitable checkout and its exact starting commit.
+For example: “Use `run-task-end-to-end` to implement the attached keyboard shortcut spec and verify it.” The skill checks the current suitable checkout and its starting commit, or uses the client's worktree when requested or needed. Add a starting point or publication target when one matters.
 
 The skill follows this path:
 
@@ -75,8 +74,8 @@ These are the details I rely on to make agent sessions easier to follow and thei
 | Desktop notifications (Windows and macOS) | Shared scripts alert me when Claude Code needs input or an agent or subagent finishes, and when a Codex session ends. Each client has its own hook configuration. | [Windows script](./home/dot_local/share/show-agent-notification.ps1), [macOS script](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), and [Codex hooks](./home/dot_codex/hooks.json.tmpl). |
 | Local validation | The hook renders the staged source snapshot in a temporary directory without applying it. Its checks cover source identity, skill and shared-rule parity, statusline parity, and Markdown links; focused suites cover profile behavior, diagnostics, Git configuration, and company branch policy. | [Pre-commit hook](./scripts/git-hooks/pre-commit), [Bash test runner](./scripts/tests/run-git-bash-tests.ps1), and [setup guide](./docs/setup.md). |
 | Personal or work AI setup | A machine-local `ai_context` lets me use the same repository for personal and work AI setups. It selects the corresponding agent guidance and defaults without committing the machine's choice. | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) and [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context). |
-| File and artifact hygiene | Specs and references, reusable test inputs, and updateable handoffs have separate homes under `~/Documents/`. For tasks spanning several items, an issue, PR/MR, or one status note links them. Agents check material provenance before use. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |
-| Defensive engineering and evidence-first safeguards | Shared rules cover trust-boundary validation, output escaping, parameterized SQL, and secret hygiene. They also require agents to verify the checkout and material provenance and report only checks they actually ran, designed to reduce common security mistakes and unsupported completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md) and [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md). |
+| Project materials and handoffs | Specs and references, reusable test inputs, and updateable handoffs have separate homes under `~/Documents/`. For tasks spanning several items, an issue, PR/MR, or one status note links them. Agents check material provenance before use. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |
+| Security and verification safeguards | Shared rules cover trust-boundary validation, output escaping, parameterized SQL, and secret hygiene. They also require agents to verify the checkout and material provenance and report only checks they actually ran, designed to reduce common security mistakes and unsupported completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md) and [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md). |
 
 **Statusline example.** The model and usage figures show one past session.
 
@@ -89,7 +88,7 @@ These are the details I rely on to make agent sessions easier to follow and thei
 | [`home/`](./home/) | The desired configuration state managed by chezmoi. |
 | [`home/.chezmoitemplates/`](./home/.chezmoitemplates/) | Reusable settings, instruction bodies, and templates. |
 | [`home/dot_agents/skills/`](./home/dot_agents/skills/) | Shared and client-gated AI skill sources. |
-| `home/dot_<client>/` | Native client entry points and thin wrappers that connect shared guidance. |
+| `home/dot_<client>/` | Client-specific configuration and thin wrappers that connect shared guidance. |
 | [`scripts/`](./scripts/) | Bootstrap, diagnostics, and validation tools. |
 | [`docs/`](./docs/) | Setup steps, the customization source map, operating guides, and architecture decision records (ADRs). |
 

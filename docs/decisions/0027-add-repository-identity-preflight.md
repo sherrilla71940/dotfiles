@@ -86,7 +86,7 @@ that path without relying on heuristics.
 ## Related files and verification
 
 - [`home/.chezmoitemplates/core.md`](../../home/.chezmoitemplates/core.md) — shared rule
-- [`home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md`](../../home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) — task implementation entry point
-- [`home/.chezmoitemplates/skills/task-handoff/SKILL.md`](../../home/.chezmoitemplates/skills/task-handoff/SKILL.md) — portable handoff prompt
+- [`home/dot_agents/skills/run-task-end-to-end/SKILL.md`](../../home/dot_agents/skills/run-task-end-to-end/SKILL.md) — task implementation entry point
+- [`home/dot_agents/skills/task-handoff/SKILL.md`](../../home/dot_agents/skills/task-handoff/SKILL.md) — portable handoff prompt
 - [`AGENTS.md`](../../AGENTS.md) — repository-specific identity and source rules
 - Verify both profile renders and the company-flow branch-policy suite.

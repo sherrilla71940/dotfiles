@@ -81,5 +81,5 @@ reliable scope boundary.
 - [`AGENTS.md`](../../AGENTS.md) — repository-specific ownership and source rules
 - [`docs/customization-support.md`](../customization-support.md) — project-specific customization surfaces
 - [`docs/decisions/0001-separate-operational-guides-from-decision-records.md`](./0001-separate-operational-guides-from-decision-records.md) — documentation layers
-- [`home/.chezmoitemplates/skills/task-handoff/SKILL.md`](../../home/.chezmoitemplates/skills/task-handoff/SKILL.md) — explicit handoff boundary
+- [`home/dot_agents/skills/task-handoff/SKILL.md`](../../home/dot_agents/skills/task-handoff/SKILL.md) — explicit handoff boundary
 - [`scripts/tests/test-ai-configuration-profiles.sh`](../../scripts/tests/test-ai-configuration-profiles.sh) — cross-profile rendering coverage

@@ -89,8 +89,8 @@ address with an acceptably small repository-owned rule.
 
 ## Related files and verification
 
-- `home/.chezmoitemplates/skills/task-handoff/SKILL.md`
-- `home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md`
+- `home/dot_agents/skills/task-handoff/SKILL.md`
+- `home/dot_agents/skills/run-task-end-to-end/SKILL.md`
 - `home/.chezmoitemplates/core.md`
 - `home/.chezmoitemplates/ai-profile.yaml`
 - `home/.chezmoitemplates/git-hooks/company-flow-pre-push.sh`

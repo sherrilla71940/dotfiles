@@ -42,10 +42,28 @@ chezmoi renders the versioned source with the machine-local profile. Each client
 | Goal | Start with | What it does |
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
-| Take a request to a reviewable change | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | Guides a natural-language task through workspace checks, implementation, verification, and requested delivery. It can also return a plan or review without editing files. |
+| Take a request to a reviewable change | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
 | Move work to another AI session | [`task-handoff`](./home/.chezmoitemplates/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-For example: “Use `run-task-end-to-end` to implement the attached keyboard shortcut spec and verify it.” Add a starting point, worktree preference, or publication target only when needed. The skill uses the current suitable checkout or the client's native worktree starting point for routine work.
+For example: “Use `run-task-end-to-end` to implement the attached keyboard shortcut spec and verify it.” Specify a starting point, task branch, worktree, verification policy, or PR/MR target when needed. Otherwise, the skill checks the current suitable checkout and its exact starting commit.
+
+The skill follows this path:
+
+```mermaid
+flowchart TB
+    request["Request and materials"] --> route{"Plan/review or execute?"}
+    route -->|Plan/review| findings["Findings and next action<br/>No file edits"]
+    route -->|Execute| workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
+    workspace --> work["Implement; run available automated,<br/>runtime, and browser checks;<br/>fix and retest as needed"]
+    work --> gate{"User review or manual checks required?"}
+    gate -->|Yes| user["Wait for user review or test results"]
+    gate -->|No| delivery{"PR/MR delivery requested?"}
+    user --> delivery
+    delivery -->|No| local["Commit locally"]
+    delivery -->|Yes| publish["Recheck target base;<br/>commit, push, and open PR/MR"]
+```
+
+If the target base has moved, the skill pauses for a merge or rebase choice and reruns affected checks before publication.
 
 ## Day-to-day conveniences and safeguards
 

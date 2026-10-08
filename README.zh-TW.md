@@ -42,10 +42,28 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 想做什麼 | 從哪裡開始 | 它會怎麼做 |
 | --- | --- | --- |
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
-| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務，skill 會確認工作目錄、完成實作與驗證，並依要求交付成果。也可以只請它規劃或檢查，不修改檔案。 |
+| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/.chezmoitemplates/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/.chezmoitemplates/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-例如：「用 `run-task-end-to-end` 實作附上的快捷鍵規格並驗證。」需要指定任務起點、worktree 或發布目標時，再補上這些資訊即可。一般任務可以沿用目前合適的 checkout，或由 client 選擇 worktree 的起點。
+例如：「用 `run-task-end-to-end` 實作附上的快捷鍵規格並驗證。」需要時可指定起始 branch 或 commit、任務 branch、worktree、驗證方式，或 PR／MR 的目標分支。沒有指定時，skill 會確認目前 checkout 是否適合，並記下實際的起始 commit。
+
+整個流程如下：
+
+```mermaid
+flowchart TB
+    request["需求與材料"] --> route{"只規劃／檢查<br/>或執行？"}
+    route -->|規劃／檢查| findings["回報結果與下一步<br/>不修改檔案"]
+    route -->|執行| workspace["確認 repository 規則、目前 checkout<br/>或指定的 worktree，以及起始 commit"]
+    workspace --> work["實作並執行可用的自動化測試；<br/>可行時啟動程式、檢查瀏覽器流程；<br/>必要時修正並重測"]
+    work --> gate{"需要使用者審查<br/>或手動檢查？"}
+    gate -->|需要| user["等候使用者審查或測試結果"]
+    gate -->|不需要| delivery{"要求建立 PR／MR？"}
+    user --> delivery
+    delivery -->|否| local["在本機提交"]
+    delivery -->|是| publish["重新確認目標分支；<br/>提交、推送並建立 PR／MR"]
+```
+
+若目標分支已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。
 
 ## 日常使用的小便利與防護
 

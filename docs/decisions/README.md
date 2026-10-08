@@ -48,13 +48,15 @@ agent session.
 | [0027](./0027-add-repository-identity-preflight.md) | Accepted | Add a read-only repository-identity gate before substantive work |
 | [0028](./0028-classify-instruction-ownership-before-adding.md) | Accepted | Classify instruction ownership and scope before adding behavior |
 | [0040](./0040-require-company-flow-branch-identifiers.md) | Accepted | Require explicit flow identifiers for company-context task branches while preserving explicit project exceptions |
-| [0046](./0046-retire-tracked-workflow-archives.md) | Accepted | Retire tracked workflow archives and use Git history for source recovery |
+| [0046](./0046-retire-tracked-workflow-archives.md) | Superseded by 0055 | Retire tracked workflow archives and use Git history for source recovery |
 | [0048](./0048-merge-explicit-vscode-settings-by-key.md) | Accepted | Merge explicitly managed VS Code settings over app-owned user settings |
 | [0049](./0049-preserve-app-written-settings-across-clients.md) | Accepted | Preserve app-written VS Code and Copilot CLI settings outside explicit repository ownership |
 | [0050](./0050-preserve-app-written-windows-terminal-actions-and-keybindings.md) | Accepted | Preserve unlisted Windows Terminal actions and keybindings |
 | [0051](./0051-preserve-app-written-git-global-settings.md) | Accepted | Preserve Git global settings outside explicit repository ownership |
 | [0052](./0052-define-ai-profile-applicability-scope.md) | Accepted | Separate AI profile applicability from client reach and validate both rendered contexts |
 | [0053](./0053-native-first-ai-workflows.md) | Accepted | Use native client/Git workflows with an explicit, verified cross-client handoff |
+| [0054](./0054-verify-native-task-starts.md) | Accepted | Use verified current or client-selected starting points for routine tasks |
+| [0055](./0055-retire-workflow-deletion-engine.md) | Accepted | Retire the workflow deletion engine while keeping reviewed source and target cleanup |
 
 ## Template
 

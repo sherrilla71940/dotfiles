@@ -48,6 +48,7 @@
 - Handle errors explicitly; do not silently catch them. Validate trust-boundary inputs and do not leak internals in user-facing errors.
 - Flag changes to public APIs, wire formats, configuration schemas, or persisted data and describe a compatible migration path. Prefer additive, reversible changes.
 - Fix reported hook failures rather than bypassing hooks.
+- When browser testing needs a person's interaction, prepare the relevant state, give clear actions and the expected result, then verify the observable outcome. Use the available browser driver's supported interactions when they are reliable; avoid a fragile automation workaround for a short manual action.
 - Before substantial Git work, confirm the current repository and active instructions. Keep commits atomic, stage deliberately rather than using blind `git add -A`, and use the repository's commit workflow.
 
 ## Security

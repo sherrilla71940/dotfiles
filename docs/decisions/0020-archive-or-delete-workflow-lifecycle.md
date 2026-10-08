@@ -68,5 +68,6 @@ cryptographic erasure.
 ## Related files and verification
 
 This decision is historical and is superseded by
-[ADR-0046](./0046-retire-tracked-workflow-archives.md). The current deletion and Git-recovery
-procedure is documented in [`docs/workflow-deletion.md`](../workflow-deletion.md).
+[ADR-0046](./0046-retire-tracked-workflow-archives.md) and
+[ADR-0055](./0055-retire-workflow-deletion-engine.md). The current source and target cleanup
+procedure is in the [chezmoi workflow guide](../chezmoi-workflow.md#retire-a-managed-customization).

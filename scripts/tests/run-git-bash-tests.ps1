@@ -7,7 +7,7 @@ param(
         "scripts/tests/test-ai-profile-scope.sh",
         "scripts/tests/test-ai-configuration-profiles.sh",
         "scripts/tests/test-git-config-migration.sh",
-        "scripts/tests/test-workflow-delete.sh",
+        "scripts/tests/test-repository-tools.sh",
         "scripts/tests/test-company-flow-policy.sh"
     )
 )

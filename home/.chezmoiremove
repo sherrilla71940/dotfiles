@@ -23,3 +23,9 @@
 .local/share/worktree-runtime.py
 .local/share/git-worktree-provision.ps1
 .local/share/git-worktree-provision.sh
+.agents/skills/workflow-delete
+.claude/skills/workflow-delete
+.agents/skills/prompt-optimizer
+.claude/skills/prompt-optimizer
+.agents/skills/browser-collab-testing
+.claude/skills/browser-collab-testing

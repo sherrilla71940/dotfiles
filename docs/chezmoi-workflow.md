@@ -43,18 +43,19 @@ The selected context composes the shared baseline with personal or company guida
 Earlier configs may still contain ai_continuity, ai_harness, or ai_workflow. The current templates ignore those keys. Remove them with chezmoi edit-config if you want to clean up the machine-local file.
 
 After changing the context, run chezmoi diff to preview the selected render. Review it before chezmoi apply, then start a new client session to load the updated instructions.
-## Delete reusable workflows
 
-Workflow deletion operates on canonical repository source, not generated targets or application
-state. Use the `workflow-delete` skill. It accepts a workflow name or description, performs bounded
-discovery, and uses a reviewed explicit inventory under
-`scripts/workflows/workflow-delete.py`.
+## Retire a managed customization
 
-The deletion engine removes only confirmed canonical source files and queues generated-target
-deletion through `home/.chezmoiremove`; it does not delete live targets directly. Git is the
-recovery mechanism for tracked source: locate the relevant commit with `git log`, then review and
-run `git restore --source <commit> -- <paths>`. Read the [workflow deletion guide](./workflow-deletion.md)
-before changing the definition or deletion boundary.
+Before deleting a skill or workflow, list its owned source files, shared dependencies, client
+wrappers, and rendered home-directory targets. Check direct references with `rg` and resolve
+uncertain source-to-target mappings with `chezmoi target-path`. Keep shared files in place.
+
+Delete only the owned source files. Add each retired live target to `home/.chezmoiremove`; deleting
+source alone does not remove a previously rendered target. Review `git diff` and `chezmoi diff`
+before applying the change to a home directory. Keep removal entries until each managed machine
+has applied them. Git history preserves tracked source: use `git log -- <path>` to find a version,
+then review and run `git restore --source <commit> -- <paths>` if recovery is needed. Leave
+application-owned settings and ignored task records untouched.
 
 From the repository root, `bash scripts/dev-env doctor` reports source identity, the resolved
 profile, unapplied target drift, Claude shared-skill link health, and required tool versions. It is

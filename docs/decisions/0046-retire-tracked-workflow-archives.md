@@ -1,6 +1,6 @@
 # ADR-0046: Retire tracked workflow archives in favor of Git recovery
 
-- Status: Accepted
+- Status: Superseded by ADR-0055
 - Date: 2026-09-24
 
 ## Context
@@ -57,14 +57,7 @@ chezmoi target-application step.
 
 ## Related files and verification
 
-- [`docs/workflow-deletion.md`](../workflow-deletion.md) — current deletion and Git recovery procedure
-- [`scripts/workflows/workflow-delete.py`](../../scripts/workflows/workflow-delete.py) — bounded deletion engine
-- [`home/dot_agents/skills/workflow-delete/SKILL.md`](../../home/dot_agents/skills/workflow-delete/SKILL.md) — user-facing skill
-- [`scripts/tests/test-workflow-delete.sh`](../../scripts/tests/test-workflow-delete.sh) — focused suite
-
-Verify with:
-
-```bash
-bash scripts/tests/test-workflow-delete.sh
-python -m py_compile scripts/workflows/workflow-delete.py
-```
+The engine, skill, and test described above were retired by
+[ADR-0055](./0055-retire-workflow-deletion-engine.md). The current procedure is in the
+[chezmoi workflow guide](../chezmoi-workflow.md#retire-a-managed-customization); Git history
+contains the original implementation and its focused test.

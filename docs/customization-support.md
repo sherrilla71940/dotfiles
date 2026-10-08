@@ -34,7 +34,6 @@ The columns group surfaces only when they read the same personal configuration:
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Task implementation and handoff skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
-| Workflow deletion skill | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
@@ -43,8 +42,7 @@ The columns group surfaces only when they read the same personal configuration:
 | General settings | partially managed `settings.json`; only env, hooks, status line and update channel are repository-owned | create-once app-owned `config.toml` | partially managed `~/.copilot/settings.json` | partially managed user `settings.json`; only keys in `settings-durable.json` are repository-owned |
 | User keybindings | terminal shortcuts live in Windows Terminal settings | not managed | not managed | partially managed user `keybindings.json`; app-authored rules can override repository rules |
 
-Add an agent or client-only skill only when it has a concrete purpose. Empty prepared
-directories exist only where a client requires the directory before a session starts.
+Add an agent or client-only skill only when it has a concrete purpose.
 Current client-only examples include Claude's `project-orientation` command and Copilot's
 `remember` skill. These features stay in their native client sources because their behavior is not
 portable across all supported clients.
@@ -181,17 +179,9 @@ directory. Represent a reusable Claude workflow as a skill instead:
 
 ### Delete a reusable workflow
 
-Workflow deletion is repository tooling, not another client customization directory. The
-`workflow-delete` skill accepts a workflow name or description, performs bounded discovery, and
-shows the exact source/dependency/target boundary before mutation. The shared engine under
-`scripts/workflows/` deletes only confirmed canonical source files and queues generated-target
-cleanup through `home/.chezmoiremove`; it never deletes live targets directly or changes
-untracked files or application-owned state.
-
-Git is the recovery mechanism for tracked source. Use `git log` to locate the relevant commit and
-`git restore --source <commit> -- <paths>` after reviewing the diff. Read the
-[workflow deletion guide](./workflow-deletion.md) for the definition fields, discovery boundary,
-Git recovery, chezmoi removal behavior, and focused test suite.
+Use the [retirement procedure](./chezmoi-workflow.md#retire-a-managed-customization) to inventory
+owned sources, shared dependencies, client wrappers, and generated targets before deleting a
+workflow. Git preserves tracked source; `home/.chezmoiremove` schedules cleanup of rendered targets.
 
 ## Add an instruction
 

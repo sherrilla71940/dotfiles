@@ -44,7 +44,7 @@ chezmoi renders the versioned source with the machine-local profile. Each client
 | Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-For a task with specific choices, try: `Use run-task-end-to-end to implement the attached keyboard shortcut spec; phase=execute base=main branch=feat/keyboard-shortcuts target=main workspace=worktree verification=balanced`. Here `base` selects the starting branch, `target` requests PR/MR delivery, and `verification=balanced` adds a user-review gate. These hints are optional; a plain-language request works too.
+For a task with specific choices, try: `Use run-task-end-to-end to implement the attached keyboard shortcut spec; phase=execute base=main target=main workspace=worktree verification=balanced`. Here `base` selects the starting point, `target` requests PR/MR delivery, and `verification=balanced` adds a user-review gate. The skill follows repository policy, uses a suitable existing or client-created branch, or derives a name from the change type and summary when a new branch is needed. Add `branch=` only to request a specific name. These hints are optional; a plain-language request works too.
 
 The skill follows this path:
 

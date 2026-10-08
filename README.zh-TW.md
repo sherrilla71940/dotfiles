@@ -44,7 +44,7 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；phase=execute base=main branch=feat/keyboard-shortcuts target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。這些參數都不是必填；平常直接用自然語言交代即可。
+如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；phase=execute base=main target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。skill 會先遵循 repository 規則；可以沿用合適的現有分支或 client 建立的分支，需要新名稱時則依變更類型和任務摘要命名。想指定名稱時，才加上 `branch=`。這些參數都不是必填；平常直接用自然語言交代即可。
 
 整個流程如下：
 

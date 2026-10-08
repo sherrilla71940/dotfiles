@@ -1,6 +1,7 @@
 ---
 name: run-task-end-to-end
 description: Take an implementation task from intake through verification and requested delivery, using the repository's rules and the active client's workspace behavior.
+argument-hint: "[task] [base=...] [target=...] [workspace=...] [verification=...]"
 disable-model-invocation: true
 ---
 

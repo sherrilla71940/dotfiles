@@ -44,7 +44,12 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代實作任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。skill 會先遵循 repository 規則；可以沿用合適的現有分支或 client 建立的分支，需要新名稱時則依變更類型和任務摘要命名。想指定名稱時，才加上 `branch=`。這些參數都不是必填；平常直接用自然語言交代即可。若只想規劃或檢查程式，直接請 AI 協助就好。
+可以用各 client 的原生方式呼叫 skill，再接上任務和需要指定的選項：
+
+- Claude Code：`/run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`
+- Codex：`$run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`
+
+其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。skill 會先遵循 repository 規則；可以沿用合適的現有分支或 client 建立的分支，需要新名稱時則依變更類型和任務摘要命名。想指定名稱時，才加上 `branch=`。這些選項只是給 AI 看的提示，並沒有另一套指令格式；平常直接用自然語言交代即可。若只想規劃或檢查程式，直接請 AI 協助就好。
 
 整個流程如下：
 

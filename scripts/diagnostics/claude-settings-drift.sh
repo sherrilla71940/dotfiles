@@ -34,14 +34,28 @@ local_only = sorted(k for k in live if k not in durable)
 added_under_owned = []
 overridden = []
 
+def compare_owned(path, expected, actual):
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        for key in sorted(actual):
+            if key not in expected:
+                added_under_owned.append("%s.%s" % (path, key))
+        for key in sorted(expected):
+            child = "%s.%s" % (path, key)
+            if key not in actual:
+                overridden.append((child, "<missing>", expected[key]))
+            else:
+                compare_owned(child, expected[key], actual[key])
+    elif path.startswith("hooks.") and isinstance(expected, list) and isinstance(actual, list):
+        # The modify template keeps local hook groups under repository-owned events.
+        return
+    elif expected != actual:
+        overridden.append((path, actual, expected))
+
 for key in sorted(durable):
     if key not in live:
-        continue
-    d, l = durable[key], live[key]
-    if isinstance(d, dict) and isinstance(l, dict):
-        added_under_owned += [(key, sub) for sub in sorted(l) if sub not in d]
-    elif d != l:
-        overridden.append((key, l, d))
+        overridden.append((key, "<missing>", durable[key]))
+    else:
+        compare_owned(key, durable[key], live[key])
 
 def section(title, rows):
     print(title)
@@ -57,10 +71,10 @@ section(
 )
 section(
     "Added locally under a repository-owned key - kept by the merge, still not committed:",
-    ["%s.%s" % (k, sub) for k, sub in added_under_owned],
+    added_under_owned,
 )
 section(
-    "Reverted on the next apply - the repository pins a different value:",
+    "Restored or replaced on the next apply - the repository pins a different value:",
     ["%s: live %s -> repository %s" % (k, json.dumps(l), json.dumps(d))
      for k, l, d in overridden],
 )

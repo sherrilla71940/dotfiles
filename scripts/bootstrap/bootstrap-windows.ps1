@@ -66,6 +66,9 @@ $installed = winget list --id $packageId --exact 2>$null | Select-String -Simple
 if (-not $installed) {
     winget install --id $packageId --exact --source winget `
         --accept-package-agreements --accept-source-agreements --disable-interactivity
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not install $packageId. Install it before running the Claude MCP installer."
+    }
 } else {
     Write-Host "$packageId already installed"
 }
@@ -77,6 +80,9 @@ if (-not $installed) {
 if (-not (Get-Command typescript-language-server -ErrorAction SilentlyContinue)) {
     if (Get-Command npm -ErrorAction SilentlyContinue) {
         npm install -g typescript-language-server typescript
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Could not install the TypeScript language server. Rerun the npm command before using the Claude TypeScript plugin."
+        }
     } else {
         Write-Warning "npm is not on PATH, so typescript-language-server was skipped. Install Node, then run 'npm install -g typescript-language-server typescript'."
     }
@@ -401,4 +407,4 @@ New-ItemProperty -Path $codexIdentityKey -Name "DisplayName" -Value $codexDispla
 
 Write-Host "Codex notification identity registered as $codexAumid"
 
-Write-Host 'Optional tools are ready.'
+Write-Host 'Bootstrap finished. Review warnings above for skipped or failed setup.'

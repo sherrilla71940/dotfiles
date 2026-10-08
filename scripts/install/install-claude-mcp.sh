@@ -14,6 +14,9 @@ fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest_path="$script_dir/../manifests/claude-user-mcp-servers.json"
 
+servers="$(jq -c '.mcpServers | to_entries[]' "$manifest_path")"
+[[ -n "$servers" ]] || exit 0
+
 while IFS= read -r server; do
   name="$(jq -r '.key' <<<"$server")"
   configuration="$(jq -c '.value' <<<"$server")"
@@ -24,4 +27,4 @@ while IFS= read -r server; do
   fi
 
   claude mcp add-json --scope user "$name" "$configuration"
-done < <(jq -c '.mcpServers | to_entries[]' "$manifest_path")
+done <<<"$servers"

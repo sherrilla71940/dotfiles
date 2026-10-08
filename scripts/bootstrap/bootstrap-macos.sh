@@ -122,4 +122,4 @@ else
   printf 'codex is not on PATH, so Codex memories was skipped. Install Codex CLI, then rerun this script.\n' >&2
 fi
 
-printf 'Optional tools are ready.\n'
+printf 'Bootstrap finished. Review warnings above for skipped or failed setup.\n'

@@ -67,12 +67,15 @@ fi
 
 printf 'repository override: personal (AGENTS.md has priority while working in this repository)\n'
 
-status_output="$(chezmoi status 2>&1 || true)"
-if [[ -z "$(printf '%s\n' "$status_output" | sed '/^[[:space:]]*$/d')" ]]; then
-  pass 'chezmoi status is clean'
+if status_output="$(chezmoi status 2>&1)"; then
+  if [[ -z "$(printf '%s\n' "$status_output" | sed '/^[[:space:]]*$/d')" ]]; then
+    pass 'chezmoi status is clean'
+  else
+    warn 'chezmoi has unapplied target drift:'
+    printf '%s\n' "$status_output"
+  fi
 else
-  warn 'chezmoi has unapplied target drift:'
-  printf '%s\n' "$status_output"
+  fail "chezmoi status failed: $status_output"
 fi
 
 link_count=0

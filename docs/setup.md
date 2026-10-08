@@ -338,7 +338,8 @@ The pre-commit hook checks the staged snapshot. It verifies the source identity,
 
 The hook renders with the same --exclude=scripts flag described in the source-filename rules section of the chezmoi workflow guide. Before checking, it lists every staged path. In this shared checkout, use git commit --only with explicit paths so another session's staged files cannot enter the commit.
 
-The pre-commit hook also warns when multiple interactive Claude Code sessions run in this working tree. They share the Git index. Stay in this primary checkout because chezmoi reads from it; ordinary repositories can use the clients' native worktree features when isolation helps.
+Stay in this primary checkout because chezmoi reads from it; ordinary repositories can use the clients' native worktree features when isolation helps.
+
 ## Working tree at `~/dotfiles`
 
 This repository is developed in, not only applied: decision records, bootstrap scripts, a

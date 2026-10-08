@@ -43,7 +43,7 @@ if [ ! -d "$PROJECTS" ]; then
   exit 1
 fi
 
-REPO="$(cd "$(dirname "$0")/.." && pwd)"
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 
 PY=python3
 command -v python3 >/dev/null 2>&1 || PY=python
@@ -73,17 +73,21 @@ def managed_skills():
     shared = os.path.join(repo, "home", "dot_agents", "skills")
     if os.path.isdir(shared):
         for entry in os.listdir(shared):
-            if os.path.isfile(os.path.join(shared, entry, "SKILL.md")):
+            if any(os.path.isfile(os.path.join(shared, entry, name))
+                   for name in ("SKILL.md", "SKILL.md.tmpl")):
                 names.add(entry)
     claude_only = os.path.join(repo, "home", "dot_claude", "skills")
     if os.path.isdir(claude_only):
         for entry in os.listdir(claude_only):
-            if os.path.isfile(os.path.join(claude_only, entry, "SKILL.md")):
+            if any(os.path.isfile(os.path.join(claude_only, entry, name))
+                   for name in ("SKILL.md", "SKILL.md.tmpl")):
                 names.add(entry)
     commands = os.path.join(repo, "home", "dot_claude", "commands")
     if os.path.isdir(commands):
         for entry in os.listdir(commands):
-            if entry.endswith(".md"):
+            if entry.endswith(".md.tmpl"):
+                names.add(entry[:-8])
+            elif entry.endswith(".md"):
                 names.add(entry[:-3])
     return names
 

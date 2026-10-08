@@ -62,17 +62,18 @@ for context in personal company; do
   assert_contains "$handoff_skill" 'Report receiver verification as pending'
   assert_contains "$task_skill" "native worktree flow when available"
   assert_contains "$task_skill" 'branch=<name>'
-  assert_contains "$task_skill" 'resolve a task branch before editing'
+  assert_contains "$task_skill" 'a suitable current branch or native detached worktree can hold the work'
   assert_contains "$task_skill" '<type>/<short-ascii-slug>'
-  assert_contains "$task_skill" 'create or verify the task branch from that commit before implementation'
+  assert_contains "$task_skill" "record the current checkout's HEAD or the native worktree's starting commit"
+  assert_contains "$task_skill" 'create the required branch before committing or publishing'
   assert_contains "$task_skill" 'active repository and profile policies'
   assert_contains "$task_skill" 'Do not infer policy-required identifiers'
   assert_not_contains "$task_skill" 'company-flow'
   assert_not_contains "$task_skill" 'flow=<number>'
-  branch_section_line="$(grep -n '^## Establish a task branch$' "$task_skill" | cut -d: -f1)"
+  branch_section_line="$(grep -n '^## Establish the starting point and branch$' "$task_skill" | cut -d: -f1)"
   implement_section_line="$(grep -n '^## Implement and verify$' "$task_skill" | cut -d: -f1)"
   [[ -n "$branch_section_line" && -n "$implement_section_line" && "$branch_section_line" -lt "$implement_section_line" ]] ||
-    fail 'task branch setup must be documented before implementation'
+    fail 'starting point and branch setup must be documented before implementation'
   assert_not_contains "$task_skill" 'runtime=auto'
 
   if [[ "$context" == company ]]; then

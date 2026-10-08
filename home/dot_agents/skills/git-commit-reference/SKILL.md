@@ -68,11 +68,8 @@ Keep the Conventional Commit type, the scope token and every trailer (`feat`, `f
 for Taiwan — never Simplified. A scope may be English or Chinese, whichever reads better. Never
 translate code identifiers, filenames, or branch names.
 
-A commit message is exactly the register where over-formal phrasing creeps in, so load the
-`natural-zhtw` skill for the description and body. It holds the plain-word table, the Taiwan
-terminology list and the translationese checks. Do not copy those tables back into this file:
-a second copy drifts from the original, and the trimmed version that used to live here had
-already lost the rule that quoted UI strings and official names stay untranslated.
+Load `natural-zhtw` for the description and body so they read naturally in context. Keep the
+commit-specific syntax and identifiers above intact.
 
 ```text
 fix(parser): 修正欄位不存在時的例外

@@ -63,10 +63,10 @@ Use footers only for useful trailers such as `BREAKING CHANGE:`, `Refs:`, or `Cl
 
 ## Traditional Chinese (zh-TW) messages
 
-Keep the Conventional Commit type, the scope token and every trailer (`feat`, `fix`,
-`BREAKING CHANGE:`, `Refs:`) in English. Write the description and body in Traditional Chinese
-for Taiwan — never Simplified. A scope may be English or Chinese, whichever reads better. Never
-translate code identifiers, filenames, or branch names.
+Keep the Conventional Commit type and trailer keys (`feat`, `fix`, `BREAKING CHANGE:`,
+`Refs:`) in English. Write the description and body in Traditional Chinese for Taiwan — never
+Simplified. A scope may be English or Chinese, whichever fits the context and any client or
+repository convention. Never translate code identifiers, filenames, or branch names.
 
 Load `natural-zhtw` for the description and body so they read naturally in context. Keep the
 commit-specific syntax and identifiers above intact.

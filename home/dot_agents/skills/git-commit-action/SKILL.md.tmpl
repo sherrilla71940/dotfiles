@@ -64,42 +64,21 @@ When the invocation omits a language, use the active context default `{{ $profil
 2. Inspect repository state with `git status --porcelain`.
 3. Determine the candidate file set from Scope:
    - `all`: staged + unstaged + untracked.
-   - `staged`: `git diff --cached --name-status` only.
+   - `staged`: `git diff --cached --name-status` only. The staged blobs, including partial hunks, are the candidate content.
      Inspect with `--name-status` and `--stat` first; read full patches only when names/stat are insufficient for an accurate message, or a file looks secret-like, ambiguous, or unexpected.
 4. Check candidate filenames for obvious secrets or private credentials (`.env`, private keys, credential JSON, tokens, generated secret dumps). Stop and explain if any is present.
 5. Group the candidates:
-   - `batch`: partition into logical changes by concern/type/area. Prefer fewer cohesive commits — don't split a single coherent change just because it spans multiple files; split on distinct concern/type, not on file count. One logical change can span files of different types or folders — e.g. a rule moved from one file to another is **one** commit even across folders, while files that merely share a folder aren't automatically one commit. Group by *why it changed*, not *where it lives*. Everything that is one logical change is one group. Prefer whole-file grouping; only reach for `git add -p` when one file's hunks genuinely belong to different groups.
+   - `batch`: partition into logical changes by concern/type/area. Prefer fewer cohesive commits — don't split a single coherent change just because it spans multiple files; split on distinct concern/type, not on file count. One logical change can span files of different types or folders — e.g. a rule moved from one file to another is **one** commit even across folders, while files that merely share a folder aren't automatically one commit. Group by *why it changed*, not *where it lives*. Prefer whole-file grouping. If one file spans groups, either place the whole file in one coherent group or stop and agree on a separate hunk-level approach; `git commit --only` does not respect `git add -p` selections.
    - `single`: one group containing all candidates.
 6. Load the `git-commit-reference` skill and compose a Conventional Commit message for each group, following its type table, description/body rules, bullet-body guidance, and breaking-change/footer conventions. When Language is `zhtw`, load `natural-zhtw` too and check each message against it before step 7.
 7. **Draft mode** — present the plan: for each group, list its files and show its proposed message in a fenced `text` block. State that nothing was staged or committed. End with the exact next command, e.g. `Next: run /git-commit-action commit <same flags>` to create these. Stop here.
-8. **Commit mode** — create the commit(s). Git has one index per working tree, and `git commit` records the index rather than the paths you meant to stage. Commit each group **by pathspec**, so the commit builds its own index and ignores everything else:
+8. **Commit mode** — choose the command that matches the candidate content:
 
-   ```bash
-   git add path/to/new-file   # untracked files only; --only cannot name what git does not know
-   git commit --only -m "<message>" -- path/to/file1 path/to/file2
-   ```
+   - `all`: review the working-tree versions, stage only new files so Git can name them, then use `git commit --only -m "<message>" -- <group paths>`. This commits those paths from the working tree and excludes other staged paths.
+   - `staged single`: run `git diff --cached --check`, recheck the staged diff, then use `git commit -m "<message>"`. This commits the staged blobs, including selected hunks, without unstaged edits.
+   - `staged batch`: for each whole-file group, run `git diff --quiet -- <group paths>` to confirm no unstaged edits exist in those paths. Then use `git commit --only -m "<message>" -- <group paths>`. If any group path has unstaged edits, stop; `--only` would commit those edits instead of the staged snapshot.
 
-   This matters whenever anything else can write to the index: another agent session in the same working tree, an editor, a watcher. Those sessions share one index and one HEAD, so a plain `git add` + `git commit` can silently carry their staged work into your commit, and it outlives the session that staged it. Pathspec commits remove the hazard rather than detecting it, so no client needs to warn you first.
-
-   For each group, in order:
-
-   1. Stage only what `--only` cannot reference — untracked files (`git add <path>`), and hunks when one file's changes span groups (`git add -p <path>`). A deletion needs no staging; naming the path in the commit records it.
-   2. Run `git diff --cached --check` when anything was staged.
-   3. Commit that group's paths — single-line, or a heredoc for a body:
-
-      ```bash
-      git commit --only -m "$(cat <<'EOF'
-      <type>[scope]: <description>
-
-      <optional body>
-      <optional footer>
-      EOF
-      )" -- path/to/file1 path/to/file2
-      ```
-
-      Then move to the next group. Never mix files from different groups in one commit.
-
-   `--only` refuses to run during a merge or rebase (`cannot do a partial commit during a merge`). There, stage deliberately and commit normally, and say that the index was not isolated.
+   Recheck `git status --short` and the selected diff before each commit. Another process can change a shared index, file, or `HEAD` between checks; pathspec commits exclude unrelated staged paths but do not isolate concurrent edits to the same path. Use a separate worktree when that risk matters. During a merge or rebase, `--only` is unavailable; stop and inspect the full index before choosing a merge commit command.
 
 9. Finish with `git status --short` and report each commit's hash and message.
 
@@ -116,6 +95,6 @@ When the invocation omits a language, use the active context default `{{ $profil
 Overriding these creates no danger; it makes the result meaningless, because the mode stops describing what happened. There is no confirmation that unlocks them.
 
 - Never stage files or create commits in `draft` mode.
-- In `batch` mode, commit one group at a time by pathspec; never combine files from different logical groups in a single commit. If `--only` is unavailable (mid-merge), say that the index was not isolated rather than committing as though it were.
+- In `batch` mode, commit one group at a time; never combine files from different logical groups in a single commit. If the selected Git mode cannot preserve the candidate content, stop instead of silently changing scope.
 
 Rewriting or discarding existing history — `git commit --amend`, `git reset --hard`, `git clean`, force-pushing — is outside this skill. It creates commits; it does not undo them.

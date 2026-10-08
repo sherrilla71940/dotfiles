@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+client="${1:-claude}"
+if [[ "$client" != "claude" && "$client" != "codex" ]]; then
+  printf 'Unknown notification client: %s\n' "$client" >&2
+  exit 1
+fi
+
 log_directory="$HOME/.claude/logs"
 log_file="$log_directory/notification-hook.log"
 mkdir -p "$log_directory"
@@ -11,6 +17,7 @@ write_log() {
 
 input="$(cat)"
 if [ -z "${input//[[:space:]]/}" ]; then
+  [[ "$client" != "codex" ]] || printf '{}\n'
   exit 0
 fi
 
@@ -21,15 +28,17 @@ fi
 
 notification_type="$(printf '%s' "$input" | jq -r '.notification_type // empty')"
 
-# Codex sends no notification_type - it has no Notification event, only lifecycle ones - so its
-# SessionEnd is mapped to a type here. SubagentStop is likewise a lifecycle event shared by
-# Claude Code's terminal and VS Code hosts; map it to the same background-agent completion banner
-# instead of relying on the Agent-view-only agent_completed notification.
-if [[ -z "$notification_type" ]]   && [[ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" == "SessionEnd" ]]; then
-  notification_type="session_end"
-fi
-if [[ -z "$notification_type" ]]   && [[ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" == "SubagentStop" ]]; then
-  notification_type="agent_completed"
+# Codex sends no notification_type, so use the explicitly passed client to distinguish its
+# lifecycle events from Claude's. SubagentStop is shared by Claude's terminal and VS Code hosts.
+if [[ -z "$notification_type" ]]; then
+  hook_event="$(printf '%s' "$input" | jq -r '.hook_event_name // empty')"
+  case "$client:$hook_event" in
+    claude:Stop) notification_type="claude_turn_complete" ;;
+    claude:SubagentStop) notification_type="agent_completed" ;;
+    codex:Stop) notification_type="codex_turn_complete" ;;
+    codex:PermissionRequest) notification_type="codex_permission_request" ;;
+    codex:SessionEnd) notification_type="session_end" ;;
+  esac
 fi
 
 # The Windows copy keeps a toast on screen until dismissed when a notification means work is
@@ -57,6 +66,18 @@ case "$notification_type" in
     title="Claude finished"
     message="Claude finished and is waiting for your next prompt."
     ;;
+  claude_turn_complete)
+    title="Claude finished"
+    message="Claude is ready for your next prompt."
+    ;;
+  codex_turn_complete)
+    title="Codex finished"
+    message="Codex is ready for your next prompt."
+    ;;
+  codex_permission_request)
+    title="Codex needs permission"
+    message="Codex is waiting for tool approval."
+    ;;
   auth_success)
     title="Claude signed in"
     message="$(printf '%s' "$input" | jq -r '.message // "Authentication succeeded."')"
@@ -76,6 +97,7 @@ case "$notification_type" in
     message="The Codex session ended."
     ;;
   *)
+    [[ "$client" != "codex" ]] || printf '{}\n'
     exit 0
     ;;
 esac
@@ -84,7 +106,11 @@ esac
 # The product name leads because macOS attributes a banner to whichever binary posted it,
 # never to Claude Code. Either identifying field can be absent, so each is appended only when
 # it has a value.
-attribution="Claude Code"
+if [[ "$client" == "codex" ]]; then
+  attribution="Codex"
+else
+  attribution="Claude Code"
+fi
 
 working_directory="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 if [ -n "$working_directory" ]; then
@@ -107,7 +133,9 @@ fi
 resolve_sender_bundle_id() {
   local bundle
   local bundle_id
-  for bundle in "/Applications/Claude.app" "$HOME/Applications/Claude.app"; do
+  local app_name="Claude"
+  [[ "$client" != "codex" ]] || app_name="Codex"
+  for bundle in "/Applications/$app_name.app" "$HOME/Applications/$app_name.app"; do
     if [ -d "$bundle" ]; then
       bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle/Contents/Info.plist" 2>/dev/null || true)"
       if [ -n "$bundle_id" ]; then
@@ -144,6 +172,7 @@ APPLESCRIPT
 
 if send_notification; then
   write_log "Notification sent: $notification_type - $title"
+  [[ "$client" != "codex" ]] || printf '{}\n'
 else
   write_log "Notification failed: $notification_type - $title"
   exit 1

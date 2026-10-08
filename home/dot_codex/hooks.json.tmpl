@@ -1,16 +1,22 @@
-{{- /* Keep the user-level session-end notification. Workspace and task lifecycle
-       behavior follows the active client's native defaults. */ -}}
-{{- $notifyCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\"" -}}
+{{- /* Notify when a local Codex turn finishes or needs approval. */ -}}
+{{- $notifyCommand := "bash \"$HOME/.local/share/show-agent-notification-macos.sh\" codex" -}}
 {{- if eq .chezmoi.os "windows" -}}
 {{-   $pwsh := "powershell.exe -NoProfile -ExecutionPolicy Bypass -File" -}}
-{{-   $notifyCommand = printf "%s %s/.local/share/show-agent-notification.ps1" $pwsh .chezmoi.homeDir -}}
+{{-   $notifyCommand = printf "%s %s/.local/share/show-agent-notification.ps1 codex" $pwsh .chezmoi.homeDir -}}
 {{- end -}}
 {
   "hooks": {
-    "SessionEnd": [
+    "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 3 }
+          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 20 }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          { "type": "command", "command": {{ $notifyCommand | toJson }}, "timeout": 20 }
         ]
       }
     ]

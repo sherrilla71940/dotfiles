@@ -94,9 +94,12 @@ import sys
 
 claude = json.load(open(sys.argv[1], encoding="utf-8"))
 codex = json.load(open(sys.argv[2], encoding="utf-8"))
-assert set(claude["hooks"]) == {"Notification", "SubagentStop"}
+assert set(claude["hooks"]) == {"Notification", "Stop", "SubagentStop"}
 assert "statusLine" in claude
-assert set(codex["hooks"]) == {"SessionEnd"}
+assert "idle_prompt" not in claude["hooks"]["Notification"][0]["matcher"]
+assert set(codex["hooks"]) == {"Stop", "PermissionRequest"}
+for event in ("Stop", "PermissionRequest"):
+    assert " codex" in codex["hooks"][event][0]["hooks"][0]["command"]
 for configuration in (claude, codex):
     rendered = json.dumps(configuration)
     for retired in ("maintain-task-continuity.sh", "check-worktree-launch", "worktree-runtime.py"):
@@ -150,7 +153,8 @@ cat >"$merge_destination/.claude/settings.json" <<'JSON'
     ]}],
     "Stop": [{"hooks": [
       {"type": "command", "command": "bash $HOME/.local/share/maintain-task-continuity.sh"},
-      {"type": "command", "command": "bash $HOME/.local/share/maintain-project-continuity.sh"}
+      {"type": "command", "command": "bash $HOME/.local/share/maintain-project-continuity.sh"},
+      {"type": "command", "command": "bash $HOME/custom-stop.sh"}
     ]}]
   }
 }
@@ -172,12 +176,13 @@ commands = [hook["command"] for groups in settings["hooks"].values()
             for group in groups for hook in group.get("hooks", []) if "command" in hook]
 assert any("custom-notification.sh" in command for command in commands)
 assert any("custom-session-start.sh" in command for command in commands)
+assert any("custom-stop.sh" in command for command in commands)
 assert any("show-agent-notification.ps1" in command or "show-agent-notification-macos.sh" in command
            for command in commands)
 assert not any("check-worktree-launch" in command or "maintain-task-continuity" in command
                or "maintain-project-continuity" in command
                for command in commands)
-assert "Stop" not in settings["hooks"]
+assert len(settings["hooks"]["Stop"]) == 2
 PY
 printf 'profile tests: Claude settings preserve app-owned values and remove retired hooks\n'
 

@@ -1,7 +1,9 @@
+param([ValidateSet("claude", "codex")][string]$Client = "claude")
+
 $ErrorActionPreference = "Stop"
 
 # Windows PowerShell uses console code pages that are not UTF-8 on every machine. Claude sends
-# UTF-8 JSON on stdin, and hook diagnostics use stdout, so force UTF-8 in both directions before
+# UTF-8 JSON on stdin, and Codex Stop requires JSON on stdout, so force UTF-8 in both directions before
 # either stream is read or written.
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding $false
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
@@ -11,7 +13,7 @@ $ErrorActionPreference = "Stop"
 # where it came from. scripts/bootstrap/bootstrap-windows.ps1 registers both AUMIDs below by hand.
 #
 # One script serves both clients, so the identity is chosen per notification: a banner raised
-# for a Codex session must not be attributed to Claude Code. The AUMID sets the name and icon
+# for a Codex turn must not be attributed to Claude Code. The AUMID sets the name and icon
 # Windows draws in the header, which no property in the toast markup can override.
 $claudeCodeAumid = "Anthropic.ClaudeCode"
 $codexAumid = "OpenAI.Codex"
@@ -52,7 +54,7 @@ $separator = " $([char]0x00B7) "
 function Get-AttributionText($Payload, [bool]$NeedsProductName) {
     $parts = @()
     if ($NeedsProductName) {
-        $parts += "Claude Code"
+        $parts += if ($Client -eq "codex") { "Codex" } else { "Claude Code" }
     }
 
     $workingDirectory = [string]$Payload.cwd
@@ -86,7 +88,7 @@ function Show-Toast([string]$Aumid, [string]$Xml, [string]$Tag) {
     # so the shortened session id is used rather than the full identifier.
     if (-not [string]::IsNullOrWhiteSpace($Tag)) {
         $toast.Tag = $Tag
-        $toast.Group = "claude-code"
+        $toast.Group = if ($Client -eq "codex") { "codex" } else { "claude-code" }
     }
 
     [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($Aumid).Show($toast)
@@ -103,6 +105,7 @@ function Get-ShortSessionId($Payload) {
 
 $inputJson = [Console]::In.ReadToEnd()
 if ([string]::IsNullOrWhiteSpace($inputJson)) {
+    if ($Client -eq "codex") { [Console]::Out.WriteLine("{}") }
     exit 0
 }
 
@@ -120,16 +123,17 @@ try {
 # Windows offers for it all cost more than they return: see New-ToastXml. Being away from the
 # desk is the case this cannot serve at all, whatever the banner does, and that belongs to a
 # notification that reaches a phone rather than to a longer toast.
-# Codex sends no notification_type - it has no Notification event, only lifecycle ones - so
-# its SessionEnd is mapped to a type here. SubagentStop is likewise a lifecycle event shared by
-# Claude Code's terminal and VS Code hosts; map it to the same background-agent completion toast
-# instead of relying on the Agent-view-only agent_completed notification.
+# Codex sends no notification_type, so use the explicitly passed client to distinguish its
+# lifecycle events from Claude's. SubagentStop is shared by Claude's terminal and VS Code hosts;
+# map it to the background-agent toast instead of relying on agent_completed alone.
 $notificationType = [string]$payload.notification_type
-if (-not $notificationType -and [string]$payload.hook_event_name -eq "SessionEnd") {
-    $notificationType = "session_end"
-}
-if (-not $notificationType -and [string]$payload.hook_event_name -eq "SubagentStop") {
-    $notificationType = "agent_completed"
+if (-not $notificationType) {
+    switch ([string]$payload.hook_event_name) {
+        "Stop" { $notificationType = if ($Client -eq "codex") { "codex_turn_complete" } else { "claude_turn_complete" } }
+        "PermissionRequest" { if ($Client -eq "codex") { $notificationType = "codex_permission_request" } }
+        "SessionEnd" { if ($Client -eq "codex") { $notificationType = "session_end" } }
+        "SubagentStop" { if ($Client -eq "claude") { $notificationType = "agent_completed" } }
+    }
 }
 switch ($notificationType) {
     "permission_prompt" {
@@ -147,6 +151,18 @@ switch ($notificationType) {
     "idle_prompt" {
         $title = "Claude finished"
         $message = "Claude finished and is waiting for your next prompt."
+    }
+    "claude_turn_complete" {
+        $title = "Claude finished"
+        $message = "Claude is ready for your next prompt."
+    }
+    "codex_turn_complete" {
+        $title = "Codex finished"
+        $message = "Codex is ready for your next prompt."
+    }
+    "codex_permission_request" {
+        $title = "Codex needs permission"
+        $message = "Codex is waiting for tool approval."
     }
     "auth_success" {
         $title = "Claude signed in"
@@ -167,6 +183,7 @@ switch ($notificationType) {
         $message = "The Codex session ended."
     }
     default {
+        if ($Client -eq "codex") { [Console]::Out.WriteLine("{}") }
         exit 0
     }
 }
@@ -209,14 +226,13 @@ try {
     [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType=WindowsRuntime]
 } catch {
     Write-HookLog "Notification failed: $notificationType - WinRT unavailable: $($_.Exception.Message)"
-    Write-Error "Claude notification failed. See ~/.claude/logs/notification-hook.log."
+    Write-Error "Agent notification failed. See ~/.claude/logs/notification-hook.log."
     exit 1
 }
 
-# session_end is only ever raised by the Codex hook; SubagentStop and every other type come from
-# Claude. An unregistered identity drops the toast silently, so each falls back to the always-
+# An unregistered identity drops the toast silently, so each client falls back to the always-
 # present Windows PowerShell identity rather than to the other client's.
-if ($notificationType -eq "session_end") {
+if ($Client -eq "codex") {
     $preferredAumid = $codexAumid
     $preferredShortcut = $codexShortcut
 } else {
@@ -228,6 +244,7 @@ $aumid = if (Test-Path -LiteralPath $preferredShortcut) { $preferredAumid } else
 try {
     Show-Toast -Aumid $aumid -Xml (New-ToastXml -Aumid $aumid) -Tag (Get-ShortSessionId -Payload $payload)
     Write-HookLog "Notification sent: $notificationType - $title (aumid: $aumid)"
+    if ($Client -eq "codex") { [Console]::Out.WriteLine("{}") }
     exit 0
 } catch {
     # A custom AUMID can fail after its shortcut is removed or its registration is reset.
@@ -237,15 +254,16 @@ try {
         try {
             Show-Toast -Aumid $fallbackAumid -Xml (New-ToastXml -Aumid $fallbackAumid) -Tag (Get-ShortSessionId -Payload $payload)
             Write-HookLog "Notification sent: $notificationType - $title (aumid: $fallbackAumid)"
+            if ($Client -eq "codex") { [Console]::Out.WriteLine("{}") }
             exit 0
         } catch {
             Write-HookLog "Notification failed: $notificationType - $($_.Exception.Message)"
-            Write-Error "Claude notification failed. See ~/.claude/logs/notification-hook.log."
+            Write-Error "Agent notification failed. See ~/.claude/logs/notification-hook.log."
             exit 1
         }
     }
 
     Write-HookLog "Notification failed: $notificationType - $($_.Exception.Message)"
-    Write-Error "Claude notification failed. See ~/.claude/logs/notification-hook.log."
+    Write-Error "Agent notification failed. See ~/.claude/logs/notification-hook.log."
     exit 1
 }

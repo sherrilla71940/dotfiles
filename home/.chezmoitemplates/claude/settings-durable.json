@@ -22,7 +22,14 @@
   "hooks": {
     "Notification": [
       {
-        "matcher": "permission_prompt|elicitation_dialog|elicitation_url_dialog|idle_prompt|auth_success|agent_needs_input|agent_completed",
+        "matcher": "permission_prompt|elicitation_dialog|elicitation_url_dialog|auth_success|agent_needs_input|agent_completed",
+        "hooks": [
+          { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
         "hooks": [
           { "type": "command", "command": {{ $notificationCommand | toJson }}, "timeout": 20 }
         ]

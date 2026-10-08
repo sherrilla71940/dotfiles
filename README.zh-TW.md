@@ -44,7 +44,7 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-例如：「用 `run-task-end-to-end` 實作附上的快捷鍵規格並驗證。」skill 會確認目前 checkout 是否適合、記下起始 commit；你指定或需要獨立工作目錄時，則使用 client 原生的 worktree。起點或發布目標有特別要求，再一併說明即可。
+如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；phase=execute base=main branch=feat/keyboard-shortcuts target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。這些參數都不是必填；平常直接用自然語言交代即可。
 
 整個流程如下：
 
@@ -59,7 +59,7 @@ flowchart TB
     gate -->|不需要| delivery{"要求建立 PR／MR？"}
     user --> delivery
     delivery -->|否| local["在本機提交"]
-    delivery -->|是| publish["重新確認目標分支；<br/>提交、推送並建立 PR／MR"]
+    delivery -->|是| publish["重新確認目標分支；必要時整合變更<br/>並重跑受影響的檢查；<br/>提交、推送並建立 PR／MR"]
 ```
 
 若目標分支已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。
@@ -71,7 +71,7 @@ flowchart TB
 | 功能 | 用途 | 查看實作 |
 | --- | --- | --- |
 | Claude Code 狀態列（Bash 與 PowerShell） | 狀態列會依終端機寬度調整版面，顯示模型與推理強度、可選的 session 名稱、專案路徑與 Git 狀態、context 使用量，以及資料可用時的 5 小時或 7 天用量百分比與重設時間。 | [Bash](./home/dot_claude/claude-session-statusline.sh)、[PowerShell](./home/dot_claude/claude-session-statusline.ps1) 和[設定來源](./home/.chezmoitemplates/claude/settings-durable.json)。 |
-| 桌面通知（Windows 與 macOS） | Claude Code 等待使用者回應，或 agent、subagent 完成時會提醒；Codex session 結束時也會提醒。Windows 和 macOS 各有一支通知腳本，兩個 client 也各自設定 hook。 | [Windows 腳本](./home/dot_local/share/show-agent-notification.ps1)、[macOS 腳本](./home/dot_local/share/show-agent-notification-macos.sh)、[Claude 設定](./home/.chezmoitemplates/claude/settings-durable.json)和 [Codex hooks](./home/dot_codex/hooks.json.tmpl)。 |
+| 桌面通知（Windows 與 macOS） | Claude Code 或 Codex 回覆完畢、Claude 的 subagent 完成工作或等待回應，以及任一 client 等待工具授權時，共用腳本會發出通知。各自的 hook 設定適用於本機終端機與 VS Code session。 | [Windows 腳本](./home/dot_local/share/show-agent-notification.ps1)、[macOS 腳本](./home/dot_local/share/show-agent-notification-macos.sh)、[Claude 設定](./home/.chezmoitemplates/claude/settings-durable.json)和 [Codex hooks](./home/dot_codex/hooks.json.tmpl)。 |
 | 本機驗證 | hook 會把已暫存的 chezmoi 來源快照渲染到暫存目錄，不會套用到家目錄。檢查項目包括 chezmoi 來源目錄是否指向這個 repository、skill 和共用規則的一致性、Bash／PowerShell 狀態列輸出，以及 Markdown 連結；其他測試涵蓋 profile 行為、診斷工具、Git 設定和公司 branch policy。 | [Pre-commit hook](./scripts/git-hooks/pre-commit)、[Bash 測試入口](./scripts/tests/run-git-bash-tests.ps1) 與[設定指南](./docs/setup.md)。 |
 | 個人與工作用 AI 設定 | 機器本機的 `ai_context` 讓同一份設定來源能用於個人或工作環境，套用各自的 AI 指引與預設值。這台機器選用哪一套，不會提交到 Git。 | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) 與[profile 設定方式](./docs/chezmoi-workflow.md#machine-local-ai-context)。 |
 | 專案材料與交接紀錄 | 規格與參考資料、可重複使用的測試資料，以及交接紀錄分別放在 `~/Documents/` 下的不同目錄。任務如果用到多份資料，就在 issue、PR／MR 或一份狀態筆記中連結；使用外部材料前先確認來源。 | [專案材料規則](./home/.chezmoitemplates/core.md#project-material)與 [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md)。 |

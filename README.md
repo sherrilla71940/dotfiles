@@ -44,7 +44,7 @@ chezmoi renders the versioned source with the machine-local profile. Each client
 | Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-For example: “Use `run-task-end-to-end` to implement the attached keyboard shortcut spec and verify it.” The skill checks the current suitable checkout and its starting commit, or uses the client's worktree when requested or needed. Add a starting point or publication target when one matters.
+For a task with specific choices, try: `Use run-task-end-to-end to implement the attached keyboard shortcut spec; phase=execute base=main branch=feat/keyboard-shortcuts target=main workspace=worktree verification=balanced`. Here `base` selects the starting branch, `target` requests PR/MR delivery, and `verification=balanced` adds a user-review gate. These hints are optional; a plain-language request works too.
 
 The skill follows this path:
 
@@ -59,7 +59,7 @@ flowchart TB
     gate -->|No| delivery{"PR/MR delivery requested?"}
     user --> delivery
     delivery -->|No| local["Commit locally"]
-    delivery -->|Yes| publish["Recheck target base;<br/>commit, push, and open PR/MR"]
+    delivery -->|Yes| publish["Recheck target; reconcile and rerun<br/>affected checks if needed;<br/>commit, push, and open PR/MR"]
 ```
 
 If the target base has moved, the skill pauses for a merge or rebase choice and reruns affected checks before publication.
@@ -71,7 +71,7 @@ These are the details I rely on to make agent sessions easier to follow and thei
 | Feature | What it does | Inspect |
 | --- | --- | --- |
 | Claude Code statusline (Bash and PowerShell) | A terminal-width-aware display shows the model and effort, an optional session name, project path and Git state, context use, and 5-hour or 7-day usage percentages with reset times when available. | [Bash](./home/dot_claude/claude-session-statusline.sh), [PowerShell](./home/dot_claude/claude-session-statusline.ps1), and [settings source](./home/.chezmoitemplates/claude/settings-durable.json). |
-| Desktop notifications (Windows and macOS) | Shared scripts alert me when Claude Code needs input or an agent or subagent finishes, and when a Codex session ends. Each client has its own hook configuration. | [Windows script](./home/dot_local/share/show-agent-notification.ps1), [macOS script](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), and [Codex hooks](./home/dot_codex/hooks.json.tmpl). |
+| Desktop notifications (Windows and macOS) | Shared scripts alert me when Claude Code or Codex finishes a turn, when a Claude subagent finishes or needs input, and when either client needs tool approval. Client hooks are configured for local terminal and VS Code sessions. | [Windows script](./home/dot_local/share/show-agent-notification.ps1), [macOS script](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), and [Codex hooks](./home/dot_codex/hooks.json.tmpl). |
 | Local validation | The hook renders the staged source snapshot in a temporary directory without applying it. Its checks cover source identity, skill and shared-rule parity, statusline parity, and Markdown links; focused suites cover profile behavior, diagnostics, Git configuration, and company branch policy. | [Pre-commit hook](./scripts/git-hooks/pre-commit), [Bash test runner](./scripts/tests/run-git-bash-tests.ps1), and [setup guide](./docs/setup.md). |
 | Personal or work AI setup | A machine-local `ai_context` lets me use the same repository for personal and work AI setups. It selects the corresponding agent guidance and defaults without committing the machine's choice. | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) and [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context). |
 | Project materials and handoffs | Specs and references, reusable test inputs, and updateable handoffs have separate homes under `~/Documents/`. For tasks spanning several items, an issue, PR/MR, or one status note links them. Agents check material provenance before use. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |

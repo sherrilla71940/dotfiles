@@ -57,6 +57,7 @@ agent session.
 | [0053](./0053-native-first-ai-workflows.md) | Accepted | Use native client/Git workflows with an explicit, verified cross-client handoff |
 | [0054](./0054-verify-native-task-starts.md) | Accepted | Use verified current or client-selected starting points for routine tasks |
 | [0055](./0055-retire-workflow-deletion-engine.md) | Accepted | Retire the workflow deletion engine while keeping reviewed source and target cleanup |
+| [0056](./0056-limit-end-to-end-skill-to-implementation.md) | Accepted | Limit the end-to-end skill to implementation and use ordinary requests for planning and review |
 
 ## Template
 

@@ -41,18 +41,16 @@ chezmoi renders the versioned source with the machine-local profile. Each client
 | Goal | Start with | What it does |
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
-| Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language task through workspace checks, implementation, verification, and a local commit or requested PR/MR. A plan or review request returns findings without editing files. |
+| Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language implementation task through workspace checks, verification, and a local commit or requested PR/MR. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-For a task with specific choices, try: `Use run-task-end-to-end to implement the attached keyboard shortcut spec; phase=execute base=main target=main workspace=worktree verification=balanced`. Here `base` selects the starting point, `target` requests PR/MR delivery, and `verification=balanced` adds a user-review gate. The skill follows repository policy, uses a suitable existing or client-created branch, or derives a name from the change type and summary when a new branch is needed. Add `branch=` only to request a specific name. These hints are optional; a plain-language request works too.
+For a task with specific choices, try: `Use run-task-end-to-end to implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`. Here `base` selects the starting point, `target` requests PR/MR delivery, and `verification=balanced` adds a user-review gate. The skill follows repository policy, uses a suitable existing or client-created branch, or derives a name from the change type and summary when a new branch is needed. Add `branch=` only to request a specific name. These hints are optional; a plain-language request works too. For planning or code review, ask the agent directly.
 
 The skill follows this path:
 
 ```mermaid
 flowchart TB
-    request["Request and materials"] --> route{"Plan/review or execute?"}
-    route -->|Plan/review| findings["Findings and next action<br/>No file edits"]
-    route -->|Execute| workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
+    request["Implementation request and materials"] --> workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
     workspace --> work["Implement; run available automated,<br/>runtime, and browser checks;<br/>fix and retest as needed"]
     work --> gate{"User review or manual checks required?"}
     gate -->|Yes| user["Wait for user review or test results"]

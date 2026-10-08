@@ -41,18 +41,16 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。各 
 | 想做什麼 | 從哪裡開始 | 它會怎麼做 |
 | --- | --- | --- |
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
-| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。如果只請它規劃或檢查，會回報結果而不修改檔案。 |
+| 把需求帶到可檢查的變更 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代實作任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
 
-如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；phase=execute base=main target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。skill 會先遵循 repository 規則；可以沿用合適的現有分支或 client 建立的分支，需要新名稱時則依變更類型和任務摘要命名。想指定名稱時，才加上 `branch=`。這些參數都不是必填；平常直接用自然語言交代即可。
+如果想明確指定起點、工作目錄和發布方式，可以這樣下指令：`用 run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`。其中 `base` 指定起點、`target` 要求建立 PR／MR，`verification=balanced` 則會在交付前等你審查。skill 會先遵循 repository 規則；可以沿用合適的現有分支或 client 建立的分支，需要新名稱時則依變更類型和任務摘要命名。想指定名稱時，才加上 `branch=`。這些參數都不是必填；平常直接用自然語言交代即可。若只想規劃或檢查程式，直接請 AI 協助就好。
 
 整個流程如下：
 
 ```mermaid
 flowchart TB
-    request["需求與材料"] --> route{"只規劃／檢查<br/>或執行？"}
-    route -->|規劃／檢查| findings["回報結果與下一步<br/>不修改檔案"]
-    route -->|執行| workspace["確認 repository 規則、目前 checkout<br/>或指定的 worktree，以及起始 commit"]
+    request["實作需求與材料"] --> workspace["確認 repository 規則、目前 checkout<br/>或指定的 worktree，以及起始 commit"]
     workspace --> work["實作並執行可用的自動化測試；<br/>可行時啟動程式、檢查瀏覽器流程；<br/>必要時修正並重測"]
     work --> gate{"需要使用者審查<br/>或手動檢查？"}
     gate -->|需要| user["等候使用者審查或測試結果"]

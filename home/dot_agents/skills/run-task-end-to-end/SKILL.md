@@ -21,6 +21,8 @@ Before reading project files, follow the repository-identity preflight in the ac
 - Honor an explicit `workspace=current` or `workspace=worktree`. Otherwise continue in the active checkout. Ask before isolating only when a separate checkout is needed to protect unrelated work or enable requested parallel work.
 - Default verification to `balanced` when publication is requested and `agent` for local delivery. The user can choose another verification policy.
 
+Continue through routine implementation, corrections, verification, and authorized delivery until the requested outcome is complete. Do not ask to proceed between those steps. Pause only for a required decision, the selected human review or test gate, or a concrete limitation that prevents the next required step; report the unfinished step and what would unblock it.
+
 When invoked without a task, ask for the outcome and only the missing decisions needed to proceed. Use the active client's question interface when available; otherwise ask in one concise message.
 
 ## Establish the workspace

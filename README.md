@@ -44,9 +44,12 @@ chezmoi renders the versioned source with the machine-local profile. I edit the 
 | Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language implementation task through workspace checks, verification, and a local commit or requested PR/MR. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
-Claude Code, Codex, and GitHub Copilot can invoke this skill with slash syntax. Put the task and any optional choices after the skill name:
+Invoke the skill with the syntax supported by your client, followed by the task and any optional choices:
 
-- `/run-task-end-to-end Implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`
+- Claude Code or Copilot CLI: `/run-task-end-to-end Implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`
+- Codex: `$run-task-end-to-end Implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`
+
+In Copilot for VS Code, ask for `run-task-end-to-end` by name in chat.
 
 `base` names the starting branch or commit. If omitted, a supplied `target` also supplies the starting point unless repository policy says otherwise; `target` names the PR/MR destination and requests that delivery. If neither is supplied, the skill uses and records the active checkout or client worktree's starting commit. It never infers a publication target. `workspace` selects the current checkout or a worktree, and `verification` selects the review policy. State these choices in plain language or as optional `key=value` hints. The skill follows repository policy and uses a suitable existing or client-created branch, or derives a name from the change type and summary when a new branch is needed. Add `branch=` only to request a specific name. For planning or code review, ask the agent directly.
 
@@ -55,7 +58,10 @@ The skill follows this path:
 ```mermaid
 flowchart TB
     request["Task + materials<br/>Optional choices: starting point (base),<br/>PR/MR destination (target), workspace, verification"] --> materials["Check material provenance and authority;<br/>file reusable test inputs when needed"]
-    materials --> workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
+    materials --> material_index{"Several external materials?"}
+    material_index -->|Yes| links["Link references, tests, and handoffs<br/>from issue, PR/MR, or one status note"]
+    material_index -->|No| workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
+    links --> workspace
     workspace --> work["Implement; run available automated,<br/>runtime, and browser checks;<br/>fix and retest as needed"]
     work --> gate{"User review or manual checks required?"}
     gate -->|Yes| user["Wait for user review or test results"]
@@ -81,7 +87,7 @@ These are the details I rely on to make agent sessions easier to follow and thei
 | Desktop notifications (Windows and macOS) | Shared scripts alert me when Claude Code or Codex finishes a turn, when a Claude subagent finishes or needs input, and when either client needs tool approval. Client hooks are configured for local terminal and VS Code sessions. | [Windows script](./home/dot_local/share/show-agent-notification.ps1), [macOS script](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), and [Codex hooks](./home/dot_codex/hooks.json.tmpl). |
 | Local validation | The hook renders the staged source snapshot in a temporary directory without applying it. Its checks cover source identity, skill and shared-rule parity, statusline parity, and Markdown links; focused suites cover profile behavior, diagnostics, Git configuration, and company branch policy. | [Pre-commit hook](./scripts/git-hooks/pre-commit), [Bash test runner](./scripts/tests/run-git-bash-tests.ps1), and [setup guide](./docs/setup.md). |
 | Personal or work AI setup | A machine-local `ai_context` lets me use the same repository for personal and work AI setups. It selects the corresponding agent guidance and defaults without committing the machine's choice. | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) and [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context). |
-| Project material storage and indexing | Stable references, reusable test inputs, and handoff notes have separate homes under `~/Documents/`. For tasks using several materials, link them from an issue, PR/MR, or status note. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |
+| Project material storage and indexing | Stable references go under `~/Documents/task-materials/`, reusable test inputs under `~/Documents/test-materials/`, and handoff notes under `~/Documents/handoffs/`. When a task uses several, link them from its issue, PR/MR, or one updateable status note; simple tasks need no index. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |
 | Security and verification safeguards | Shared rules cover trust-boundary validation, output escaping, parameterized SQL, and secret hygiene. They also require agents to verify the checkout and material provenance and report only checks they actually ran, designed to reduce common security mistakes and unsupported completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md) and [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md). |
 
 **Statusline example.** The model and usage figures show one past session.

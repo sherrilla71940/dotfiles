@@ -61,6 +61,18 @@ Check older names in Git history when retiring a renamed skill or hook. Targets 
 earlier name can be unmanaged and still active even when `chezmoi status` is empty; include
 those exact target paths in `.chezmoiremove` when they should be retired too.
 
+Treat retirement as two separate operations:
+
+| Artifact | Source change | Live cleanup |
+| --- | --- | --- |
+| Chezmoi-managed file, rule, or skill | Delete or stop managing the source entry | Add its exact home-relative target to `.chezmoiremove`, then apply and review the deletion |
+| Client-installed plugin or marketplace package | Remove the bootstrap or declaration that installs or enables it | Use the client’s own uninstall or disable command; `.chezmoiremove` does not own plugin caches |
+| Unmanaged diagnostic, cache, session, or application-owned file | Leave repository source unchanged unless the repository explicitly owns it | Archive or remove it separately after checking that it is unused |
+
+Deleting a repository source never proves that the live artifact is gone. Check the rendered
+target after apply, and keep the cleanup entry until the machines that still carry it have applied
+the change.
+
 From the repository root, `bash scripts/dev-env doctor` reports source identity, the resolved
 profile, unapplied target drift, Claude shared-skill link health, and required tool versions. It is
 repository tooling because it checks this checkout and live chezmoi state; it is not rendered into

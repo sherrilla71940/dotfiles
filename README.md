@@ -30,7 +30,11 @@ flowchart LR
     dotfiles --> render
     shared --> render
     adapters --> render
-    render --> ai["Native AI configuration surfaces<br/>Claude Code · Codex · GitHub Copilot"]
+    subgraph clients["AI clients"]
+        ai["Selected durable configuration<br/>Claude Code · Codex · GitHub Copilot"]
+        appstate["Application-owned state<br/>Sessions · credentials · runtime choices<br/>(outside chezmoi)"]
+    end
+    render --> ai
     render --> settings["Shell · Git · editor · terminal<br/>and other durable settings"]
 ```
 
@@ -43,21 +47,21 @@ chezmoi renders the versioned source with the machine-local profile. I edit the 
 | Goal | Start with | What it does |
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
-| Take a request to a reviewable change | [End-to-end task guide](./docs/run-task-end-to-end.md) | Explains how to invoke the `run-task-end-to-end` skill, choose verification, and follow work through a local commit or requested PR/MR. |
+| Take a request to a reviewable change | [End-to-end task guide](./docs/run-task-end-to-end.md) | Takes a request through repository and material checks, implementation, and verification to a local commit or requested PR/MR. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
 
 ## Day-to-day conveniences and safeguards
 
-These are the details I rely on to make agent sessions easier to follow and their changes easier to trust.
+Selective settings ownership and staged-source validation keep changes reviewable; the other entries support daily use.
 
 | Feature | What it does | Inspect |
 | --- | --- | --- |
-| Claude Code statusline (Bash and PowerShell) | A terminal-width-aware display shows the model and effort, an optional session name, project path and Git state, context use, and 5-hour or 7-day usage percentages with reset times when available. | [Bash](./home/dot_claude/claude-session-statusline.sh), [PowerShell](./home/dot_claude/claude-session-statusline.ps1), and [settings source](./home/.chezmoitemplates/claude/settings-durable.json). |
-| Desktop notifications (Windows and macOS) | Shared scripts alert me when Claude Code or Codex finishes a turn, when a Claude subagent finishes or needs input, and when either client needs tool approval. Client hooks are configured for local terminal and VS Code sessions. | [Windows script](./home/dot_local/share/show-agent-notification.ps1), [macOS script](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), and [Codex hooks](./home/dot_codex/hooks.json.tmpl). |
-| Local validation | The hook renders the staged source snapshot in a temporary directory without applying it. Its checks cover source identity, skill and shared-rule parity, statusline parity, and Markdown links; focused suites cover profile behavior, diagnostics, Git configuration, and company branch policy. | [Pre-commit hook](./scripts/git-hooks/pre-commit), [Bash test runner](./scripts/tests/run-git-bash-tests.ps1), and [setup guide](./docs/setup.md). |
-| Personal or work AI setup | A machine-local `ai_context` lets me use the same repository for personal and work AI setups. It selects the corresponding agent guidance and defaults without committing the machine's choice. | [`ai-profile` skill](./home/dot_agents/skills/ai-profile/SKILL.md) and [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context). |
-| Project material storage and indexing | Stable references go under `~/Documents/task-materials/`, reusable test inputs under `~/Documents/test-materials/`, and handoff notes under `~/Documents/handoffs/`. When a task uses several, link them from its issue, PR/MR, or one updateable status note; simple tasks need no index. | [Project material rules](./home/.chezmoitemplates/core.md#project-material) and [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md). |
-| Security and verification safeguards | Shared rules cover trust-boundary validation, output escaping, parameterized SQL, and secret hygiene. They also require agents to verify the checkout and material provenance and report only checks they actually ran, designed to reduce common security mistakes and unsupported completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md) and [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md). |
+| Claude Code statusline (Bash and PowerShell) | Shows the model, session, Git context, and available usage windows in a width-aware display. | [Bash](./home/dot_claude/claude-session-statusline.sh), [PowerShell](./home/dot_claude/claude-session-statusline.ps1) |
+| Desktop notifications (Windows and macOS) | Alerts for completed turns, Claude subagents, and tool approvals in terminal and VS Code sessions. | [Windows](./home/dot_local/share/show-agent-notification.ps1), [macOS](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), [Codex hooks](./home/dot_codex/hooks.json.tmpl) |
+| Local validation | The pre-commit hook renders and validates staged source in a temporary directory without changing home files, then runs relevant guidance, statusline, and link checks. | [Hook](./scripts/git-hooks/pre-commit), [test runner](./scripts/tests/run-git-bash-tests.ps1) |
+| Personal or work AI setup | Machine-local `ai_context` selects the guidance and defaults without committing that choice. | [`ai-profile`](./home/dot_agents/skills/ai-profile/SKILL.md), [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context) |
+| Project material storage and indexing | Keeps stable references, reusable test inputs, and handoffs in dedicated folders; indexes tasks that use several materials. | [Project material rules](./home/.chezmoitemplates/core.md#project-material), [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md) |
+| Security and verification safeguards | Shared rules cover input validation, output escaping, secret hygiene, and evidence-backed completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md), [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md) |
 
 **Statusline example.** The model and usage figures show one past session.
 

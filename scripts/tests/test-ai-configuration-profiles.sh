@@ -61,7 +61,9 @@ for context in personal company; do
   assert_contains "$claude_core" 'use `task-record` to find or create one personal record'
   assert_contains "$codex_core" 'use `task-record` to find or create one personal record'
   assert_contains "$copilot_core" 'use `task-record` to find or create one personal record'
-  assert_contains "$claude_core" 'use `task-record` to search completed records'
+  assert_contains "$claude_core" 'first invoke `task-record` to search matching completed records'
+  assert_contains "$codex_core" 'first invoke `task-record` to search matching completed records'
+  assert_contains "$copilot_core" 'first invoke `task-record` to search matching completed records'
   [[ ! -e "$destination/.agents/skills/task-handoff" ]] || fail 'retired task-handoff skill rendered'
   assert_contains "$task_skill" "native worktree flow when available"
   assert_contains "$task_skill" 'branch=<name>'

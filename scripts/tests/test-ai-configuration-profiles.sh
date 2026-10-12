@@ -186,6 +186,38 @@ assert len(settings["hooks"]["Stop"]) == 2
 PY
 printf 'profile tests: Claude settings preserve app-owned values and remove retired hooks\n'
 
+retired_destination="$work_directory/render-retired-skills"
+mkdir -p "$retired_destination/.agents/skills/project-continuity" \
+  "$retired_destination/.agents/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/skills/project-continuity" \
+  "$retired_destination/.claude/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/hooks"
+for path in \
+  "$retired_destination/.agents/skills/project-continuity/SKILL.md" \
+  "$retired_destination/.agents/skills/frontend-task-workflow/SKILL.md" \
+  "$retired_destination/.claude/skills/project-continuity/SKILL.md" \
+  "$retired_destination/.claude/skills/frontend-task-workflow/SKILL.md" \
+  "$retired_destination/.claude/hooks/maintain-project-continuity.sh"; do
+  printf 'retired fixture\n' >"$path"
+done
+"$chezmoi_bin" apply \
+  --config="$config_file" \
+  --source="$repository_root" \
+  --destination="$retired_destination" \
+  --exclude=scripts \
+  --no-tty \
+  --force >/dev/null
+for path in \
+  "$retired_destination/.agents/skills/project-continuity" \
+  "$retired_destination/.agents/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/skills/project-continuity" \
+  "$retired_destination/.claude/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/hooks/maintain-project-continuity.sh"; do
+  [[ ! -e "$path" ]] || fail "retired target remains after apply: $path"
+done
+assert_file "$retired_destination/.agents/skills/run-task-end-to-end/SKILL.md"
+printf 'profile tests: old shared-skill names and continuity hook are retired\n'
+
 default_destination="$work_directory/render-default"
 mkdir -p "$default_destination"
 "$chezmoi_bin" apply \

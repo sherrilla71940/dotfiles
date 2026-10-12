@@ -1,6 +1,8 @@
 .agents/skills/workflow-archive
 .agents/skills/workflow-restore
 .agents/skills/task-continuity
+.agents/skills/project-continuity
+.agents/skills/frontend-task-workflow
 .agents/skills/task-workflow
 .agents/skills/run-task-end-to-end/references/invocation.md
 .agents/skills/run-task-end-to-end/references/lifecycle.md
@@ -10,6 +12,8 @@
 .claude/skills/workflow-archive
 .claude/skills/workflow-restore
 .claude/skills/task-continuity
+.claude/skills/project-continuity
+.claude/skills/frontend-task-workflow
 .claude/skills/task-workflow
 .claude/skills/run-task-end-to-end/references/invocation.md
 .claude/skills/run-task-end-to-end/references/lifecycle.md
@@ -18,6 +22,7 @@
 .claude/skills/worktree-manifest
 .claude/hooks/check-worktree-launch.ps1
 .claude/hooks/check-worktree-launch.sh
+.claude/hooks/maintain-project-continuity.sh
 .local/share/maintain-project-continuity.sh
 .local/share/maintain-task-continuity.sh
 .local/share/worktree-runtime.py

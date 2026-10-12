@@ -57,6 +57,10 @@ has applied them. Git history preserves tracked source: use `git log -- <path>` 
 then review and run `git restore --source <commit> -- <paths>` if recovery is needed. Leave
 application-owned settings and ignored task records untouched.
 
+Check older names in Git history when retiring a renamed skill or hook. Targets left by an
+earlier name can be unmanaged and still active even when `chezmoi status` is empty; include
+those exact target paths in `.chezmoiremove` when they should be retired too.
+
 From the repository root, `bash scripts/dev-env doctor` reports source identity, the resolved
 profile, unapplied target drift, Claude shared-skill link health, and required tool versions. It is
 repository tooling because it checks this checkout and live chezmoi state; it is not rendered into

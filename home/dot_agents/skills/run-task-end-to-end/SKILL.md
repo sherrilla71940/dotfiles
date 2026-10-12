@@ -63,4 +63,4 @@ When `target` or an explicit publish request is present, check the repository's 
 
 After the verification and any selected user-review gate pass, push the task branch and create the request against the resolved `target`. If the host or credentials prevent publication, keep the verified local result and report the exact safe next step.
 
-Report the checkout, branch, changed behavior, checks and outcomes, blockers, commit, and request URL when created. When another session must continue, use `task-handoff`; the receiving session verifies its claims against current files and Git.
+Report the checkout, branch, changed behavior, checks and outcomes, blockers, commit, and request URL when created. For a substantial task with a personal task record, update its outcome and next action. A receiving session finds that record and verifies its current-state claims against Git and source material before continuing.

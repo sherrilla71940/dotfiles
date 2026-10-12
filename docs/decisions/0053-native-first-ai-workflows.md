@@ -3,6 +3,10 @@
 - Status: Accepted
 - Date: 2026-10-08
 
+The explicit `task-handoff` and issue/PR-first task-index decisions below were superseded by
+[ADR-0057](./0057-use-durable-personal-task-records.md). The native client and Git decisions
+remain active.
+
 ## Context
 
 This repository had grown a custom task-state system, cross-client lifecycle hooks, worktree
@@ -89,7 +93,7 @@ address with an acceptably small repository-owned rule.
 
 ## Related files and verification
 
-- `home/dot_agents/skills/task-handoff/SKILL.md`
+- `docs/decisions/0057-use-durable-personal-task-records.md` (supersedes the handoff decision)
 - `home/dot_agents/skills/run-task-end-to-end/SKILL.md`
 - `home/.chezmoitemplates/core.md`
 - `home/.chezmoitemplates/ai-profile.yaml`

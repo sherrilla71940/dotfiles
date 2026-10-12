@@ -75,9 +75,9 @@ apply:
 ## Keep the document alive without duplicating it
 
 Treat the handoff as one living file while the task is in progress. Update that file as facts are
-verified. When another AI session needs it, use the task-handoff skill to point to this file and
-state whether the receiving environment can access it; do not duplicate the full document into a
-conversation prompt.
+verified. When a personal task record exists, link this human-facing handoff from it. A receiving AI
+session checks whether it can access the file and verifies its claims; do not duplicate the full
+document into a conversation prompt.
 
 Add an appendix such as **Investigated and closed — no action** for concerns that were checked and
 ruled out. This prevents the recipient or the next agent from repeating the investigation.

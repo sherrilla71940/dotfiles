@@ -41,4 +41,4 @@ flowchart TB
     freshness -->|No| publish
 ```
 
-If the PR/MR target has advanced since the recorded checkpoint, the skill waits for a merge or rebase choice and reruns affected checks before publication. If another session needs to continue the task, use [`task-handoff`](../home/dot_agents/skills/task-handoff/SKILL.md) to capture the current state when transferring the work.
+If the PR/MR target has advanced since the recorded checkpoint, the skill waits for a merge or rebase choice and reruns affected checks before publication. For a substantial task that spans sessions, [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) keeps the questions, decisions, current state, and next action in one personal file. A continuing session checks it against Git and source material.

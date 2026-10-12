@@ -20,7 +20,8 @@ The publish stage adds a base-freshness and integration gate:
 3. Stop when the base advanced and ask the user to choose merge or rebase. Do not use `git pull` as
    an implicit strategy, and do not stash, reset, discard, or resolve conflicts automatically.
 4. Preserve a conflict state for user- or agent-assisted resolution. Record conflict paths and the
-   next operation in the durable issue or handoff, then rerun applicable verification.
+   next operation in the personal task record when one exists, or in an existing issue or
+   human-facing handoff otherwise; then rerun applicable verification.
 5. Recheck the remote and base immediately before pushing. Never silently change the request target.
 
 Merging is the safe default for a task branch that has already been published. Rebasing a published
@@ -42,9 +43,9 @@ strategy.
 ## Consequences
 
 Publishing can pause when the base moves, and a successful integration can require another
-verification pass. Conflicts remain visible in Git and in the durable issue or handoff, including
-when another supported client takes over. No workflow can guarantee that the remote base will not
-advance after the final check; another advance requires another integration cycle.
+verification pass. Conflicts remain visible in Git and the task record or other durable pointer,
+including when another supported client takes over. No workflow can guarantee that the remote base
+will not advance after the final check; another advance requires another integration cycle.
 
 ## Reconsider when
 
@@ -55,4 +56,4 @@ adopts a different branch publication policy.
 ## Related files and verification
 
 - [`home/dot_agents/skills/run-task-end-to-end/SKILL.md`](../../home/dot_agents/skills/run-task-end-to-end/SKILL.md)
-- [`home/dot_agents/skills/task-handoff/SKILL.md`](../../home/dot_agents/skills/task-handoff/SKILL.md)
+- [`home/dot_agents/skills/task-record/SKILL.md`](../../home/dot_agents/skills/task-record/SKILL.md)

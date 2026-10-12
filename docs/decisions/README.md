@@ -54,10 +54,11 @@ agent session.
 | [0050](./0050-preserve-app-written-windows-terminal-actions-and-keybindings.md) | Accepted | Preserve unlisted Windows Terminal actions and keybindings |
 | [0051](./0051-preserve-app-written-git-global-settings.md) | Accepted | Preserve Git global settings outside explicit repository ownership |
 | [0052](./0052-define-ai-profile-applicability-scope.md) | Accepted | Separate AI profile applicability from client reach and validate both rendered contexts |
-| [0053](./0053-native-first-ai-workflows.md) | Accepted | Use native client/Git workflows with an explicit, verified cross-client handoff |
+| [0053](./0053-native-first-ai-workflows.md) | Accepted | Use native client/Git workflows; the explicit handoff decision was later replaced by 0057 |
 | [0054](./0054-verify-native-task-starts.md) | Accepted | Use verified current or client-selected starting points for routine tasks |
 | [0055](./0055-retire-workflow-deletion-engine.md) | Accepted | Retire the workflow deletion engine while keeping reviewed source and target cleanup |
 | [0056](./0056-limit-end-to-end-skill-to-implementation.md) | Accepted | Limit the end-to-end skill to implementation and use ordinary requests for planning and review |
+| [0057](./0057-use-durable-personal-task-records.md) | Accepted | Keep personal task context and decision rationale in durable task records |
 
 ## Template
 

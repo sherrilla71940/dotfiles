@@ -36,3 +36,5 @@
 .claude/skills/browser-collab-testing
 .agents/skills/technical-writing
 .claude/skills/technical-writing
+.agents/skills/task-handoff
+.claude/skills/task-handoff

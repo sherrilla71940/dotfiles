@@ -48,11 +48,9 @@ chezmoi renders the versioned source with the machine-local profile. I edit the 
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
 | Take a request to a reviewable change | [End-to-end task guide](./docs/run-task-end-to-end.md) | Takes a request through repository and material checks, implementation, and verification to a local commit or requested PR/MR. |
-| Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
+| Keep and find task decisions across AI sessions | [Personal task-record guide](./docs/task-record.md) | Keeps one personal record of questions, sourced answers, decisions, and next actions, so later AI sessions can resume work or revisit its rationale. |
 
 ## Day-to-day conveniences and safeguards
-
-Selective settings ownership and staged-source validation keep changes reviewable; the other entries support daily use.
 
 | Feature | What it does | Inspect |
 | --- | --- | --- |
@@ -60,7 +58,7 @@ Selective settings ownership and staged-source validation keep changes reviewabl
 | Desktop notifications (Windows and macOS) | Alerts for completed turns, Claude subagents, and tool approvals in terminal and VS Code sessions. | [Windows](./home/dot_local/share/show-agent-notification.ps1), [macOS](./home/dot_local/share/show-agent-notification-macos.sh), [Claude settings](./home/.chezmoitemplates/claude/settings-durable.json), [Codex hooks](./home/dot_codex/hooks.json.tmpl) |
 | Local validation | The pre-commit hook renders and validates staged source in a temporary directory without changing home files, then runs relevant guidance, statusline, and link checks. | [Hook](./scripts/git-hooks/pre-commit), [test runner](./scripts/tests/run-git-bash-tests.ps1) |
 | Personal or work AI setup | Machine-local `ai_context` selects the guidance and defaults without committing that choice. | [`ai-profile`](./home/dot_agents/skills/ai-profile/SKILL.md), [profile setup](./docs/chezmoi-workflow.md#machine-local-ai-context) |
-| Project material storage and indexing | Keeps stable references, reusable test inputs, and handoffs in dedicated folders; indexes tasks that use several materials. | [Project material rules](./home/.chezmoitemplates/core.md#project-material), [ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md) |
+| Project material storage and indexing | Keeps stable references, reusable test inputs, personal task records, and human-facing handoffs in separate folders. | [Project material rules](./home/.chezmoitemplates/core.md#project-material), [ADR-0057](./docs/decisions/0057-use-durable-personal-task-records.md) |
 | Security and verification safeguards | Shared rules cover input validation, output escaping, secret hygiene, and evidence-backed completion claims. | [Shared core rules](./home/.chezmoitemplates/core.md), [ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md) |
 
 **Statusline example.** The model and usage figures show one past session.

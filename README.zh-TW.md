@@ -48,11 +48,9 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。我�
 | --- | --- | --- |
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
 | 實作、驗證與交付 | [端到端任務指南](./docs/run-task-end-to-end.zh-TW.md) | 從檢查 repository 與材料、實作到驗證，最後完成本機 commit，或依要求建立 PR／MR。 |
-| 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
+| 在不同 AI session 間保留並查找任務決策 | [個人任務紀錄指南](./docs/task-record.zh-TW.md) | 以一份個人紀錄保留問題、附來源的答覆、決策與下一步，讓後續 AI session 能接續工作，也能查明當初的決策理由。 |
 
 ## 功能與防護措施
-
-只管理選定的設定，並在提交前驗證暫存的來源，讓變更更容易檢查；其餘功能則支援日常使用。
 
 | 功能 | 用途 | 查看實作 |
 | --- | --- | --- |
@@ -60,7 +58,7 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。我�
 | 桌面通知（Windows 與 macOS） | 在終端機或 VS Code session 中，針對回覆完成、Claude subagent 狀態及工具授權發出通知。 | [Windows](./home/dot_local/share/show-agent-notification.ps1)、[macOS](./home/dot_local/share/show-agent-notification-macos.sh)、[Claude 設定](./home/.chezmoitemplates/claude/settings-durable.json)、[Codex hooks](./home/dot_codex/hooks.json.tmpl) |
 | 本機驗證 | Pre-commit hook 會在暫存目錄渲染並驗證已暫存的來源，不會套用到家目錄；再視變更內容檢查共用指引、狀態列輸出與連結。 | [Hook](./scripts/git-hooks/pre-commit)、[測試入口](./scripts/tests/run-git-bash-tests.ps1) |
 | 個人與工作用 AI 設定 | 機器本機的 `ai_context` 決定使用哪套指引與預設值，不會將選擇提交到 Git。 | [`ai-profile`](./home/dot_agents/skills/ai-profile/SKILL.md)、[profile 設定方式](./docs/chezmoi-workflow.md#machine-local-ai-context) |
-| 專案材料存放與索引 | 將穩定參考資料、可重用的測試輸入和交接紀錄分開存放，並為涉及多份材料的任務建立索引。 | [專案材料規則](./home/.chezmoitemplates/core.md#project-material)、[ADR-0053](./docs/decisions/0053-native-first-ai-workflows.md) |
+| 專案材料存放與索引 | 將穩定參考資料、可重用的測試輸入、個人任務紀錄及對外交接文件分開存放。 | [專案材料規則](./home/.chezmoitemplates/core.md#project-material)、[ADR-0057](./docs/decisions/0057-use-durable-personal-task-records.md) |
 | 安全與驗證防護 | 共用規則涵蓋輸入驗證、輸出編碼、機密保護，以及有憑有據的完成回報。 | [共用核心規則](./home/.chezmoitemplates/core.md)、[ADR-0024](./docs/decisions/0024-instruction-provenance-and-material-filing.md) |
 
 **狀態列範例。** 圖中的模型與用量是當時的數值。

@@ -41,4 +41,4 @@ flowchart TB
     freshness -->|否| publish
 ```
 
-若 PR／MR 目標分支自記錄時起已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。若要把工作交給另一個 AI session 繼續，請在交接時使用 [`task-handoff`](../home/dot_agents/skills/task-handoff/SKILL.md) 記錄目前狀態。
+若 PR／MR 目標分支自記錄時起已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。較複雜、需要跨 session 進行的任務，會用 [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) 在一份個人檔案中保留問題、決策、目前進度與下一步；接手的 session 會對照 Git 和原始資料重新確認。

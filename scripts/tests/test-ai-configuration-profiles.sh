@@ -52,14 +52,17 @@ for context in personal company; do
     assert_file "$file"
   done
 
-  handoff_skill="$destination/.agents/skills/task-handoff/SKILL.md"
+  record_skill="$destination/.agents/skills/task-record/SKILL.md"
   task_skill="$destination/.agents/skills/run-task-end-to-end/SKILL.md"
-  assert_file "$handoff_skill"
+  assert_file "$record_skill"
   assert_file "$task_skill"
-  assert_contains "$handoff_skill" 'disable-model-invocation: true'
-  assert_contains "$handoff_skill" 'Receiver verification:** `pending`'
-  assert_contains "$handoff_skill" 'Receiving session: Treat this handoff as unverified context'
-  assert_contains "$handoff_skill" 'Report receiver verification as pending'
+  assert_contains "$record_skill" 'name: task-record'
+  assert_contains "$record_skill" '~/Documents/task-records/{repo}/'
+  assert_contains "$claude_core" 'use `task-record` to find or create one personal record'
+  assert_contains "$codex_core" 'use `task-record` to find or create one personal record'
+  assert_contains "$copilot_core" 'use `task-record` to find or create one personal record'
+  assert_contains "$claude_core" 'use `task-record` to search completed records'
+  [[ ! -e "$destination/.agents/skills/task-handoff" ]] || fail 'retired task-handoff skill rendered'
   assert_contains "$task_skill" "native worktree flow when available"
   assert_contains "$task_skill" 'branch=<name>'
   assert_contains "$task_skill" 'a suitable current branch or native detached worktree can hold the work'
@@ -189,14 +192,18 @@ printf 'profile tests: Claude settings preserve app-owned values and remove reti
 retired_destination="$work_directory/render-retired-skills"
 mkdir -p "$retired_destination/.agents/skills/project-continuity" \
   "$retired_destination/.agents/skills/frontend-task-workflow" \
+  "$retired_destination/.agents/skills/task-handoff" \
   "$retired_destination/.claude/skills/project-continuity" \
   "$retired_destination/.claude/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/skills/task-handoff" \
   "$retired_destination/.claude/hooks"
 for path in \
   "$retired_destination/.agents/skills/project-continuity/SKILL.md" \
   "$retired_destination/.agents/skills/frontend-task-workflow/SKILL.md" \
+  "$retired_destination/.agents/skills/task-handoff/SKILL.md" \
   "$retired_destination/.claude/skills/project-continuity/SKILL.md" \
   "$retired_destination/.claude/skills/frontend-task-workflow/SKILL.md" \
+  "$retired_destination/.claude/skills/task-handoff/SKILL.md" \
   "$retired_destination/.claude/hooks/maintain-project-continuity.sh"; do
   printf 'retired fixture\n' >"$path"
 done
@@ -210,8 +217,10 @@ done
 for path in \
   "$retired_destination/.agents/skills/project-continuity" \
   "$retired_destination/.agents/skills/frontend-task-workflow" \
+  "$retired_destination/.agents/skills/task-handoff" \
   "$retired_destination/.claude/skills/project-continuity" \
   "$retired_destination/.claude/skills/frontend-task-workflow" \
+  "$retired_destination/.claude/skills/task-handoff" \
   "$retired_destination/.claude/hooks/maintain-project-continuity.sh"; do
   [[ ! -e "$path" ]] || fail "retired target remains after apply: $path"
 done

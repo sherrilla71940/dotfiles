@@ -33,7 +33,7 @@ The columns group surfaces only when they read the same personal configuration:
 | Instructions for this repository | root `CLAUDE.md` imports root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md` | root `AGENTS.md`, enabled by `chat.useAgentsMdFile` |
 | Path-scoped instructions | `~/.claude/rules/` | not supported by Codex | `~/.copilot/instructions/*.instructions.md` | the same personal files, selected by `applyTo` |
 | Portable shared skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
-| Task implementation and handoff skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
+| Task implementation and record skills | linked from `~/.agents/skills` | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery | native `~/.agents/skills` discovery |
 | Client-only skills | `~/.claude/skills/<name>` | host-gated under `~/.agents/skills/<name>`; Copilot discovers the metadata but cannot invoke it automatically | `~/.copilot/skills/<name>` | `~/.copilot/skills/<name>` |
 | Agent definitions | custom subagents under `~/.claude/agents/` | custom agents under `~/.codex/agents/` | custom agents under `~/.copilot/agents/` | the same personal Copilot agents |
 | Prompts or commands | `~/.claude/commands/` | standalone custom prompts are deprecated; use a skill | no dedicated Copilot CLI command; compatible Claude commands may also be discovered | prompt files in the VS Code user profile |
@@ -266,7 +266,7 @@ The repository uses two shared-source layers because they solve different proble
 | Layer | Purpose | Example |
 | --- | --- | --- |
 | `home/.chezmoitemplates/` | Stores reusable text bodies that client wrappers include while rendering. | `rules/accessibility.md` and `core.md` |
-| `home/dot_agents/skills/` | Stores portable skill packages that render to `~/.agents/skills/`, including any needed Codex discovery metadata. | `run-task-end-to-end/` and `task-handoff/` |
+| `home/dot_agents/skills/` | Stores portable skill packages that render to `~/.agents/skills/`, including any needed Codex discovery metadata. | `run-task-end-to-end/` and `task-record/` |
 
 Keep each portable skill's instructions and supporting files in one package under
 `home/dot_agents/skills/`. Link that package into Claude when it needs the same content;

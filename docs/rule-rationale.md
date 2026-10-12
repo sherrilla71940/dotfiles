@@ -51,18 +51,18 @@ keeps personal files consistent with their surrounding ecosystem.
 Reconsider if the preferred language changes for either repository category; do not collapse
 the distinction accidentally while editing the global rule.
 
-### Explicit cross-client handoffs
+### Durable personal task records
 
-Client-native conversation resume and worktree features cover same-client continuation and code
-isolation. When work moves between different clients, a short handoff prompt carries only the facts
-needed to restart; the receiving agent checks the objective, checkout, Git diff, decisions,
-verification, blockers, materials, and next action against current sources. A transcript export can
-provide context, but it is not proof of repository state.
+Client-native conversation resume and worktree features retain session context and isolate code.
+For substantial tasks, a single personal task record retains questions, sourced answers, decisions,
+their rationale, and the next action across clients and worktrees. The receiving agent checks the
+record's current-state claims against Git and original sources. A transcript export can provide
+extra context, but it is not proof of repository state.
 
-This keeps handoff overhead proportional to the work and avoids a second, custom state machine
-that must track every client lifecycle. Reconsider if observed cross-client handoffs repeatedly
-lose decisions that cannot be recovered from Git, project instructions, durable issues, or a concise
-handoff.
+The record survives completion so a later session can find why a choice was made. It is updated at
+material boundaries rather than by lifecycle hooks, and it does not duplicate Git history or a
+human-facing handoff. Reconsider if records are repeatedly missed, stale, or cost more to maintain
+than the decisions they preserve.
 
 ### Company flow before branch creation
 
@@ -74,8 +74,9 @@ branch creation does not load it. The global pre-push hook rejects non-flow bran
 ### Approved artifact differences
 
 Classifying a difference from an approved artifact is a completion decision. Record an unresolved
-decision or deferred dependency in its durable issue or handoff record, with an owner, rather than
-relying on conversation history.
+decision or deferred dependency with an owner in the personal task record when one exists. Link a
+human-facing handoff or issue when another person must act, rather than relying on conversation
+history alone.
 
 ### External project material
 
@@ -87,8 +88,8 @@ creates a second version that can diverge; moving remains exceptional because it
 user's existing workflow.
 
 Folders use the remote repository name so every linked worktree converges on one location.
-The remote owner is added only to resolve an actual same-name collision, avoiding unnecessary
-migration of existing project folders.
+The remote namespace is added only for an actual same-name collision, with the host added if
+needed; existing project folders are not migrated merely to adopt that key.
 
 ### Files the agent authors
 

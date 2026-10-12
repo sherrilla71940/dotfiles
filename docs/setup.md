@@ -219,9 +219,13 @@ Older `ai_continuity`, `ai_harness`, and `ai_workflow` values are ignored. Remov
 `chezmoi edit-config` if they remain in the local file.
 
 Applying the native-workflow migration removes the old task-continuity skill and hooks but leaves
-ignored `.task-continuity/` records on disk. Before relying on an old record, check its next action
-against current Git state; use `task-handoff` for any work that another client must continue.
-Review old records individually before deleting them.
+ignored `.task-continuity/` records on disk. Review an old record against current Git state before
+using any fact from it, and leave the file in place until it has been reviewed individually.
+For substantial work spanning sessions, the current [`task-record` skill](../home/dot_agents/skills/task-record/SKILL.md)
+uses a durable personal file under `~/Documents/task-records/{repo}/`.
+Applying this newer task-record workflow also removes the old `task-handoff` skill and its
+Claude link after `chezmoi diff` previews those target deletions. Personal task records are not
+managed or removed by chezmoi.
 
 After changing the context, preview with `chezmoi diff` before applying. Start new client sessions
 after the selected configuration has been applied.

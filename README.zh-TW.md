@@ -1,8 +1,10 @@
 # 我的個人 Dotfiles 與 AI 設定
 
+[English](./README.md)
+
 **個人開發環境設定與共用 AI 指引的版本控制來源。**
 
-這是我分享出來的個人設定，方便其他開發者了解其中的取捨，再挑選需要的部分自行調整；不適合不經修改就直接套用。repository 收錄長期保留的設定與共用 AI 指引，不包含憑證、session 記錄等應用程式或帳戶資料。
+這是我公開分享的個人設定，供其他開發者參考其中的設計取捨；不適合不經修改就直接套用。repository 收錄長期保留的設定與共用 AI 指引，不包含憑證、session 記錄等應用程式或帳戶資料。
 
 ## 為什麼建立這個 repository
 
@@ -41,41 +43,8 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。我�
 | 想做什麼 | 從哪裡開始 | 它會怎麼做 |
 | --- | --- | --- |
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
-| 實作、驗證與交付 | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | 用自然語言交代實作任務後，skill 會確認工作目錄、實作並驗證，最後在本機提交，或依要求建立 PR／MR。 |
+| 實作、驗證與交付 | [端到端任務指南](./docs/run-task-end-to-end.zh-TW.md) | 說明如何呼叫 `run-task-end-to-end` skill、選擇驗證方式，並完成本機提交或依要求建立 PR／MR。 |
 | 把工作交給另一個 AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | 整理目前的 checkout、決策、檢查結果、材料和下一步，供接手的 session 核對。 |
-
-請依使用的 client 選擇呼叫方式，後面再接任務與選用條件：
-
-- Claude Code 或 Copilot CLI：`/run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`
-- Codex：`$run-task-end-to-end 實作附上的快捷鍵規格；base=main target=main workspace=worktree verification=balanced`
-
-在 VS Code 的 Copilot 聊天視窗中，也可以直接指名 `run-task-end-to-end`。
-
-`base` 是開始工作的分支或 commit。若未指定，且有 `target`，除非 repository 規則另有要求，skill 也會以 `target` 作為起始點；`target` 指定 PR／MR 目標分支，並要求以該方式交付。兩者都未指定時，skill 會使用並記錄目前 checkout 或 client worktree 的起始 commit；skill 不會自行推測發布目標。`workspace` 選擇目前 checkout 或 worktree，`verification` 選擇審查方式。這些選擇可用自然語言描述，也可寫成可選的 `key=value` 提示。skill 會遵循 repository 規則，沿用合適的現有分支或 client 建立的分支；需要新分支名稱時，則依變更類型和任務摘要命名。只有要指定名稱時，才加上 `branch=`。若只想規劃或檢查程式，直接請 AI 協助即可。
-
-整個流程如下：
-
-```mermaid
-flowchart TB
-    request["實作需求與材料<br/>可選條件：起始點（base）、<br/>PR／MR 目標分支（target）、workspace、verification"] --> materials["確認材料來源與權威性；<br/>必要時存放可重用測試輸入"]
-    materials --> material_index{"有多份外部材料？"}
-    material_index -->|有| links["從 issue、PR／MR 或一份狀態筆記<br/>連結參考資料、測試輸入與交接紀錄"]
-    material_index -->|沒有| workspace["確認 repository 規則、目前 checkout<br/>或指定的 worktree，以及起始 commit"]
-    links --> workspace
-    workspace --> work["實作並執行可用的自動化測試；<br/>可行時啟動程式、檢查瀏覽器流程；<br/>必要時修正並重測"]
-    work --> gate{"需要使用者審查<br/>或手動檢查？"}
-    gate -->|需要| user["等候使用者審查或測試結果"]
-    gate -->|不需要| delivery{"要求建立 PR／MR？"}
-    user --> feedback{"需要修改或檢查未通過？"}
-    feedback -->|需要| work
-    feedback -->|不需要| delivery
-    delivery -->|否| local["在本機提交"]
-    delivery -->|是| publish["重新確認目標分支；必要時整合變更<br/>並重跑受影響的檢查；<br/>提交、推送並建立 PR／MR"]
-```
-
-若目標分支已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。
-
-若要把工作交給另一個 AI session 繼續，請在交接時使用 [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) 記錄目前狀態。
 
 ## 功能與防護措施
 

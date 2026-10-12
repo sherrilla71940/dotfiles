@@ -1,8 +1,10 @@
 # My Personal Dotfiles and AI Configurations
 
+[繁體中文](./README.zh-TW.md)
+
 **A versioned source of truth for the durable settings and shared AI guidance that shape my development environment.**
 
-This is my personal setup, shared so other developers can inspect the choices and adapt what they need; it is not meant to be installed unchanged. The repository contains durable settings and shared AI guidance, but not application or account data such as credentials and session history.
+This is my personal setup, published as a reference to the choices behind it; it is not meant to be installed unchanged. The repository contains durable settings and shared AI guidance, but not application or account data such as credentials and session history.
 
 ## Why I built it
 
@@ -41,41 +43,8 @@ chezmoi renders the versioned source with the machine-local profile. I edit the 
 | Goal | Start with | What it does |
 | --- | --- | --- |
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
-| Take a request to a reviewable change | [`run-task-end-to-end`](./home/dot_agents/skills/run-task-end-to-end/SKILL.md) | Takes a natural-language implementation task through workspace checks, verification, and a local commit or requested PR/MR. |
+| Take a request to a reviewable change | [End-to-end task guide](./docs/run-task-end-to-end.md) | Explains how to invoke the `run-task-end-to-end` skill, choose verification, and follow work through a local commit or requested PR/MR. |
 | Move work to another AI session | [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) | Summarizes the current checkout, decisions, checks, materials, and next action for the receiving session to verify. |
-
-Invoke the skill with the syntax supported by your client, followed by the task and any optional choices:
-
-- Claude Code or Copilot CLI: `/run-task-end-to-end Implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`
-- Codex: `$run-task-end-to-end Implement the attached keyboard shortcut spec; base=main target=main workspace=worktree verification=balanced`
-
-In Copilot for VS Code, ask for `run-task-end-to-end` by name in chat.
-
-`base` names the starting branch or commit. If omitted, a supplied `target` also supplies the starting point unless repository policy says otherwise; `target` names the PR/MR destination and requests that delivery. If neither is supplied, the skill uses and records the active checkout or client worktree's starting commit. It never infers a publication target. `workspace` selects the current checkout or a worktree, and `verification` selects the review policy. State these choices in plain language or as optional `key=value` hints. The skill follows repository policy and uses a suitable existing or client-created branch, or derives a name from the change type and summary when a new branch is needed. Add `branch=` only to request a specific name. For planning or code review, ask the agent directly.
-
-The skill follows this path:
-
-```mermaid
-flowchart TB
-    request["Task + materials<br/>Optional choices: starting point (base),<br/>PR/MR destination (target), workspace, verification"] --> materials["Check material provenance and authority;<br/>file reusable test inputs when needed"]
-    materials --> material_index{"Several external materials?"}
-    material_index -->|Yes| links["Link references, tests, and handoffs<br/>from issue, PR/MR, or one status note"]
-    material_index -->|No| workspace["Check repository policy, checkout or requested worktree,<br/>and starting commit"]
-    links --> workspace
-    workspace --> work["Implement; run available automated,<br/>runtime, and browser checks;<br/>fix and retest as needed"]
-    work --> gate{"User review or manual checks required?"}
-    gate -->|Yes| user["Wait for user review or test results"]
-    gate -->|No| delivery{"PR/MR delivery requested?"}
-    user --> feedback{"Changes requested or checks failed?"}
-    feedback -->|Yes| work
-    feedback -->|No| delivery
-    delivery -->|No| local["Commit locally"]
-    delivery -->|Yes| publish["Recheck target; reconcile and rerun<br/>affected checks if needed;<br/>commit, push, and open PR/MR"]
-```
-
-If the target base has moved, the skill pauses for a merge or rebase choice and reruns affected checks before publication.
-
-If another session needs to continue the task, use [`task-handoff`](./home/dot_agents/skills/task-handoff/SKILL.md) to capture the current state when transferring the work.
 
 ## Day-to-day conveniences and safeguards
 

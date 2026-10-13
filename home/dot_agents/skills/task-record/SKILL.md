@@ -1,6 +1,6 @@
 ---
 name: task-record
-description: Find, create, or update a personal task record when work awaits a consequential external answer, a decision needs durable rationale, or work spans sessions; retrieve earlier decisions and sources.
+description: Use whenever asked why an earlier task decision was made or what follow-up remains from that work: search its personal task record first, even if an ADR or issue seems sufficient, then verify cited sources. Also find, create, or update a record when work awaits an external answer, needs durable rationale, or spans sessions.
 ---
 
 # Task record
@@ -17,7 +17,7 @@ Create a record when the user asks, when work awaits an answer from another pers
 
 ## Look up an earlier decision
 
-For a read-only question about why a choice was made, a repository identity already recorded in available context can guide the search; creating or updating a record requires verification against the current subject repository. Search matching default and qualified task-record folders by task ID, feature, decision terms, and aliases, including completed records. Read plausible matches and follow their cited original messages, tickets, documents, or commits when accessible. Distinguish a recorded rationale from independently verified evidence; label a missing source or stale claim. If several decisions plausibly match, resolve which one the user means. If no record is found, report the searched scope and continue with relevant Git or project sources rather than treating a narrow search as proof that no decision exists. Do not create a record merely to answer a historical lookup.
+For a read-only question about an earlier decision or its remaining follow-ups, a repository identity already recorded in available context can guide the search; creating or updating a record requires verification against the current subject repository. Search the exact default or known qualified task-record folder directly by task ID, feature, decision terms, and aliases, including completed records; do not scan the parent `Documents` folder. Read plausible matches and follow their cited original messages, tickets, documents, or commits when accessible. Distinguish a recorded rationale from independently verified evidence; label a missing source or stale claim. If several decisions plausibly match, resolve which one the user means. If no record is found, report the searched scope and continue with relevant Git or project sources rather than treating a narrow search as proof that no decision exists. Do not create a record merely to answer a historical lookup.
 
 ## Reconcile and update
 

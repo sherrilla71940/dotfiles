@@ -59,6 +59,8 @@ agent session.
 | [0055](./0055-retire-workflow-deletion-engine.md) | Accepted | Retire the workflow deletion engine while keeping reviewed source and target cleanup |
 | [0056](./0056-limit-end-to-end-skill-to-implementation.md) | Accepted | Limit the end-to-end skill to implementation and use ordinary requests for planning and review |
 | [0057](./0057-use-durable-personal-task-records.md) | Accepted | Keep personal task context and decision rationale in durable task records |
+| [0058](./0058-validate-skill-frontmatter-in-pre-commit.md) | Accepted | Parse rendered skill frontmatter during staged-source validation |
+| [0059](./0059-validate-unicode-markdown-anchors.md) | Accepted | Validate Unicode Markdown heading anchors in staged links |
 
 ## Template
 

@@ -236,6 +236,11 @@ if [[ "$statusline_changed" == true ]]; then
   elif ! command -v jq >/dev/null 2>&1; then
     printf 'pre-commit: jq is unavailable; skipping status line parity check.\n' >&2
   else
+    statusline_output_check="$staged/scripts/git-hooks/statusline-output.sh"
+    [[ -f "$statusline_output_check" ]] ||
+      fail "status line output check is missing from the staged source."
+    source "$statusline_output_check"
+
     # Reset times four days out render as a weekday rather than a clock time, so the
     # two runs cannot disagree because a minute ticked over between them.
     far_reset=$(( $(date +%s) + 4 * 86400 ))
@@ -260,6 +265,10 @@ if [[ "$statusline_changed" == true ]]; then
           COLUMNS="$width" "$powershell_bin" -NoProfile -ExecutionPolicy Bypass -File "$statusline_ps1" 2>/dev/null |
           tr -d '\r')" ||
           fail "PowerShell status line failed at COLUMNS=$width."
+        statusline_output_has_content "$sh_output" ||
+          fail "Bash status line returned empty output at COLUMNS=$width."
+        statusline_output_has_content "$ps_output" ||
+          fail "PowerShell status line returned empty output at COLUMNS=$width."
         comparisons=$((comparisons + 1))
 
         if [[ "$sh_output" != "$ps_output" ]]; then

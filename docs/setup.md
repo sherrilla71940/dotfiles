@@ -338,7 +338,7 @@ Run the repository pre-commit hook manually from PowerShell with:
 
 The wrapper resolves Git for Windows Bash and prepends only that child process's usr/bin to PATH. It validates the staged snapshot; it does not stage files or apply chezmoi.
 
-The pre-commit hook checks the staged snapshot. It verifies the source identity, renders files into a temporary directory, checks skill file-count parity and Claude shared-skill links, compares shared Claude and Copilot instructions, renders both AI contexts when guidance changes, rejects YAML frontmatter in Codex's AGENTS.md, checks paired statusline scripts, and validates Markdown links.
+The pre-commit hook checks the staged snapshot. It verifies the source identity, renders files into a temporary directory, checks skill file-count parity and Claude shared-skill links, compares shared Claude and Copilot instructions, renders both AI contexts when guidance changes, rejects YAML frontmatter in Codex's AGENTS.md, and validates Markdown links. Statusline parity runs only when PowerShell and jq are available; otherwise the hook reports that check as skipped.
 
 The hook renders with the same --exclude=scripts flag described in the source-filename rules section of the chezmoi workflow guide. Before checking, it lists every staged path. In this shared checkout, use git commit --only with explicit paths so another session's staged files cannot enter the commit.
 

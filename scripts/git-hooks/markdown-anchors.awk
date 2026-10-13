@@ -56,7 +56,7 @@ function record(h,   slug) {
   gsub(/[][]/, "", h)                           # awk gsub has no backreference, so do it in two
   gsub(/`|\*/, "", h)                           # code spans and emphasis do not reach the slug
   slug = tolower(h)
-  gsub(/[^a-z0-9 _-]/, "", slug)                # underscores DO survive into a GitHub anchor
+  gsub(/[^[:alnum:] _-]/, "", slug)              # GitHub keeps Unicode letters and numbers
   gsub(/ /, "-", slug)
   # GitHub disambiguates a repeated heading by appending -1, -2, ... in document order.
   if ((FILENAME SUBSEP slug) in heading) {
@@ -74,7 +74,7 @@ function record(h,   slug) {
   gsub(/<!--.*-->/, "", line)                   # nor is one inside a comment
   # The character class excludes ":", so an absolute http(s) or mailto target never matches and
   # only repository-relative links are collected.
-  while (match(line, /\]\([A-Za-z0-9._\/#-]+\)/)) {
+  while (match(line, /\]\([[:alnum:]._\/#-]+\)/)) {
     src[++total] = FILENAME
     raw[total] = substr(line, RSTART + 2, RLENGTH - 3)
     lno[total] = FNR

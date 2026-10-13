@@ -7,8 +7,6 @@ disable-model-invocation: true
 
 # Run a task end to end
 
-Use this skill when the user asks you to implement a repository change through verification and delivery.
-
 ## Resolve the request
 
 Accept an implementation task in ordinary language, with attached or named materials and any clear choices such as `base=<branch-or-commit>`, `target=<branch>`, `branch=<name>`, `workspace=current|worktree`, or `verification=agent|balanced|user`. These names are optional shorthand, not a required command grammar. The active repository and profile policies determine any additional required inputs. Treat provided values as user prompt text, not as a separate command interface.

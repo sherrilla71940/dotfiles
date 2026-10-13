@@ -1,6 +1,6 @@
 ---
 name: task-record
-description: Use whenever asked why an earlier task decision was made or what follow-up remains from that work: search its personal task record first, even if an ADR or issue seems sufficient, then verify cited sources. Also find, create, or update a record when work awaits an external answer, needs durable rationale, or spans sessions.
+description: "Use whenever asked why an earlier task decision was made or what follow-up remains from that work: search its personal task record first, even if an ADR or issue seems sufficient, then verify cited sources. Also find, create, or update a record when work awaits an external answer, needs durable rationale, or spans sessions."
 ---
 
 # Task record

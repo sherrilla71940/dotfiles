@@ -46,3 +46,9 @@ flowchart TB
 ```
 
 回頭箭頭表示什麼時候要重新檢查：補齊資訊，或任務範圍、起點、工作目錄有變，就重新確認開始條件；驗證失敗或審查要求修改，就回到實作。若 PR／MR 目標分支已前進，skill 會先等你選擇合併或 rebase，完成整合後重跑受影響的檢查；需要人工確認時，也要重新經過該環節，最後再檢查目標分支。較複雜、需要跨 session 進行的任務，會用 [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) 在一份個人檔案中保留問題、決策、目前進度與下一步；接手的 session 會對照 Git 和原始資料重新確認。
+
+## 跨專案平行工作（Work across projects in parallel）
+
+每個彼此獨立的工作流，使用不同的原生 client task 或 session；開始修改前，先確認各自連到正確的 repository 與工作目錄。不同 repository 可以各自並行處理。同一個 repository 若要同時進行不同修改，且 repository 規則允許，請使用不同 worktree；避免多個工作流同時修改同一個 checkout。Worktree 會隔離檔案與分支狀態，但不會自動隔離 port、資料庫或 cache 等專案服務，請依專案的執行環境設定處理。
+
+讓每個工作流使用所屬 repository 的指引與檢查；若大型任務會跨 session 進行，或需要保留後續可查的決策，再使用 [`task-record`](../home/dot_agents/skills/task-record/SKILL.md)。前端修改若會影響畫面呈現，請使用 [`web-ui-verification`](../home/dot_agents/skills/web-ui-verification/SKILL.md)。這是一種工作方式，不是中央排程器；直接使用各 client 原生的 task 與 worktree 支援即可。

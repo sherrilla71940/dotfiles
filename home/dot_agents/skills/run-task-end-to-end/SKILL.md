@@ -43,7 +43,7 @@ Before editing, verify the workspace Git root, branch or detached state, and sta
 
 ## Implement and verify
 
-Use the supplied materials and the repository's own setup. Implement the requested outcome, review the full diff, and run the most useful available checks, including focused tests, lint, type checks, and a build when the project provides them. For user-facing changes, start the application and exercise relevant browser flows when the app and browser tools are available.
+Use the supplied materials and the repository's own setup. Implement the requested outcome, review the full diff, and run the most useful available checks, including focused tests, lint, type checks, and a build when the project provides them. For frontend changes that affect rendered web UI, use [web-ui-verification](../web-ui-verification/SKILL.md) to check the changed route, states, and relevant viewport behavior. For focused accessibility work, also follow [accessibility-review](../accessibility-review/SKILL.md).
 
 The verification policies define the human checkpoint:
 

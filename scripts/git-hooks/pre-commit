@@ -105,6 +105,13 @@ if [[ "$src_skills" -ne "$out_skills" ]]; then
     empty_, dot_ ...). See docs/chezmoi-workflow.md, 'Source filename rules'."
 fi
 
+# Validate rendered skill metadata with the YAML parser already provided by chezmoi. This
+# includes templated portable skills and client-specific wrappers in the staged snapshot.
+frontmatter_check="$staged/scripts/git-hooks/check-skill-frontmatter.sh"
+[[ -f "$frontmatter_check" ]] || fail "skill frontmatter check is missing from the staged source."
+bash "$frontmatter_check" "$chezmoi_bin" "$render" ||
+  fail "rendered skill frontmatter is invalid."
+
 # 3. Every portable skill must render in Claude as an individual symlink or thin skill wrapper.
 #    Wrappers preserve Claude-specific discovery metadata while
 #    keeping the rendered instruction body in sync with the portable package. A source-only

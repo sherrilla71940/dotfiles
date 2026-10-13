@@ -27,18 +27,22 @@ The agent continues routine implementation, corrections, and verification until 
 ```mermaid
 flowchart TB
     request["Task + materials<br/>Optional: base=start, branch=task,<br/>target=PR/MR destination,<br/>workspace=current/worktree,<br/>verification=agent/balanced/user"] --> ready{"Git root, policy, material authority,<br/>workspace, starting commit, and branch valid?"}
-    ready -->|No| stop["Stop; resolve mismatch<br/>or missing input"]
-    ready -->|Yes| work["Implement, verify, fix, and retest<br/>for the selected verification mode"]
-    work --> gate{"Human checkpoint<br/>required?"}
+    ready -->|No| resolve["Resolve mismatch or missing input;<br/>pause if a decision is needed"]
+    resolve -->|Resolved| ready
+    ready -->|Yes| work["Implement or revise"]
+    work --> verify["Run applicable checks for<br/>the selected verification mode"]
+    work -->|Scope, base, or workspace changes| ready
+    verify -->|Failed| work
+    verify -->|Passed| gate{"Human checkpoint<br/>required?"}
     gate -->|Yes| review["Wait for review or manual results"]
     gate -->|No| delivery{"PR/MR delivery requested?"}
     review -->|Passed| delivery
     review -->|Changes needed| work
     delivery -->|No| local["Review diff and secrets;<br/>commit locally"]
     delivery -->|Yes| freshness{"PR/MR target advanced?"}
-    freshness -->|Yes| integrate["Ask for a merge or rebase choice;<br/>integrate and repeat affected checks"]
-    integrate -->|Gates pass| publish["Review diff and secrets; recheck target;<br/>commit, push, open PR/MR"]
-    freshness -->|No| publish
+    freshness -->|Yes| integrate["Ask for a merge or rebase choice;<br/>integrate"]
+    integrate --> verify
+    freshness -->|No| publish["Review diff and secrets; recheck target;<br/>commit, push, open PR/MR"]
 ```
 
-If the PR/MR target has advanced since the recorded checkpoint, the skill waits for a merge or rebase choice and reruns affected checks before publication. For a substantial task that spans sessions, [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) keeps the questions, decisions, current state, and next action in one personal file. A continuing session checks it against Git and source material.
+The return arrows show when earlier checks must be repeated. Resolved inputs or changes to scope, starting point, or workspace return to readiness checks. Failed verification or requested changes return to implementation. If the PR/MR target advances, the skill waits for a merge or rebase choice, then repeats affected checks and any required human checkpoint before rechecking the target. For a substantial task that spans sessions, [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) keeps the questions, decisions, current state, and next action in one personal file. A continuing session checks it against Git and source material.

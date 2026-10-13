@@ -27,18 +27,22 @@ AI 會持續實作、修正並驗證，直到完成要求的結果；只有遇�
 ```mermaid
 flowchart TB
     request["實作需求與材料<br/>選用：base=起點、<br/>branch=任務分支、<br/>target=PR／MR 目標分支、<br/>workspace=current/worktree、<br/>verification=agent/balanced/user"] --> ready{"Git root、repository 規則、材料來源、<br/>workspace、起始 commit 與分支都符合？"}
-    ready -->|否| stop["暫停；釐清不符或<br/>缺少的資訊"]
-    ready -->|是| work["依 verification 設定實作、驗證、<br/>修正並重測"]
-    work --> gate{"需要人工確認？"}
+    ready -->|否| resolve["釐清不符或缺少的資訊；<br/>需要決定時先暫停"]
+    resolve -->|已釐清| ready
+    ready -->|是| work["實作或修改"]
+    work --> verify["依 verification 設定<br/>執行適用的檢查"]
+    work -->|範圍、起點或工作目錄有變| ready
+    verify -->|未通過| work
+    verify -->|通過| gate{"需要人工確認？"}
     gate -->|需要| review["等候審查或手動測試結果"]
     gate -->|不需要| delivery{"要求建立 PR／MR？"}
     review -->|通過| delivery
     review -->|需要修改| work
     delivery -->|否| local["檢查差異與機密資料；<br/>在本機提交"]
     delivery -->|是| freshness{"PR／MR 目標分支已前進？"}
-    freshness -->|是| integrate["等你選擇合併或 rebase；<br/>整合並重跑受影響的檢查"]
-    integrate -->|確認通過| publish["檢查差異與機密資料，重新確認目標；<br/>提交、推送並建立 PR／MR"]
-    freshness -->|否| publish
+    freshness -->|是| integrate["等你選擇合併或 rebase；<br/>完成整合"]
+    integrate --> verify
+    freshness -->|否| publish["檢查差異與機密資料，重新確認目標；<br/>提交、推送並建立 PR／MR"]
 ```
 
-若 PR／MR 目標分支自記錄時起已前進，skill 會先等你選擇合併或 rebase，再重跑受影響的檢查，才繼續發布。較複雜、需要跨 session 進行的任務，會用 [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) 在一份個人檔案中保留問題、決策、目前進度與下一步；接手的 session 會對照 Git 和原始資料重新確認。
+回頭箭頭表示什麼時候要重新檢查：補齊資訊，或任務範圍、起點、工作目錄有變，就重新確認開始條件；驗證失敗或審查要求修改，就回到實作。若 PR／MR 目標分支已前進，skill 會先等你選擇合併或 rebase，完成整合後重跑受影響的檢查；需要人工確認時，也要重新經過該環節，最後再檢查目標分支。較複雜、需要跨 session 進行的任務，會用 [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) 在一份個人檔案中保留問題、決策、目前進度與下一步；接手的 session 會對照 Git 和原始資料重新確認。

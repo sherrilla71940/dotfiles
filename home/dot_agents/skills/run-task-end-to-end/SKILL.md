@@ -39,6 +39,8 @@ For an execution task, resolve an explicit `base` or `target` to an exact commit
 
 When a branch is required, use the active client's native branch controls if they can create it from the resolved starting commit; otherwise use Git inside the selected workspace. A native detached worktree can remain detached during implementation, but create the required branch before committing or publishing. If workspace setup already created the branch, verify its starting commit and continue there. Reuse an existing branch only when it is the user's selected current workspace or an explicit continuation whose task matches; never reset it or silently switch to unrelated work. Before switching a current checkout, check for unrelated uncommitted work. Preserve it, and ask to use a separate workspace or for a clear resolution if switching would mix or displace that work.
 
+Some sandboxed clients can edit a linked worktree while denying writes to its Git metadata directory outside the workspace, so branch creation or commit may fail after implementation succeeds. If Git reports a metadata-path permission failure, preserve the edits, stop retrying broader filesystem allowances, and report the blocked path. Use an available host-side Git operation for the requested branch or commit; if none is available, ask the user to complete it in a Git-capable terminal. Afterwards, verify the branch's starting commit, committed path set, and clean worktree.
+
 Before editing, verify the workspace Git root, branch or detached state, and starting commit. After any branch creation, verify the branch and commit again. Stop if the workspace or branch does not match the resolved task; do not repair a mismatch by resetting the checkout.
 
 ## Implement and verify

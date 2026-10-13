@@ -47,8 +47,4 @@ flowchart TB
 
 The return arrows show when earlier checks must be repeated. Resolved inputs or changes to scope, starting point, or workspace return to readiness checks. Failed verification or requested changes return to implementation. If the PR/MR target advances, the skill waits for a merge or rebase choice, then repeats affected checks and any required human checkpoint before rechecking the target. For a substantial task that spans sessions, [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) keeps the questions, decisions, current state, and next action in one personal file. A continuing session checks it against Git and source material.
 
-## Work across projects in parallel
-
-Use a separate native client task or session for each independent workstream, and verify that each one is attached to the intended repository and workspace before editing. Different repositories can progress independently. For concurrent changes in the same repository, use separate worktrees when its policy allows them; avoid concurrent edits to the same checkout. A worktree isolates files and branch state, but project services such as ports, databases, and caches may still be shared, so follow the project's runtime setup.
-
-Keep task context with the work that needs it: use the repository's instructions and checks, and use [`task-record`](../home/dot_agents/skills/task-record/SKILL.md) when substantial work spans sessions or needs durable decisions. For frontend changes that affect rendered UI, use [`web-ui-verification`](../home/dot_agents/skills/web-ui-verification/SKILL.md). This is a working pattern, not a central scheduler; use the clients' native task and worktree support.
+For multiple independent workstreams, see the [parallel work guide](./parallel-work.md).

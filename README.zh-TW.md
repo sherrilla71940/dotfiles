@@ -49,7 +49,7 @@ chezmoi 會依這台機器的 profile，產生各工具需要的設定檔。我�
 | 在不同 client 共用 AI 指引 | [AI 設定支援對照](./docs/customization-support.md) | 共用規則與 skill 會送到 Claude Code、Codex 和 GitHub Copilot 支援的設定位置；client 專屬行為只套用在支援它的 client。 |
 | 實作、驗證與交付 | [端到端任務指南](./docs/run-task-end-to-end.zh-TW.md) | 從檢查 repository 與材料、實作到驗證，最後完成本機 commit，或依要求建立 PR／MR。 |
 | 驗證前端畫面修改 | [Web UI 驗證 skill](./home/dot_agents/skills/web-ui-verification/SKILL.md) | 在執行中的應用程式檢查修改路徑、狀態、互動方式與相關 viewport。 |
-| 平行處理多個專案 | [平行工作指南](./docs/run-task-end-to-end.zh-TW.md#跨專案平行工作work-across-projects-in-parallel) | 確認各工作流使用正確的 repository；同一 repository 的並行修改會在規則允許時以 worktree 隔離。 |
+| 平行處理多個專案 | [平行工作指南](./docs/parallel-work.zh-TW.md) | 確認各工作流使用正確的 repository；同一 repository 的並行修改會在規則允許時以 worktree 隔離。 |
 | 在不同 AI session 間保留並查找任務決策 | [個人任務紀錄指南](./docs/task-record.zh-TW.md) | 以一份個人紀錄保留問題、附來源的答覆、決策與下一步，讓後續 AI session 能接續工作，也能查明當初的決策理由。 |
 
 ## 功能與防護措施

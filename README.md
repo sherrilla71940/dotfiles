@@ -49,7 +49,7 @@ chezmoi renders the versioned source with the machine-local profile. I edit the 
 | Share AI guidance across clients | [Customization support guide](./docs/customization-support.md) | Reusable rules and skills reach supported Claude Code, Codex, and GitHub Copilot surfaces; client-specific behavior stays scoped to the clients that support it. |
 | Take a request to a reviewable change | [End-to-end task guide](./docs/run-task-end-to-end.md) | Takes a request through repository and material checks, implementation, and verification to a local commit or requested PR/MR. |
 | Verify a frontend UI change | [Web UI verification skill](./home/dot_agents/skills/web-ui-verification/SKILL.md) | Checks the changed routes, states, interactions, and relevant viewport behavior in the running application. |
-| Work across projects in parallel | [Parallel work guide](./docs/run-task-end-to-end.md#work-across-projects-in-parallel) | Keeps independent tasks attached to the right repository and isolates concurrent changes in the same repository when worktrees are allowed. |
+| Work across projects in parallel | [Parallel work guide](./docs/parallel-work.md) | Keeps independent tasks attached to the right repository and isolates concurrent changes in the same repository when worktrees are allowed. |
 | Keep and find task decisions across AI sessions | [Personal task-record guide](./docs/task-record.md) | Keeps one personal record of questions, sourced answers, decisions, and next actions, so later AI sessions can resume work or revisit its rationale. |
 
 ## Day-to-day conveniences and safeguards

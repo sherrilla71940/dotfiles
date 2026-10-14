@@ -17,6 +17,9 @@ _load_nvm() {
     [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 }
 
+# Keep the loader available when a child Bash inherits a Node command wrapper.
+export -f _load_nvm
+
 nvm() { _load_nvm; nvm "$@"; }
 node() { _load_nvm; node "$@"; }
 npm() { _load_nvm; npm "$@"; }

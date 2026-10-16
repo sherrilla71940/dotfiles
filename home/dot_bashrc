@@ -11,19 +11,20 @@ fi
 # Load NVM only when a Node-family command is first used.
 export NVM_DIR="$HOME/.nvm"
 
-_load_nvm() {
+# Claude Code shell snapshots include this loader under a plain function name.
+# Keep it exported for child Bash shells that inherit command wrappers.
+lazy_load_nvm() {
     unset -f nvm node npm npx
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 }
 
-# Keep the loader available when a child Bash inherits a Node command wrapper.
-export -f _load_nvm
+export -f lazy_load_nvm
 
-nvm() { _load_nvm; nvm "$@"; }
-node() { _load_nvm; node "$@"; }
-npm() { _load_nvm; npm "$@"; }
-npx() { _load_nvm; npx "$@"; }
+nvm() { lazy_load_nvm; nvm "$@"; }
+node() { lazy_load_nvm; node "$@"; }
+npm() { lazy_load_nvm; npm "$@"; }
+npx() { lazy_load_nvm; npx "$@"; }
 
 # Load Git completion from Git for Windows or either common Homebrew prefix.
 for git_completion in \

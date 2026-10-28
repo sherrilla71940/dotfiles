@@ -230,6 +230,18 @@ managed or removed by chezmoi.
 After changing the context, preview with `chezmoi diff` before applying. Start new client sessions
 after the selected configuration has been applied.
 
+### Company Git identity
+
+In company context, the rendered Git config includes `~/.config/git/work.local` for repositories
+under `~/Documents/work/`. That file is machine-local and never committed, because this repository
+is public. Create it on a company machine with the work identity:
+
+    [user]
+    	email = <work email>
+
+Without the file, Git skips the include and keeps the default identity. Repositories elsewhere set
+their own identity with `git config user.email` when needed.
+
 ## Application installation and login
 
 Chezmoi can write configuration before an application exists. Each application discovers its

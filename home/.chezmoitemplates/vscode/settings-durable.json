@@ -16,7 +16,6 @@
   "editor.linkedEditing": true,
   "editor.snippetSuggestions": "top",
   "editor.stickyScroll.enabled": true,
-  "editor.foldingImportsByDefault": true,
   "editor.bracketPairColorization.enabled": true,
   "editor.cursorSmoothCaretAnimation": "on",
   "editor.cursorBlinking": "smooth",

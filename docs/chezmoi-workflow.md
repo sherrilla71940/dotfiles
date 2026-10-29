@@ -177,9 +177,11 @@ application, because its GUIDs are generated per machine. See
 [ADR-0050](./decisions/0050-preserve-app-written-windows-terminal-actions-and-keybindings.md).
 
 VS Code settings and MCP configuration deep-merge repository values over live objects. The
-repository wins when an object key is named in both places. VS Code MCP inputs merge by `id`;
-unlisted server names and input IDs remain app-owned. The merge parses JSONC and serializes
-JSON, so comments and formatting in live files are normalized on apply.
+repository wins when an object key is named in both places, including when the repository value
+is `false`, `0`, or `""`; see
+[ADR-0060](./decisions/0060-let-repository-settings-win-empty-looking-values.md). VS Code MCP
+inputs merge by `id`; unlisted server names and input IDs remain app-owned. The merge parses
+JSONC and serializes JSON, so comments and formatting in live files are normalized on apply.
 
 VS Code keybindings use a different rule because order determines which shortcut runs. The
 modify template keeps repository rules once at the beginning and app-authored rules after them.

@@ -61,6 +61,7 @@ agent session.
 | [0057](./0057-use-durable-personal-task-records.md) | Accepted | Keep personal task context and decision rationale in durable task records |
 | [0058](./0058-validate-skill-frontmatter-in-pre-commit.md) | Accepted | Parse rendered skill frontmatter during staged-source validation |
 | [0059](./0059-validate-unicode-markdown-anchors.md) | Accepted | Validate Unicode Markdown heading anchors in staged links |
+| [0060](./0060-let-repository-settings-win-empty-looking-values.md) | Accepted | Let repository settings win over false, 0, and empty live values |
 
 ## Template
 

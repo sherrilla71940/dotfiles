@@ -6,4 +6,4 @@
 {{-   $live = fromJsonc .chezmoi.stdin -}}
 {{- end -}}
 {{- $durable := includeTemplate "copilot/settings-durable.json" . | fromJsonc -}}
-{{ merge $durable $live | toPrettyJson }}
+{{ mergeOverwrite (deepCopy $live) $durable | toPrettyJson }}

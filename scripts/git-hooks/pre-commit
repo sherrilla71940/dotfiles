@@ -310,5 +310,28 @@ if [[ "$docs_changed" == true ]]; then
   fi
 fi
 
+# 9. Partially managed JSON settings must let repository values win, including false, 0 and "".
+#    Sprig's plain merge treats those as empty and keeps the live value, so a durable false
+#    never overrode a live true. Only run when a modify template or the check changes.
+settings_merge_changed=false
+while IFS= read -r changed; do
+  case "$changed" in
+    home/*/modify_*|home/modify_*|scripts/tests/test-settings-merge.sh)
+      settings_merge_changed=true
+      ;;
+  esac
+done < <(git diff --cached --name-only)
+
+if [[ "$settings_merge_changed" == true ]]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    printf 'pre-commit: jq is unavailable; skipping settings merge check.\n' >&2
+  else
+    merge_check="$staged/scripts/tests/test-settings-merge.sh"
+    [[ -f "$merge_check" ]] || fail "settings merge check is missing from the staged source."
+    bash "$merge_check" "$chezmoi_bin" "$staged" ||
+      fail "a partially managed settings template lets live values override repository values."
+  fi
+fi
+
 printf 'pre-commit: staged source state OK (%s skill files, %s shared rules).\n' \
   "$src_skills" "$(find "$staged/home/.chezmoitemplates/rules" -maxdepth 1 -type f -name '*.md' | wc -l)"

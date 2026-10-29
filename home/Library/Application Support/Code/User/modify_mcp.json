@@ -6,7 +6,7 @@
 {{-   $live = fromJsonc .chezmoi.stdin -}}
 {{- end -}}
 {{- $durable := includeTemplate "vscode/mcp.json" . | fromJsonc -}}
-{{- $result := merge $durable $live -}}
+{{- $result := mergeOverwrite (deepCopy $live) $durable -}}
 {{- if hasKey $durable "inputs" -}}
 {{-   $ownedInputIDs := dict -}}
 {{-   range $input := index $durable "inputs" -}}

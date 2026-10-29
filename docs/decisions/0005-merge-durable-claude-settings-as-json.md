@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-24
+- Amended: 2026-10-29
 
 ## Context
 
@@ -32,6 +33,10 @@ the live file, including that partial, and combining them with `merge $durable $
 `merge` gives the first argument precedence and recurses into nested objects, so the
 repository wins on any key it names while a locally added sibling under the same parent is
 preserved.
+
+[ADR-0060](./0060-let-repository-settings-win-empty-looking-values.md) replaced `merge` with
+`mergeOverwrite (deepCopy $live) $durable`, because `merge` let a live value override a
+repository `false`, `0`, or `""`.
 
 Admit a key to the durable set only when it is needed on every machine, stable enough that
 it would not be changed mid-session, and not written by the application.

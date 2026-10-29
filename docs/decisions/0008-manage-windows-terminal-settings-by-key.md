@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-26
+- Amended: 2026-10-29
 
 ## Context
 
@@ -23,6 +24,8 @@ Manage the file with a chezmoi `modify_` template, following the pattern ADR-000
 established for Claude Code. `home/.chezmoitemplates/windows-terminal/settings-durable.json`
 holds the durable keys as readable JSON; the sibling `modify_settings.json` merges them over
 the live file with `merge $durable $live`, so the repository wins only on keys it names.
+[ADR-0060](./0060-let-repository-settings-win-empty-looking-values.md) later replaced that call
+with `mergeOverwrite (deepCopy $live) $durable` so repository `false`, `0`, and `""` values also win.
 
 The durable set is `profiles.defaults.font.face` and
 `profiles.defaults.antialiasingMode`. Both meet ADR-0005's admission criterion: needed on

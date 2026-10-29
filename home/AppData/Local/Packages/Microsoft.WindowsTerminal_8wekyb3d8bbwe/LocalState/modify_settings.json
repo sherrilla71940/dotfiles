@@ -8,11 +8,14 @@
        home/.chezmoitemplates/windows-terminal/settings-durable.json - edit that,
        not this.
 
-       merge gives the first argument precedence, so the repository wins on any
-       key it names and the live file fills in everything else. It recurses into
-       nested objects, which is why the durable file can name profiles.defaults
-       without touching profiles.list beside it. The actions array merges by
-       action id and keybindings merge by keys, so unlisted app entries survive.
+       mergeOverwrite gives the last argument precedence, so the repository wins
+       on any key it names, including false, 0, and "" values, and the live file
+       fills in everything else. Plain merge would let a live value replace those
+       empty-looking values. Merging into a copy keeps $live intact for the array
+       merges below. It recurses into nested objects, which is why the durable
+       file can name profiles.defaults without touching profiles.list beside it.
+       The actions array merges by action id and keybindings merge by keys, so
+       unlisted app entries survive.
 
        fromJson fails on malformed input rather than replacing it, which keeps a
        hand-broken settings.json recoverable instead of silently overwritten. */ -}}
@@ -21,7 +24,7 @@
 {{-   $live = fromJson .chezmoi.stdin -}}
 {{- end -}}
 {{- $durable := includeTemplate "windows-terminal/settings-durable.json" . | fromJson -}}
-{{- $result := merge $durable $live -}}
+{{- $result := mergeOverwrite (deepCopy $live) $durable -}}
 {{- range $arrayName := list "actions" "keybindings" -}}
 {{-   if hasKey $durable $arrayName -}}
 {{-     $durableEntries := index $durable $arrayName -}}

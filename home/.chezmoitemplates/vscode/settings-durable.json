@@ -88,7 +88,7 @@
   // Workbench UI
   "breadcrumbs.enabled": true,
   "workbench.iconTheme": "vscode-icons",
-  "workbench.colorTheme": "Dracula Theme",
+  "workbench.colorTheme": "Light+",
   "workbench.editorAssociations": {
     "git-rebase-todo": "default",
   },

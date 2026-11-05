@@ -36,6 +36,13 @@ Apply only to web UI markup, styling, and DOM behavior.
 - For animations and transitions, prefer compositor-friendly properties (transform, opacity) when appropriate; avoid animating layout-affecting properties (top, left, width, height) when an equivalent transform-based approach is available.
 - When both state changes should animate, declare `transition` on the element's base state. A transition declared only in `:hover` or `:focus` applies on entry but not on exit.
 
+## Interaction states
+
+- Give interactive links, buttons, and options hover feedback, including selected items and a current-page link that stays clickable. Do not give disabled or non-interactive items hover styles.
+- Show keyboard focus with `:focus-visible`; hover styling is not a focus indicator. Never remove an outline without a visible replacement.
+- Hover, focus, active, selected, and expanded states must not change the element's box geometry: change color, background, shadow, outline, or opacity, not padding, border width, margin, font weight, or position. Reserve a state border with a transparent border in the base state. Expanding content may grow its container; the control that toggles it keeps its size.
+- When states come from classes or `data-*` attributes at equal specificity, source order decides; order them deliberately and check that hover and selected combine as intended.
+
 ## Generated assets
 
 - When browser behavior does not match edited source and the project generates CSS or JavaScript, confirm that the relevant assets were rebuilt and loaded before changing source logic. Treat timestamps, build logs, source maps, and network responses as evidence rather than relying on one signal alone.

@@ -1,6 +1,6 @@
 # Task record format
 
-Keep one Markdown file at `~/Documents/task-records/{repo}/{task-key}.md`. Use the verified remote repository name for `{repo}` unless a confirmed collision requires the stable, qualified folder key in shared guidance; do not rename existing records automatically. A task key is a verified issue/task ID or a stable descriptive slug. The file is personal task context, not a replacement for Git or the original request.
+Keep one Markdown file at `~/Documents/task-records/{repo}/{task-key}.md`. Use the verified remote repository name for `{repo}` unless a confirmed collision requires the stable, qualified folder key in shared guidance; do not rename existing records automatically. A task key is a verified issue/task ID or a stable descriptive slug. The file is personal task context, not a replacement for Git or the original request. Team-owned decisions, gaps, and follow-ups belong in the project's canonical artifacts; link them here by purpose.
 
 ```markdown
 # <task title>
@@ -17,13 +17,6 @@ Keep one Markdown file at `~/Documents/task-records/{repo}/{task-key}.md`. Use t
 ## Objective
 
 <requested outcome and material scope>
-
-## Current state
-
-- Checkout: <absolute path and Git root>
-- Branch and HEAD: <branch or detached; commit>
-- Uncommitted work: <relevant paths or none; mention relevant stash when known>
-- Last reconciled: <date and timezone>
 
 ## Next action
 
@@ -60,4 +53,4 @@ Keep one Markdown file at `~/Documents/task-records/{repo}/{task-key}.md`. Use t
 - Publication checkpoint, when needed: <redacted remote, base ref and commit, intended target>.
 ```
 
-Omit empty optional entries and add detail only when it helps another session continue or explains a consequential decision. Current state is a dated snapshot for resumption, not a live representation of Git; refresh relevant fields when resuming or materially updating the task rather than maintaining them continuously. At completion, retain the final outcome and decision-relevant verification, condense redundant interim checks, and omit checkout, uncommitted-work, or publication-checkpoint details that no longer explain the result or an open follow-up. Keep status and verification current while retaining answered questions and the rationale of superseded decisions. Pending questions remain in Questions and answers; Follow-ups list only actionable post-delivery work or externally owned dependencies, referring to question IDs when useful. A verified task or issue ID identifies the record. Record a client session reference only when it helps locate material context not preserved in the record; do not maintain an exhaustive session history or treat the ID alone as proof. If an answer is the entire decision, use one sourced entry instead of duplicating it across sections. Do not copy a full transcript, credentials, or confidential source material into the record.
+Omit empty optional entries and add detail only when it helps another session continue or explains a consequential decision. At material updates, revise the existing summary rather than append a session log; preserve decision rationale and compress completed implementation details to outcomes and links. On resumption, check Git and cited sources before acting; the record is not live status. Do not store routine branch, HEAD, or clean/dirty snapshots. Keep a dated checkpoint only when another checkout, uncommitted work, or an in-progress publication changes the next action. At completion, retain the final outcome and decision-relevant verification, condense redundant interim checks, and omit details that no longer explain the result or an open follow-up. Keep status and verification current while retaining answered questions and the rationale of superseded decisions. Pending questions remain in Questions and answers; Follow-ups list only actionable post-delivery work or externally owned dependencies, referring to question IDs when useful. Team-facing decisions and actionable gaps live in project-owned issues, ADRs, documentation, or handoffs; keep the personal record concise and link to those sources instead of duplicating their contents. A verified task or issue ID identifies the record. Record a client session reference only when it helps locate material context not preserved in the record; do not maintain an exhaustive session history or treat the ID alone as proof. If an answer is the entire decision, use one sourced entry instead of duplicating it across sections. Do not copy a full transcript, credentials, or confidential source material into the record.

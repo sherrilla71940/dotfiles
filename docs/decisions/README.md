@@ -62,6 +62,7 @@ agent session.
 | [0058](./0058-validate-skill-frontmatter-in-pre-commit.md) | Accepted | Parse rendered skill frontmatter during staged-source validation |
 | [0059](./0059-validate-unicode-markdown-anchors.md) | Accepted | Validate Unicode Markdown heading anchors in staged links |
 | [0060](./0060-let-repository-settings-win-empty-looking-values.md) | Accepted | Let repository settings win over false, 0, and empty live values |
+| [0061](./0061-keep-task-records-concise-and-project-outputs-canonical.md) | Accepted | Keep personal task records concise and team-owned outputs in canonical project artifacts |
 
 ## Template
 

@@ -74,7 +74,9 @@ agents must reconcile them. The local folder is available only where the file ca
 to another machine requires the owner to transfer or sync the record. Guidance is managed by
 chezmoi, while task records themselves are not versioned or copied by this repository.
 
-Current-state fields are dated snapshots, not a live Git feed. Optional session references should
+Any state notes are dated checkpoints, not a live Git feed.
+[ADR-0061](./0061-keep-task-records-concise-and-project-outputs-canonical.md) refines the format to omit routine Git snapshots and route team-owned decisions and gaps to project artifacts.
+Optional session references should
 help locate material context rather than enumerate every session. Pending questions stay in the
 question section; follow-ups name actionable post-delivery work or externally owned dependencies
 and can refer back to those questions. A read-only historical search can start from a recorded

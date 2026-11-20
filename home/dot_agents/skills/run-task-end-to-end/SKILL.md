@@ -31,6 +31,10 @@ When a worktree is requested, let the active client use its native worktree flow
 
 Follow project setup instructions and the active client's supported `.worktreeinclude` behavior for selected ignored files. Verify that required project instructions, skills, and setup files are available inside the task workspace; client versions differ in whether they read ignored files from the main checkout. Do not copy ignored, secret, or client-private files by hand. Report missing inputs without exposing their values.
 
+For parallel subagents working from the same task, include the intended starting branch or commit and each agent's scope in its instructions. Before edits, each agent confirms its Git root, branch or detached state, and starting commit against that assignment. Stop and resolve a mismatch before accepting changes.
+
+Before installing or cleaning dependencies, check the actual `node_modules` and other ignored or generated paths the command will change. Client worktree setup may copy, link, or share these paths with another checkout. If a path is shared, use the project's supported isolated setup or coordinate before mutating it; do not assume a worktree makes dependency installs independent.
+
 A worktree isolates files and branch state; it does not guarantee separate ports, databases, caches, or external services. Use documented project setup for those resources. If a runtime collision prevents a trustworthy test, resolve it through the project's documented configuration or report the verification as blocked; do not claim a custom per-worktree runtime guarantee.
 
 ## Establish the starting point and branch

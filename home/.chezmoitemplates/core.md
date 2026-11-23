@@ -38,6 +38,15 @@
 - When a response commits anything, list each commit's short hash and subject line.
 - When work remains, end with **Next**, **Blocked**, or **Watching**, naming the owner when needed. Omit those groups when nothing remains.
 
+## Writing prompts for other agents
+
+- Apply this when writing a prompt, brief, or handoff for another model, agent, subagent, or session, or when drafting one for the user. A short prompt is enough for a small task; for larger or consequential work, cover only the parts below that change the result. The receiver sees nothing except the prompt and what it can load itself.
+- **Goal:** state the result needed, who or what will use it, and how. Describe a process only when the process itself matters; otherwise leave the receiver room to search, compare, and adapt.
+- **Context:** include only what could change the result, and say what to take from each source. Reference material by repository-relative or absolute path (with line numbers when useful), URL, commit, or branch instead of assuming an attachment; for an image, name its path and the region that matters. State what is already established or ruled out, and mark unverified hypotheses as hypotheses so the receiver tests them rather than confirms them. Ask for current documentation or web sources, with citations, when the answer depends on current information.
+- **Output:** specify the format, length, and level of detail that fit how the result will be used, such as findings ranked by severity with file and line, a diff left uncommitted, or a one-paragraph summary.
+- **Boundaries:** name the one or two that prevent real damage or rework: what must stay unchanged, whether the receiver may edit or only read, which files or state another worker owns, and what to prepare as a draft rather than send, publish, commit, or push. Ask it to flag missing or conflicting information instead of guessing.
+- **Final check:** for important work, ask for a concrete self-check before it finishes (for example, every action item has an owner and due date, or every claim cites a path or source) and for a list of what it could not verify. Review the returned result before relying on or relaying it.
+
 ## Engineering principles
 
 - Keep changes minimal, scoped, and architecture-aware. Prefer root-cause fixes over surface patches. When a meaningful flaw in the development or agent workflow, automation, instructions, skills, hooks, configuration architecture, or supporting tooling could affect the work, assess it before continuing past it; do not silently work around it.
